@@ -1,5 +1,8 @@
 # Node.js
 node_modules/
+node_modules/.prisma
+/src/generated/prisma/
+/src/prisma/migrations/
 
 # TypeScript
 dist/
@@ -17,3 +20,9 @@ logs/
 
 # Optional prettier cache
 .prettiercache
+
+# GraphQL
+*.graphql
+*.gql
+graphql.schema.json
+
