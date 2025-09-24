@@ -1,6 +1,14 @@
-.message-wrapper {
+.message_wrapper {
     display: flex;
     justify-content: flex-start;
+    /* прижимает к правому краю */
+}
+
+.MyMessageWrapper {
+    display: flex;
+    width: 100%;
+    /* justify-content: flex-start; */
+    justify-content: flex-end;
     /* прижимает к правому краю */
 }
 
@@ -10,6 +18,18 @@
     width: fit-content;
     border-radius: 15px;
     background-color: #182533;
+    color: white;
+    padding: 10px 15px;
+    word-wrap: break-word;
+    justify-content: space-between;
+}
+
+.Mycontainer {
+    display: inline-block;
+    max-width: 80%;
+    width: fit-content;
+    border-radius: 15px;
+    background-color: #2b5278;
     color: white;
     padding: 10px 15px;
     word-wrap: break-word;
@@ -28,8 +48,20 @@
     gap: 30px;
 }
 
-.timestamp{
+.timestamp {
     font-size: 12px;
-    color: gray;
+    color: #6d7f8f;
     align-self: flex-end;
 }
+
+.MyTimestamp {
+    font-size: 12px;
+    color: #7da8d3;
+    align-self: flex-end;
+}
+
+/* @media (max-width: 1024px) {
+    .MyMessageWrapper {
+        justify-content: flex-end;
+    }
+} */

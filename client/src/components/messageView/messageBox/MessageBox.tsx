@@ -16,13 +16,18 @@ interface MessageBoxProps {
 }
 
 function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
+  const userStr = localStorage.getItem("user");
+  const user: User | null = userStr ? JSON.parse(userStr) : null;
+
+  // console.log("MessageBox user:", user);
+
   return (
-    <div className={styles["message-wrapper"]}>
-      <div className={styles.container}>
-        <h2 className={styles.author}>{sender!.name}</h2>
+    <div className={user?.id === sender?.id ? styles.MyMessageWrapper : styles.message_wrapper}>
+      <div className={user?.id === sender?.id ? styles.Mycontainer : styles.container}>
+        {user?.id === sender?.id ? null : <h2 className={styles.author}>{sender!.name}</h2>}   
         <p className={styles.message}>
           {text}
-          <span className={styles.timestamp}>
+          <span className={user?.id === sender?.id ? styles.MyTimestamp : styles.timestamp}>
             {new Date(sentAt).toLocaleString(undefined, {
               // year: "numeric", 
               month: "numeric", 

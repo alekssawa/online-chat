@@ -22,7 +22,7 @@ interface FullRoom {
 function ChatRoom() {
   const [selectedRoom, setSelectedRoom] = useState<FullRoom | null>(null);
 
-  console.log("Selected Room:", selectedRoom);
+  // console.log("Selected Room:", selectedRoom);
 
   return (
     <div className={styles.container}>

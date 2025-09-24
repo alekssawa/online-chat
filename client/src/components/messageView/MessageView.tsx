@@ -38,6 +38,16 @@ interface Message {
 function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const socketRef = useRef<ReturnType<typeof socketIOClient> | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const userStr = localStorage.getItem("user");
+  const user: User | null = userStr ? JSON.parse(userStr) : null;
+
+  // console.log(user?.id);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const roomId = selectedRoom?.id ?? null;
 
@@ -89,7 +99,7 @@ function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
     <div className={styles.container}>
       <ul>
         {messages.map((m) => (
-          <li key={m.id} className={styles.messageLi}>
+          <li key={m.id} className={m.senderId === user?.id ? styles.MyMessageLi : styles.messageLi}>
             <MessageBox
               id={m.id}
               text={m.text}
@@ -101,6 +111,7 @@ function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
             />
           </li>
         ))}
+        <div ref={messagesEndRef} />
       </ul>
       <SendMessage roomId={roomId} socket={socketRef.current} />
     </div>

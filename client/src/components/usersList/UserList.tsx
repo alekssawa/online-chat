@@ -20,7 +20,7 @@ interface FullRoom {
 
 function UserList({ selectedRoom }: { selectedRoom: FullRoom | null }) {
 
-  console.log("UserList selectedRoom:", selectedRoom);
+  // console.log("UserList selectedRoom:", selectedRoom);
 
   const users = selectedRoom?.users ?? [];
 

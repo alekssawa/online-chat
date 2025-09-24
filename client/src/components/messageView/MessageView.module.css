@@ -13,13 +13,29 @@
     flex: 1;
     /* padding: 8px; */
     /* растягивается, занимает всё свободное место */
-    overflow-y: auto;
+    /* overflow-y: auto; */
     /* скролл при переполнении */
     margin: 0;
     padding: 10px;
     list-style: none;
 }
 
+.container ul {
+  overflow-y: scroll; /* чтобы можно было скроллить */
+  scrollbar-width: none; /* Firefox */
+}
+
+/* скрыть скроллбар в WebKit-браузерах (Chrome, Safari, Edge) */
+.container ul::-webkit-scrollbar {
+  display: none;
+}
+
 .container ul li {
+  padding: 8px;
+}
+
+.MyMessageLi {
+  display: flex;
+  justify-content: flex-end;
   padding: 8px;
 }

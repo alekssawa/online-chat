@@ -13,6 +13,10 @@ interface SendMessageProps {
 }
 
 function SendMessage({ roomId, socket }: SendMessageProps) {
+  const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); // чтобы страница не перезагружалась
+    handleSend();
+  };
   const [text, setText] = useState("");
 
   // Получаем пользователя из localStorage
@@ -34,15 +38,15 @@ function SendMessage({ roomId, socket }: SendMessageProps) {
   };
 
   return (
-    <div className={styles.container}>
+    <form className={styles.container} onSubmit={onSubmit}>
       <input
         type="text"
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Введите сообщение..."
       />
-      <button onClick={handleSend}>Отправить</button>
-    </div>
+      <button type="submit">Отправить</button>
+    </form>
   );
 }
 

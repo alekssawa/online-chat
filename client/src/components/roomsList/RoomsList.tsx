@@ -115,7 +115,7 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
       }
 
       onSelectRoom(data.data.room); // передаём целую комнату
-      console.log("Комната выбрана:", data.data.room);
+      // console.log("Комната выбрана:", data.data.room);
     } catch (err) {
       console.error("Ошибка при загрузке комнаты:", err);
     }
