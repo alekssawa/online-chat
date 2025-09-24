@@ -4,9 +4,15 @@ export const typeDefs = `#graphql
     id: ID!
     email: String!
     name: String!
-    password: String!
+    # password: String!
     rooms: [Room!]!
     messages: [Message!]!
+  }
+
+  type AuthPayload {
+    accessToken: String!
+    refreshToken: String!
+    user: User!
   }
 
   # Комната
@@ -38,11 +44,18 @@ export const typeDefs = `#graphql
 
   type Query {
     users: [User!]!
+    user(id: ID!): User
     rooms: [Room!]!
+    room(id: ID!): Room
     messages(roomId: ID!): [Message!]!
   }
 
   type Mutation {
+    register(email: String!, password: String!, name: String): AuthPayload!
+    login(email: String!, password: String!): AuthPayload!
+    refreshToken: AuthPayload!
+    logout: Boolean!
+
     createUser(email: String!, name: String, password: String!): User!
     updateUser(id: ID!, email: String, name: String, password: String): User!
     deleteUser(id: ID!): User!

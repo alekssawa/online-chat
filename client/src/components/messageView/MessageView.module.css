@@ -1,0 +1,25 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    
+    /* или 100% от родителя, если он ограничивает высоту */
+    background: #0f1722;
+}
+
+.container ul {
+    margin-bottom: 10px;
+    flex: 1;
+    /* padding: 8px; */
+    /* растягивается, занимает всё свободное место */
+    overflow-y: auto;
+    /* скролл при переполнении */
+    margin: 0;
+    padding: 10px;
+    list-style: none;
+}
+
+.container ul li {
+  padding: 8px;
+}

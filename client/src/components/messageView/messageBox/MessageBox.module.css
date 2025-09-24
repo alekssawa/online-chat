@@ -1,0 +1,35 @@
+.message-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    /* прижимает к правому краю */
+}
+
+.container {
+    display: inline-block;
+    max-width: 80%;
+    width: fit-content;
+    border-radius: 15px;
+    background-color: #182533;
+    color: white;
+    padding: 10px 15px;
+    word-wrap: break-word;
+    justify-content: space-between;
+}
+
+.author {
+    text-align: left;
+    padding-bottom: 5px;
+    color: #62d4e3;
+}
+
+.message {
+    display: flex;
+    text-align: left;
+    gap: 30px;
+}
+
+.timestamp{
+    font-size: 12px;
+    color: gray;
+    align-self: flex-end;
+}

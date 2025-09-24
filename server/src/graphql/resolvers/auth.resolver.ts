@@ -1,0 +1,134 @@
+import prisma from "../../lib/prismaClient.js";
+import argon2 from "argon2";
+import { v4 as uuidv4 } from "uuid";
+import { add } from "date-fns";
+
+import { generateTokens } from "../../lib/tokenService.js";
+import { refreshMiddleware } from "../../middlewares/refresh.middleware.js";
+import type { RefreshRequest } from "../../middlewares/refresh.middleware.js";
+import type { Response } from "express";
+
+export const authResolvers = {
+  Mutation: {
+    register: async (
+      _: any,
+      {
+        email,
+        password,
+        name,
+      }: { email: string; password: string; name?: string },
+      context: { res: Response } // получаем res из Express
+    ) => {
+      // Проверяем, есть ли пользователь с таким email
+      const existingUser = await prisma.users.findUnique({ where: { email } });
+      if (existingUser) {
+        throw new Error("User with this email already exists");
+      }
+
+      // Хэшируем пароль
+      const hashedPassword = await argon2.hash(password);
+
+      // Создаём пользователя
+      const user = await prisma.users.create({
+        data: { email, password: hashedPassword, name: name ?? "unknown" },
+      });
+
+      // Генерируем токены
+      const { accessToken, refreshToken } = await generateTokens(user.id);
+
+      // Сохраняем refreshToken в HttpOnly cookie
+      context.res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/refresh_token", // путь, на котором cookie будет доступна
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
+      });
+
+      return { accessToken, user };
+    },
+
+    login: async (
+      _: any,
+      { email, password }: { email: string; password: string },
+      context: { res: Response }
+    ) => {
+      const user = await prisma.users.findUnique({ where: { email } });
+      if (!user) throw new Error("User not found");
+
+      const valid = await argon2.verify(user.password, password);
+      if (!valid) throw new Error("Invalid password");
+
+      const { accessToken, refreshToken } = await generateTokens(user.id);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      // Удаляем старый токен
+      await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+      // Создаём новый
+      await prisma.refreshToken.create({
+        data: { token: refreshToken, userId: user.id, expiresAt },
+      });
+
+      context.res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: false, // локально
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return { accessToken, user };
+    },
+
+    refreshToken: async (
+      _: any,
+      __: any,
+      context: { req: RefreshRequest; res: Response }
+    ) => {
+      const tokenFromCookie = context.req.cookies?.refreshToken;
+      if (!tokenFromCookie) throw new Error("Refresh token required");
+
+      // Передаём токен в middleware
+      context.req.body = { refreshToken: tokenFromCookie };
+
+      await new Promise<void>((resolve, reject) => {
+        refreshMiddleware(context.req, context.res, (err?: any) => {
+          if (err) return reject(err);
+          resolve();
+        });
+      });
+
+      const userId = context.req.userId!;
+      const { accessToken, refreshToken } = await generateTokens(userId);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+      // Удаляем старый токен
+      await prisma.refreshToken.deleteMany({ where: { userId } });
+
+      // Создаём новый
+      await prisma.refreshToken.create({
+        data: { token: refreshToken, userId, expiresAt },
+      });
+
+      context.res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: false, // локально
+        sameSite: "lax",
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      return {
+        accessToken,
+        user: await prisma.users.findUnique({ where: { id: userId } }),
+      };
+    },
+
+    logout: async (_: any, __: any, { user }: any) => {
+      if (!user) throw new Error("Not authenticated");
+      await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+      return true;
+    },
+  },
+};

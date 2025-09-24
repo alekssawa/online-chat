@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import styles from "./AuthForm.module.css";
+import { useNavigate } from "react-router-dom";
 
 import { ToastContainer, toast } from "react-toastify";
 
 function AuthForm() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,27 +28,54 @@ function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     const emailError = validateEmail(email);
     const passwordError = validatePassword(password);
 
     if (emailError || passwordError) {
-      setErrors({ email: emailError, password: passwordError }); // <--- здесь setErrors должно быть видно
+      setErrors({ email: emailError, password: passwordError });
       return;
     }
 
     setIsSubmitting(true);
     setErrors({});
+
     try {
-      // Имитация запроса
-      await new Promise((res) => setTimeout(res, 1000));
+      const query = `
+      mutation Login($email: String!, $password: String!) {
+        login(email: $email, password: $password) {
+          accessToken
+          user { id email name }
+        }
+      }
+    `;
+      const variables = { email, password };
+
+      const response = await fetch("http://localhost:3000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const result = await response.json();
+      if (result.errors) throw new Error("Login failed");
+
+      const { accessToken, user } = result.data.login;
+      localStorage.setItem("accessToken", accessToken);
+      
+
       setSuccess(true);
-    } catch {
+      localStorage.setItem("user", JSON.stringify(user))
+      console.log("User logged in:", user);
+      navigate("/Chat");
+    } catch (err) {
+      console.error(err);
       setErrors({ email: "Ошибка входа", password: "Ошибка входа" });
     } finally {
       setIsSubmitting(false);
     }
   };
-
 
   useEffect(() => {
     if (success) toast.success("Вход успешен!");
