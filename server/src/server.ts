@@ -6,9 +6,13 @@ import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express4"; // Изменено на express4
 import cors from "cors";
 import cookieParser from "cookie-parser";
+
+
 import prisma from "./lib/prismaClient.js";
 import { typeDefs } from "./graphql/schema.js";
 import { resolvers } from "./graphql/resolvers.js";
+
+import { registerSocketHandlers } from "./sockets/socketHandler.js";
 
 const app = express();
 const httpServer = createServer(app);
@@ -54,31 +58,7 @@ app.use(
   })
 );
 
-io.on("connection", (socket) => {
-  console.log(`🔌 New client connected: ${socket.id}`);
-
-  socket.on("joinRoom", (roomId) => {
-    console.log(`➡️ Client ${socket.id} joining room ${roomId}`);
-    socket.join(roomId);
-    console.log(`✅ Client ${socket.id} joined rooms: ${Array.from(socket.rooms).join(", ")}`);
-  });
-
-  socket.on("leaveRoom", (roomId) => {
-    console.log(`⬅️ Client ${socket.id} leaving room ${roomId}`);
-    socket.leave(roomId);
-    console.log(`✅ Client ${socket.id} remaining rooms: ${Array.from(socket.rooms).join(", ")}`);
-  });
-
-  socket.on("sendMessage", (message) => {
-    console.log(`✉️ New message from ${socket.id} in room ${message.roomId}: ${message.text}`);
-    io.to(message.roomId).emit("newMessage", message);
-    console.log(`📤 Message emitted to room ${message.roomId}`);
-  });
-
-  socket.on("disconnect", (reason) => {
-    console.log(`❌ Client disconnected: ${socket.id}, reason: ${reason}`);
-  });
-});
+registerSocketHandlers(io);
 
 const PORT = 3000;
 httpServer.listen(PORT, () => {
@@ -86,4 +66,3 @@ httpServer.listen(PORT, () => {
   console.log(`GraphQL endpoint at http://localhost:${PORT}/graphql`);
 });
 
-// TODO: Argon2id для хеширования паролей

@@ -1,5 +1,6 @@
 .container {
-    width: 300px;
+    width: 200px;
+    min-width: 200px;
     /* border-left: 5px solid #53bd8d; */
     height: 100vh;
     overflow-y: auto;
@@ -8,5 +9,6 @@
     color: white;
     background-color: #182533;
 
-    margin-left: auto; /* прижимаем вправо */
+    margin-left: auto;
+    /* прижимаем вправо */
 }

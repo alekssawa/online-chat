@@ -14,7 +14,18 @@ interface User {
 }
 
 interface RoomsListProps {
-  onSelectRoom: (roomId: string) => void;
+  onSelectRoom: (room: FullRoom) => void; // передаём уже комнату
+}
+
+interface FullRoom extends Room {
+  users: { id: string; email: string; name: string }[];
+  messages: {
+    id: string;
+    text: string;
+    sentAt: string;
+    updatedAt: string;
+    sender: { id: string; email: string; name: string };
+  }[];
 }
 
 function RoomsList({ onSelectRoom }: RoomsListProps) {
@@ -27,26 +38,11 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
     const userStr = localStorage.getItem("user");
     const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-    // console.log("Current user from localStorage:", user);
     const fetchRooms = async () => {
       try {
-        // console.log("Fetching rooms...");
-
-        const token = localStorage.getItem("accessToken");
-        // console.log("Token:", token);
-
-        if (!token) {
-          setError("Нет токена авторизации");
-          setLoading(false);
-          return;
-        }
-
         const res = await fetchWithAuth("http://localhost:3000/graphql", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: `
             query {
@@ -62,26 +58,14 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
           }),
         });
 
-        // console.log("Raw response:", res);
-
         const data = await res.json();
-        // console.log("Parsed JSON:", data);
-
         if (data.errors) {
-          console.error("GraphQL errors:", data.errors);
           setError(data.errors[0].message);
         } else {
-          const userData = data.data.user;
-          setRooms(userData?.rooms || []);
-          // console.log("Rooms data for current user:", userData?.rooms || []);
+          setRooms(data.data.user?.rooms || []);
         }
       } catch (err: unknown) {
-        console.error("Fetch error:", err);
-        if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError(String(err));
-        }
+        setError(err instanceof Error ? err.message : String(err));
       } finally {
         setLoading(false);
       }
@@ -89,6 +73,53 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
 
     fetchRooms();
   }, [fetchWithAuth]);
+
+  const handleSelectRoom = async (roomId: string) => {
+    try {
+      const res = await fetchWithAuth("http://localhost:3000/graphql", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: `
+          query {
+            room(id: "${roomId}") {
+              id
+              name
+              createdAt
+              users {
+                id
+                email
+                name
+              }
+              messages {
+                id
+                text
+                sentAt
+                updatedAt
+                sender {
+                  id
+                  email
+                  name
+                }
+              }
+            }
+          }
+        `,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.errors) {
+        console.error("GraphQL error:", data.errors);
+        return;
+      }
+
+      onSelectRoom(data.data.room); // передаём целую комнату
+      console.log("Комната выбрана:", data.data.room);
+    } catch (err) {
+      console.error("Ошибка при загрузке комнаты:", err);
+    }
+  };
 
   if (loading) return <p>Загрузка...</p>;
   if (error) return <p>Ошибка: {error}</p>;
@@ -101,7 +132,7 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
           <li key={room.id}>
             <button
               className={styles.roomButton}
-              onClick={() => onSelectRoom(room.id)}
+              onClick={() => handleSelectRoom(room.id)}
             >
               {room.name}
             </button>

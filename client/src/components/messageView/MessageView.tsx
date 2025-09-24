@@ -1,10 +1,24 @@
 import { useEffect, useState, useRef } from "react";
 import socketIOClient from "socket.io-client";
-import { useAuth } from "../../hooks/useAuth";
+// import { useAuth } from "../../hooks/useAuth";
 
 import styles from "./MessageView.module.css";
 import MessageBox from "./messageBox/MessageBox";
 import SendMessage from "./sendMessage/SendMessage";
+
+interface FullRoom {
+  id: string;
+  name: string;
+  createdAt: string;
+  users: { id: string; email: string; name: string }[];
+  messages: {
+    id: string;
+    text: string;
+    sentAt: string;
+    updatedAt: string;
+    sender: { id: string; email: string; name: string };
+  }[];
+}
 
 interface User {
   id: string;
@@ -21,66 +35,39 @@ interface Message {
   sender?: User;
 }
 
-interface MessageViewProps {
-  roomId: string | null;
-}
-
-function MessageView({ roomId }: MessageViewProps) {
-  const { fetchWithAuth } = useAuth();
+function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const socketRef = useRef<ReturnType<typeof socketIOClient> | null>(null);
 
+  const roomId = selectedRoom?.id ?? null;
+
+  // Загружаем начальные сообщения
   useEffect(() => {
-    if (!roomId) {
+    if (selectedRoom) {
+      // преобразуем messages из комнаты в наш формат
+      const initialMessages: Message[] = selectedRoom.messages.map((m) => ({
+        id: m.id,
+        text: m.text,
+        senderId: m.sender.id,
+        roomId: selectedRoom.id,
+        sentAt: m.sentAt,
+        updatedAt: m.updatedAt,
+        sender: { id: m.sender.id, name: m.sender.name },
+      }));
+      setMessages(initialMessages);
+    } else {
       setMessages([]);
-      setLoading(false);
-      return;
     }
+  }, [selectedRoom]);
 
-    const fetchMessages = async () => {
-      try {
-        const res = await fetchWithAuth("http://localhost:3000/graphql", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: `
-              query {
-                room(id: "${roomId}") {
-                  messages {
-                    id
-                    text
-                    sentAt
-                    updatedAt
-                    sender {
-                      id
-                      name
-                    }
-                  }
-                }
-              }
-            `,
-          }),
-        });
+  // Подключение Socket.IO
+  useEffect(() => {
+    if (!roomId) return;
 
-        const data = await res.json();
-        setMessages(data.data.room?.messages ?? []);
-      } catch (err: unknown) {
-        if (err instanceof Error) setError(err.message);
-        else setError(String(err));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMessages();
-
-    // Socket.IO
     const socket = socketIOClient("http://localhost:3000", {
       auth: { token: localStorage.getItem("accessToken") },
     });
+
     socketRef.current = socket;
 
     socket.emit("joinRoom", roomId);
@@ -90,16 +77,13 @@ function MessageView({ roomId }: MessageViewProps) {
     });
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit("leaveRoom", roomId);
-        socketRef.current.off("newMessage");
-        socketRef.current.disconnect();
-      }
+      socket.emit("leaveRoom", roomId);
+      socket.off("newMessage");
+      socket.disconnect();
     };
-  }, [roomId, fetchWithAuth]);
+  }, [roomId]);
 
-  if (loading) return <p>Загрузка сообщений...</p>;
-  if (error) return <p>Ошибка: {error}</p>;
+  if (!roomId) return <p>Выберите комнату</p>;
 
   return (
     <div className={styles.container}>
@@ -118,8 +102,7 @@ function MessageView({ roomId }: MessageViewProps) {
           </li>
         ))}
       </ul>
-      {roomId ? <SendMessage /> : null}
-      
+      <SendMessage roomId={roomId} socket={socketRef.current} />
     </div>
   );
 }

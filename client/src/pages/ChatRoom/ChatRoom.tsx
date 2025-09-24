@@ -5,16 +5,34 @@ import RoomsList from "../../components/roomsList/RoomsList";
 import UserList from "../../components/usersList/UserList";
 import MessageView from "../../components/messageView/MessageView";
 
+interface FullRoom {
+  id: string;
+  name: string;
+  createdAt: string;
+  users: { id: string; email: string; name: string }[];
+  messages: {
+    id: string;
+    text: string;
+    sentAt: string;
+    updatedAt: string;
+    sender: { id: string; email: string; name: string };
+  }[];
+}
+
 function ChatRoom() {
-  const [selectedRoom, setSelectedRoom] = useState<string | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<FullRoom | null>(null);
+
+  console.log("Selected Room:", selectedRoom);
 
   return (
     <div className={styles.container}>
-      {/* Передаём setSelectedRoom в RoomsList */}
       <RoomsList onSelectRoom={setSelectedRoom} />
-      <MessageView roomId={selectedRoom} />
-      <UserList roomId={selectedRoom} />
-
+      {selectedRoom && (
+        <>
+          <MessageView selectedRoom={selectedRoom} />
+        </>
+      )}
+      <UserList selectedRoom={selectedRoom} />
     </div>
   );
 }

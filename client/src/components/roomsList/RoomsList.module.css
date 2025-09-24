@@ -1,5 +1,6 @@
 .container{
-    width: 300px;
+    width: 200px;
+    min-width: 200px;
     /* border-right: 5px solid #53bd8d; */
     height: 100vh;
     overflow-y: auto;
