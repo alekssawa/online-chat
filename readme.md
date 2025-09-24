@@ -37,43 +37,98 @@
 ```bash
 git clone https://github.com/your-username/online-chat.git
 cd online-chat
-2. Backend
-bash
+```
+
+
+### 2. Backend
+```bash
 Копировать код
 cd server
 npm install
 npx prisma migrate dev
 npm run dev
+```
+
 Сервер поднимется на http://localhost:3000/graphql
 
-3. Frontend
-bash
+### 3. Frontend
+```bash
 Копировать код
 cd client
 npm install
 npm run dev
+```
+
 Открой http://localhost:5173
 
 📂 Структура проекта
-graphql
-Копировать код
+```bash
 online-chat/
 │── server/              # Backend (Express + GraphQL + Prisma)
-│   ├── prisma/          # Схемы и миграции
-│   ├── resolvers/       # GraphQL-резолверы
-│   ├── schema.graphql   # Описание схемы
-│   └── index.ts         # Точка входа
+│   └── src                  
+│       ├── graphql/              # GraphQL слой
+│       │   ├── resolvers/        # Резолверы (auth, message, room, user)
+│       │   ├── resolvers.ts      # Индекс резолверов
+│       │   ├── schema.ts         # GraphQL-схема
+│       │   └── types.ts          # Типы
+│       ├── lib/                  # Утилиты
+│       │   ├── authDecorator.ts
+│       │   ├── prismaClient.ts
+│       │   └── tokenService.ts
+│       ├── middlewares/          # Middleware
+│       │   ├── auth.middleware.ts
+│       │   └── refresh.middleware.ts
+│       ├── sockets/              # WebSocket
+│       │   └── socketHandler.ts
+│       └── server.ts             # Точка входа (Express + GraphQL + WebSocket)
 │
-│── client/              # Frontend (React + TS)
-│   ├── src/
-│   │   ├── components/  # Компоненты (RoomsList, ChatWindow и т.д.)
-│   │   ├── hooks/       # Хуки (useAuth, useCart и т.д.)
-│   │   └── App.tsx      # Главный компонент
-│
-└── README.md
+└── client/              # Frontend (React + TS)
+    └── src/                      # Исходники React + TypeScript
+        ├── assets/               # Медиа-файлы
+        │   └── react.svg
+        ├── components/           # Компоненты
+        │   ├── messageView/      # UI для сообщений
+        │   │   ├── messageBox/   # Один блок сообщения
+        │   │   │   ├── MessageBox.tsx
+        │   │   │   └── MessageBox.module.css
+        │   │   ├── sendMessage/  # Форма отправки сообщений
+        │   │   │   ├── SendMessage.tsx
+        │   │   │   └── SendMessage.module.css
+        │   │   ├── MessageView.tsx
+        │   │   └── MessageView.module.css
+        │   ├── roomsList/        # Список комнат
+        │   │   ├── RoomsList.tsx
+        │   │   └── RoomsList.module.css
+        │   └── usersList/        # Список пользователей
+        │       ├── UserList.tsx
+        │       └── UserList.module.css
+        │
+        ├── hooks/                # Кастомные хуки
+        │   └── useAuth.ts        # Аутентификация + refresh token
+        ├── pages/                # Страницы
+        │   ├── ChatRoom/         # Чат-страница
+        │   │   ├── ChatRoom.tsx
+        │   │   └── ChatRoom.module.css
+        │   └── General/          # Главная + авторизация
+        │       ├── authForm/     # Форма логина/регистрации
+        │       │   ├── AuthForm.tsx
+        │       │   └── AuthForm.module.css
+        │       └── General.tsx
+        │
+        ├── styles/               # Глобальные стили
+        │   ├── reset.css
+        │   └── common.css
+        ├── App.tsx               # Главный компонент
+        ├── main.tsx              # Входная точка приложения
+        └── vite-env.d.ts         # TypeScript типы для Vite
+ 
+ 
+
+```
+
 🔐 Аутентификация
+```bash
 Access Token хранится в localStorage
-
 Refresh Token — в HTTP-only cookie
-
 При истечении accessToken автоматически выполняется refreshToken
+```
