@@ -8,7 +8,7 @@ interface User {
 
 export const useAuth = () => {
   const [accessToken, setAccessToken] = useState<string | null>(
-    localStorage.getItem("accessToken")
+    localStorage.getItem("accessToken"),
   );
   const [user, setUser] = useState<User | null>(() => {
     const storedUser = localStorage.getItem("user");
@@ -25,7 +25,7 @@ export const useAuth = () => {
     }
 
     refreshingToken.current = (async () => {
-      console.log("🔄 Refreshing access token...");
+      // console.log("🔄 Refreshing access token...");
 
       try {
         const query = `
@@ -49,7 +49,7 @@ export const useAuth = () => {
         });
 
         const result = await response.json();
-        console.log("💻 Refresh token result:", result);
+        // console.log("💻 Refresh token result:", result);
 
         if (result.errors) throw result.errors;
 
@@ -93,7 +93,7 @@ export const useAuth = () => {
       let response = await performFetch(accessToken);
 
       if (response.status === 401) {
-        console.log("⚠️ Access token expired, attempting refresh...");
+        // console.log("⚠️ Access token expired, attempting refresh...");
         const newToken = await refreshAccessToken();
 
         if (!newToken) {
@@ -102,12 +102,15 @@ export const useAuth = () => {
         }
 
         response = await performFetch(newToken);
-        console.log("✅ Request retried after refresh, status:", response.status);
+        // console.log(
+        //   "✅ Request retried after refresh, status:",
+        //   response.status,
+        // );
       }
 
       return response;
     },
-    [accessToken, refreshAccessToken]
+    [accessToken, refreshAccessToken],
   );
 
   return { accessToken, user, fetchWithAuth, refreshAccessToken };

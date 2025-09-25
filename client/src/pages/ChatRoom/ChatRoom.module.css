@@ -1,4 +1,47 @@
-.container{
-    display: flex;
-    background-color: #0e1621;
+.container {
+  display: flex;
+  height: 100vh;
+  background-color: #0e1621;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  height: 100vh;
+  width: 100%;
+  color: white;
+  background-color: #0e1621;
+}
+
+.loader {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%; /* делаем круг */
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite; /* бесконечная анимация */
+  /* margin: 100px auto; */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loadingText {
+  margin-top: 10px;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: red;
+  text-align: center;
+  margin-top: 20px;
 }

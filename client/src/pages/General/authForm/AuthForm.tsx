@@ -10,7 +10,7 @@ function AuthForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
-    {}
+    {},
   );
   const [remember, setRemember] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -63,10 +63,9 @@ function AuthForm() {
 
       const { accessToken, user } = result.data.login;
       localStorage.setItem("accessToken", accessToken);
-      
 
       setSuccess(true);
-      localStorage.setItem("user", JSON.stringify(user))
+      localStorage.setItem("user", JSON.stringify(user));
       console.log("User logged in:", user);
       navigate("/Chat");
     } catch (err) {

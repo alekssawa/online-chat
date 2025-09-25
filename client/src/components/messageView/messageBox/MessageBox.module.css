@@ -1,63 +1,63 @@
 .message_wrapper {
-    display: flex;
-    justify-content: flex-start;
-    /* прижимает к правому краю */
+  display: flex;
+  justify-content: flex-start;
+  /* прижимает к правому краю */
 }
 
 .MyMessageWrapper {
-    display: flex;
-    width: 100%;
-    /* justify-content: flex-start; */
-    justify-content: flex-end;
-    /* прижимает к правому краю */
+  display: flex;
+  width: 100%;
+  /* justify-content: flex-start; */
+  justify-content: flex-end;
+  /* прижимает к правому краю */
 }
 
 .container {
-    display: inline-block;
-    max-width: 80%;
-    width: fit-content;
-    border-radius: 15px;
-    background-color: #182533;
-    color: white;
-    padding: 10px 15px;
-    word-wrap: break-word;
-    justify-content: space-between;
+  display: inline-block;
+  max-width: 80%;
+  width: fit-content;
+  border-radius: 15px;
+  background-color: #182533;
+  color: white;
+  padding: 10px 15px;
+  word-wrap: break-word;
+  justify-content: space-between;
 }
 
 .Mycontainer {
-    display: inline-block;
-    max-width: 80%;
-    width: fit-content;
-    border-radius: 15px;
-    background-color: #2b5278;
-    color: white;
-    padding: 10px 15px;
-    word-wrap: break-word;
-    justify-content: space-between;
+  display: inline-block;
+  max-width: 80%;
+  width: fit-content;
+  border-radius: 15px;
+  background-color: #2b5278;
+  color: white;
+  padding: 10px 15px;
+  word-wrap: break-word;
+  justify-content: space-between;
 }
 
 .author {
-    text-align: left;
-    padding-bottom: 5px;
-    color: #62d4e3;
+  text-align: left;
+  padding-bottom: 5px;
+  color: #62d4e3;
 }
 
 .message {
-    display: flex;
-    text-align: left;
-    gap: 30px;
+  display: flex;
+  text-align: left;
+  gap: 30px;
 }
 
 .timestamp {
-    font-size: 12px;
-    color: #6d7f8f;
-    align-self: flex-end;
+  font-size: 12px;
+  color: #6d7f8f;
+  align-self: flex-end;
 }
 
 .MyTimestamp {
-    font-size: 12px;
-    color: #7da8d3;
-    align-self: flex-end;
+  font-size: 12px;
+  color: #7da8d3;
+  align-self: flex-end;
 }
 
 /* @media (max-width: 1024px) {

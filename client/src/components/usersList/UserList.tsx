@@ -3,7 +3,6 @@
 
 import styles from "./UserList.module.css";
 
-
 interface FullRoom {
   id: string;
   name: string;
@@ -17,24 +16,31 @@ interface FullRoom {
     sender: { id: string; email: string; name: string };
   }[];
 }
+interface UserListProps {
+  selectedRoom: FullRoom | null;
+  loading: boolean;
+}
 
-function UserList({ selectedRoom }: { selectedRoom: FullRoom | null }) {
-
+function UserList({ selectedRoom, loading }: UserListProps) {
   // console.log("UserList selectedRoom:", selectedRoom);
 
   const users = selectedRoom?.users ?? [];
 
   return (
-    <div className={styles.container}>
-      <h4>Users:</h4>
-      {selectedRoom && users.length > 0 ? (
-        <ul>
-          {users.map((u) => (
-            <li key={u.id}>{u.name}</li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
+    <>
+      {!loading && (
+        <div className={styles.container}>
+          <h4>Users:</h4>
+          {selectedRoom && users.length > 0 ? (
+            <ul>
+              {users.map((u) => (
+                <li key={u.id}>{u.name}</li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      )}
+    </>
   );
 }
 

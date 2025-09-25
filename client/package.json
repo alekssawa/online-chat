@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "prettier": "prettier --write \"**/*.{ts,tsx,css,js,jsx}\"",
     "tree-cli": "npx tree-cli -l 10 --ignore node_modules"
   },
   "dependencies": {

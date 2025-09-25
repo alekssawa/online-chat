@@ -22,18 +22,34 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
   // console.log("MessageBox user:", user);
 
   return (
-    <div className={user?.id === sender?.id ? styles.MyMessageWrapper : styles.message_wrapper}>
-      <div className={user?.id === sender?.id ? styles.Mycontainer : styles.container}>
-        {user?.id === sender?.id ? null : <h2 className={styles.author}>{sender!.name}</h2>}   
+    <div
+      className={
+        user?.id === sender?.id
+          ? styles.MyMessageWrapper
+          : styles.message_wrapper
+      }
+    >
+      <div
+        className={
+          user?.id === sender?.id ? styles.Mycontainer : styles.container
+        }
+      >
+        {user?.id === sender?.id ? null : (
+          <h2 className={styles.author}>{sender!.name}</h2>
+        )}
         <p className={styles.message}>
           {text}
-          <span className={user?.id === sender?.id ? styles.MyTimestamp : styles.timestamp}>
+          <span
+            className={
+              user?.id === sender?.id ? styles.MyTimestamp : styles.timestamp
+            }
+          >
             {new Date(sentAt).toLocaleString(undefined, {
-              // year: "numeric", 
-              month: "numeric", 
-              day: "numeric", 
-              hour: "2-digit", 
-              minute: "2-digit", 
+              // year: "numeric",
+              month: "numeric",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
               // second: "2-digit",
             })}
           </span>
@@ -45,8 +61,7 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
 
 export default MessageBox;
 
-
 // FIXME: Поправить timestamp, если текст большой
 // TODO: когда user online, показывать его статус
 // TODO: Сделать формат для комнат
-// TODO: добавить форматирование текста (markdown) 
+// TODO: добавить форматирование текста (markdown)

@@ -14,7 +14,10 @@ interface User {
 }
 
 interface RoomsListProps {
-  onSelectRoom: (room: FullRoom) => void; // передаём уже комнату
+  onSelectRoom: (room: FullRoom) => void;
+  loading: boolean;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
 }
 
 interface FullRoom extends Room {
@@ -28,15 +31,21 @@ interface FullRoom extends Room {
   }[];
 }
 
-function RoomsList({ onSelectRoom }: RoomsListProps) {
+function RoomsList({
+  onSelectRoom,
+  loading,
+  setLoading,
+  setError,
+}: RoomsListProps) {
   const { fetchWithAuth } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  // const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
     const user: User | null = userStr ? JSON.parse(userStr) : null;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
     const fetchRooms = async () => {
       try {
@@ -61,18 +70,33 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
         const data = await res.json();
         if (data.errors) {
           setError(data.errors[0].message);
+          if (!intervalId) {
+            intervalId = setInterval(fetchRooms, 5000);
+          }
         } else {
           setRooms(data.data.user?.rooms || []);
+          setError(null);
+          setLoading(false);
+
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
         }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
+        if (!intervalId) {
+          intervalId = setInterval(fetchRooms, 5000);
+        }
       }
     };
 
     fetchRooms();
-  }, [fetchWithAuth]);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [fetchWithAuth, setLoading, setError]);
 
   const handleSelectRoom = async (roomId: string) => {
     try {
@@ -121,25 +145,28 @@ function RoomsList({ onSelectRoom }: RoomsListProps) {
     }
   };
 
-  if (loading) return <p>Загрузка...</p>;
-  if (error) return <p>Ошибка: {error}</p>;
+  // if (loading) return <p>Загрузка...</p>;
 
   return (
-    <div className={styles.container}>
-      <h2>Rooms:</h2>
-      <ul>
-        {rooms.map((room) => (
-          <li key={room.id}>
-            <button
-              className={styles.roomButton}
-              onClick={() => handleSelectRoom(room.id)}
-            >
-              {room.name}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <>
+      {!loading && (
+        <div className={styles.container}>
+          <h2>Rooms:</h2>
+          <ul>
+            {rooms.map((room) => (
+              <li key={room.id}>
+                <button
+                  className={styles.roomButton}
+                  onClick={() => handleSelectRoom(room.id)}
+                >
+                  {room.name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -10,9 +10,10 @@ interface User {
 interface SendMessageProps {
   roomId: string;
   socket: typeof Socket | null;
+  isSocketConnected: boolean;
 }
 
-function SendMessage({ roomId, socket }: SendMessageProps) {
+function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault(); // чтобы страница не перезагружалась
     handleSend();
@@ -44,8 +45,11 @@ function SendMessage({ roomId, socket }: SendMessageProps) {
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Введите сообщение..."
+        disabled={!isSocketConnected}
       />
-      <button type="submit">Отправить</button>
+      <button type="submit" disabled={!isSocketConnected || !text.trim()}>
+        Отправить
+      </button>
     </form>
   );
 }

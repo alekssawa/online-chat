@@ -37,7 +37,9 @@ interface Message {
 
 function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
   const socketRef = useRef<ReturnType<typeof socketIOClient> | null>(null);
+  const reconnectRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userStr = localStorage.getItem("user");
@@ -74,32 +76,76 @@ function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
   useEffect(() => {
     if (!roomId) return;
 
-    const socket = socketIOClient("http://localhost:3000", {
-      auth: { token: localStorage.getItem("accessToken") },
-    });
+    const connectSocket = () => {
+      let socket = socketRef.current;
 
-    socketRef.current = socket;
+      if (!socket) {
+        socket = socketIOClient("http://localhost:3000", {
+          auth: { token: localStorage.getItem("accessToken") },
+        });
+        socketRef.current = socket;
 
-    socket.emit("joinRoom", roomId);
+        socket?.on("connect", () => {
+          // console.log("✅ Socket connected");
+          setIsSocketConnected(true);
+          socket?.emit("joinRoom", roomId);
+        });
 
-    socket.on("newMessage", (message: Message) => {
-      setMessages((prev) => [...prev, message]);
-    });
+        socket?.on("disconnect", () => {
+          // console.log("⚠️ Socket disconnected");
+          setIsSocketConnected(false);
+        });
+      }
+
+      // Отписываемся от старых подписок перед новой
+      socket.off("newMessage");
+      socket.on("newMessage", (message: Message) => {
+        setMessages((prev) => [...prev, message]);
+      });
+
+      // Если сокет уже подключен, просто join в комнату
+      if (socket.connected) socket.emit("joinRoom", roomId);
+    };
+
+    connectSocket();
+
+    reconnectRef.current = setInterval(() => {
+      if (!socketRef.current || !socketRef.current.connected) {
+        console.log("♻️ Try reconnecting...");
+        connectSocket();
+      }
+    }, 5000);
 
     return () => {
-      socket.emit("leaveRoom", roomId);
-      socket.off("newMessage");
-      socket.disconnect();
+      if (socketRef.current) {
+        socketRef.current.emit("leaveRoom", roomId);
+        socketRef.current.off("newMessage");
+        // Не отключаем сокет полностью, чтобы он мог переиспользоваться
+      }
+      if (reconnectRef.current) clearInterval(reconnectRef.current);
     };
   }, [roomId]);
 
   if (!roomId) return <p>Выберите комнату</p>;
 
+  // console.log("Messages:", messages);
+
   return (
     <div className={styles.container}>
+      {!isSocketConnected && (
+        <div className={styles.overlay}>
+          <div className={styles.loader}></div>
+          <p>Connecting...</p>
+        </div>
+      )}
       <ul>
         {messages.map((m) => (
-          <li key={m.id} className={m.senderId === user?.id ? styles.MyMessageLi : styles.messageLi}>
+          <li
+            key={m.id}
+            className={
+              m.senderId === user?.id ? styles.MyMessageLi : styles.messageLi
+            }
+          >
             <MessageBox
               id={m.id}
               text={m.text}
@@ -113,7 +159,11 @@ function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
         ))}
         <div ref={messagesEndRef} />
       </ul>
-      <SendMessage roomId={roomId} socket={socketRef.current} />
+      <SendMessage
+        roomId={roomId}
+        socket={socketRef.current}
+        isSocketConnected={isSocketConnected}
+      />
     </div>
   );
 }

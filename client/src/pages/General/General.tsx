@@ -1,12 +1,11 @@
 import AuthForm from "./authForm/AuthForm";
 
-
 function General() {
-    return (
-        <>
-            <AuthForm />
-        </>
-    );
+  return (
+    <>
+      <AuthForm />
+    </>
+  );
 }
 
 export default General;
