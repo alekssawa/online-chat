@@ -61,7 +61,6 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
 
 export default MessageBox;
 
-// FIXME: Поправить timestamp, если текст большой
 // TODO: когда user online, показывать его статус
 // TODO: Сделать формат для комнат
 // TODO: добавить форматирование текста (markdown)
