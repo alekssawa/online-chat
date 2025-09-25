@@ -5,6 +5,9 @@
   color: white;
   display: flex;
   gap: 10px;
+  border-top: black solid 0.5px;
+  border-left: black solid 0.5px;
+  border-right: black solid 0.5px;
 }
 
 .container input {
@@ -16,7 +19,7 @@
 
 .container button {
   padding: 8px 16px;
-  background: #2563eb;
+  background: #5084be;
   color: white;
   border: none;
   border-radius: 4px;

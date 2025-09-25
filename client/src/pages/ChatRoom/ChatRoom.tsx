@@ -19,10 +19,16 @@ interface FullRoom {
   }[];
 }
 
+interface OnlineUser {
+  userId: string;
+  online: boolean;
+}
+
 function ChatRoom() {
   const [selectedRoom, setSelectedRoom] = useState<FullRoom | null>(null);
   const [loading, setLoading] = useState(true);
-  const [/*error*/, setError] = useState<string | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
+  const [, /*error*/ setError] = useState<string | null>(null);
 
   // console.log("Selected Room:", selectedRoom);
 
@@ -45,10 +51,17 @@ function ChatRoom() {
         />
         {selectedRoom && (
           <>
-            <MessageView selectedRoom={selectedRoom} />
+            <MessageView
+              selectedRoom={selectedRoom}
+              setOnlineUsers={setOnlineUsers}
+            />
           </>
         )}
-        <UserList selectedRoom={selectedRoom} loading={loading} />
+        <UserList
+          selectedRoom={selectedRoom}
+          loading={loading}
+          onlineUsers={onlineUsers}
+        />
       </>
     </div>
   );

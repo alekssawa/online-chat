@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from "react";
 import socketIOClient from "socket.io-client";
-// import { useAuth } from "../../hooks/useAuth";
 
 import styles from "./MessageView.module.css";
 import MessageBox from "./messageBox/MessageBox";
@@ -35,100 +34,95 @@ interface Message {
   sender?: User;
 }
 
-function MessageView({ selectedRoom }: { selectedRoom: FullRoom | null }) {
+interface OnlineUser {
+  userId: string;
+  online: boolean;
+}
+
+interface MessageViewProps {
+  selectedRoom: FullRoom | null;
+  setOnlineUsers: React.Dispatch<React.SetStateAction<OnlineUser[]>>;
+}
+
+function MessageView({ selectedRoom, setOnlineUsers }: MessageViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
+
   const socketRef = useRef<ReturnType<typeof socketIOClient> | null>(null);
-  const reconnectRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  // console.log(user?.id);
+  const roomId = selectedRoom?.id ?? null;
 
+  // Прокрутка вниз при новых сообщениях
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const roomId = selectedRoom?.id ?? null;
-
-  // Загружаем начальные сообщения
+  // Загрузка начальных сообщений
   useEffect(() => {
-    if (selectedRoom) {
-      // преобразуем messages из комнаты в наш формат
-      const initialMessages: Message[] = selectedRoom.messages.map((m) => ({
-        id: m.id,
-        text: m.text,
-        senderId: m.sender.id,
-        roomId: selectedRoom.id,
-        sentAt: m.sentAt,
-        updatedAt: m.updatedAt,
-        sender: { id: m.sender.id, name: m.sender.name },
-      }));
-      setMessages(initialMessages);
-    } else {
+    if (!selectedRoom) {
       setMessages([]);
+      return;
     }
+
+    const initialMessages: Message[] = selectedRoom.messages.map((m) => ({
+      id: m.id,
+      text: m.text,
+      senderId: m.sender.id,
+      roomId: selectedRoom.id,
+      sentAt: m.sentAt,
+      updatedAt: m.updatedAt,
+      sender: { id: m.sender.id, name: m.sender.name },
+    }));
+
+    setMessages(initialMessages);
   }, [selectedRoom]);
 
   // Подключение Socket.IO
   useEffect(() => {
-    if (!roomId) return;
+    if (!roomId || !user) return;
 
-    const connectSocket = () => {
-      let socket = socketRef.current;
+    if (!socketRef.current) {
+      const socket = socketIOClient("http://localhost:3000", {
+        auth: { token: localStorage.getItem("accessToken"), userId: user.id },
+      });
+      socketRef.current = socket;
 
-      if (!socket) {
-        socket = socketIOClient("http://localhost:3000", {
-          auth: { token: localStorage.getItem("accessToken") },
-        });
-        socketRef.current = socket;
+      socket.on("connect", () => setIsSocketConnected(true));
+      socket.on("disconnect", () => setIsSocketConnected(false));
 
-        socket?.on("connect", () => {
-          // console.log("✅ Socket connected");
-          setIsSocketConnected(true);
-          socket?.emit("joinRoom", roomId);
-        });
+      socket.on("newMessage", (message: Message) =>
+        setMessages((prev) => [...prev, message]),
+      );
 
-        socket?.on("disconnect", () => {
-          // console.log("⚠️ Socket disconnected");
-          setIsSocketConnected(false);
-        });
-      }
-
-      // Отписываемся от старых подписок перед новой
-      socket.off("newMessage");
-      socket.on("newMessage", (message: Message) => {
-        setMessages((prev) => [...prev, message]);
+      // 1️⃣ Слушаем список всех онлайн при подключении
+      socket.on("onlineUsersList", (users: OnlineUser[]) => {
+        setOnlineUsers(users);
       });
 
-      // Если сокет уже подключен, просто join в комнату
-      if (socket.connected) socket.emit("joinRoom", roomId);
-    };
+      // 2️⃣ Слушаем изменения статуса
+      socket.on("userStatusChanged", (status: OnlineUser) =>
+        setOnlineUsers((prev) => {
+          const filtered = prev.filter((u) => u.userId !== status.userId);
+          return [...filtered, status];
+        }),
+      );
+    }
 
-    connectSocket();
+    const socket = socketRef.current;
 
-    reconnectRef.current = setInterval(() => {
-      if (!socketRef.current || !socketRef.current.connected) {
-        console.log("♻️ Try reconnecting...");
-        connectSocket();
-      }
-    }, 5000);
+    // Входим в комнату
+    socket.emit("joinRoom", roomId);
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit("leaveRoom", roomId);
-        socketRef.current.off("newMessage");
-        // Не отключаем сокет полностью, чтобы он мог переиспользоваться
-      }
-      if (reconnectRef.current) clearInterval(reconnectRef.current);
+      socket.emit("leaveRoom", roomId);
     };
   }, [roomId]);
 
   if (!roomId) return <p>Выберите комнату</p>;
-
-  // console.log("Messages:", messages);
 
   return (
     <div className={styles.container}>

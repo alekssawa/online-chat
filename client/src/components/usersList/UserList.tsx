@@ -1,7 +1,7 @@
-// import { useEffect, useState } from "react";
-// import { useAuth } from "../../hooks/useAuth";
-
+import UserBox from "./userBox/UserBox";
 import styles from "./UserList.module.css";
+
+import userIcon from "../../assets/icons/users.svg";
 
 interface FullRoom {
   id: string;
@@ -19,22 +19,31 @@ interface FullRoom {
 interface UserListProps {
   selectedRoom: FullRoom | null;
   loading: boolean;
+  onlineUsers: { userId: string; online: boolean }[];
 }
 
-function UserList({ selectedRoom, loading }: UserListProps) {
+function UserList({ selectedRoom, loading, onlineUsers }: UserListProps) {
   // console.log("UserList selectedRoom:", selectedRoom);
 
   const users = selectedRoom?.users ?? [];
+
+  console.log("UserList onlineUsers:", onlineUsers);
 
   return (
     <>
       {!loading && (
         <div className={styles.container}>
-          <h4>Users:</h4>
+          <h4><img src={userIcon} className={styles.userIcon}></img>Users:</h4>
           {selectedRoom && users.length > 0 ? (
             <ul>
               {users.map((u) => (
-                <li key={u.id}>{u.name}</li>
+                <li key={u.id}>
+                  <UserBox
+                    userName={u.name}
+                    userId={u.id}
+                    onlineUsers={onlineUsers}
+                  />
+                </li>
               ))}
             </ul>
           ) : null}

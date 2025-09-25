@@ -5,7 +5,23 @@
   height: 100vh;
   overflow-y: auto;
   text-align: center;
-  padding: 30px;
+  padding: 20px;
   color: white;
   background-color: #182533;
+}
+
+.container h2{
+  margin-bottom: 10px;
+}
+
+.roomsIcon{
+  margin-right: 10px;
+  width: 20px;
+  height: 20px;
+  color: white; /* будет работать, если fill="currentColor" */
+  fill: currentColor; /* для совместимости */
+}
+
+.roomsIcon path {
+  fill: white;
 }
