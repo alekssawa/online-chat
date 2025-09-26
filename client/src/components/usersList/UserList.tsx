@@ -33,7 +33,9 @@ function UserList({ selectedRoom, loading, onlineUsers }: UserListProps) {
     <>
       {!loading && (
         <div className={styles.container}>
-          <h4><img src={userIcon} className={styles.userIcon}></img>Users:</h4>
+          <h4>
+            <img src={userIcon} className={styles.userIcon}></img>Users:
+          </h4>
           {selectedRoom && users.length > 0 ? (
             <ul>
               {users.map((u) => (

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import styles from "./RoomsList.module.css";
 import { useAuth } from "../../hooks/useAuth";
 
-
 import roomsIcon from "../../assets/icons/rooms2.svg";
 
 interface Room {
@@ -154,7 +153,9 @@ function RoomsList({
     <>
       {!loading && (
         <div className={styles.container}>
-          <h2><img src={roomsIcon} className={styles.roomsIcon}></img>Rooms:</h2>
+          <h2 className={styles.text}>
+            <img src={roomsIcon} className={styles.roomsIcon}></img>Rooms:
+          </h2>
           <ul>
             {rooms.map((room) => (
               <li key={room.id}>

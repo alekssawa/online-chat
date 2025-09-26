@@ -61,7 +61,6 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
 
 export default MessageBox;
 
-// TODO: когда user online, показывать его статус
 // TODO: Сделать формат для комнат
 // TODO: Сделать формат для списка users
 // TODO: добавить форматирование текста (markdown)

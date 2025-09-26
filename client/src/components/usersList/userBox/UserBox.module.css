@@ -1,6 +1,6 @@
-.container{
-    width:fit-content ;
-    text-align: left;
+.container {
+  width: fit-content;
+  text-align: left;
 }
 
 .selectUser {
@@ -8,12 +8,12 @@
   font-weight: 600;
 }
 
-.statusOnline{
-    color: #4e90c4; 
-    font-size: 14px;
+.statusOnline {
+  color: #4e90c4;
+  font-size: 14px;
 }
 
-.statusOffline{
-    color: #6d7f8f;
-    font-size: 14px;
+.statusOffline {
+  color: #6d7f8f;
+  font-size: 14px;
 }
