@@ -1,9 +1,18 @@
-import AuthForm from "./authForm/AuthForm";
+import LoginForm from "./loginForm/LoginForm";
+
+import { useState } from "react";
+import RegistrationForm from "./registerFrom/RegisterForm";
 
 function General() {
+  const [isAuthForm, setIsAuthForm] = useState(true);
+
   return (
     <>
-      <AuthForm />
+      {isAuthForm ? (
+        <LoginForm setIsAuthForm={setIsAuthForm} />
+      ) : (
+        <RegistrationForm setIsAuthForm={setIsAuthForm} />
+      )}
     </>
   );
 }

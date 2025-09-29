@@ -12,6 +12,7 @@ input[type="password"]::-webkit-password-reveal-button {
   justify-content: center;
   align-items: center;
   margin: 0 auto;
+  background-color: #0e1621;
 }
 
 .background {
@@ -536,6 +537,40 @@ input[type="password"]::-webkit-password-reveal-button {
   color: rgba(255, 255, 255, 0.7);
   font-size: 14px;
   white-space: nowrap;
+}
+
+.signUp_options span{
+  color: white;
+  /* font-weight: 500; */
+}
+
+.signUp_link {
+  color: #06b6d4;
+  /* text-decoration: none; */
+  font-size: 16px;
+  font-weight: 500;
+  /* transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); */
+  position: relative;
+  cursor: pointer;
+}
+
+.signUp_link::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #06b6d4;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.signUp_link:hover::after {
+  width: 100%;
+}
+
+.signUp_link:hover {
+  color: white;
 }
 
 /* Mobile Responsive */

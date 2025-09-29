@@ -66,11 +66,21 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
     <div className={styles.wrapper}>
       {/* тулбар */}
       <div className={styles.toolbar}>
-        <button type="button" onClick={() => execCommand("bold")}>B</button>
-        <button type="button" onClick={() => execCommand("italic")}>I</button>
-        <button type="button" onClick={() => execCommand("underline")}>U</button>
-        <button type="button" onClick={() => execCommand("strikeThrough")}>S</button>
-        <button type="button" onClick={clearFormat}>Обычный</button>
+        <button type="button" onClick={() => execCommand("bold")}>
+          B
+        </button>
+        <button type="button" onClick={() => execCommand("italic")}>
+          I
+        </button>
+        <button type="button" onClick={() => execCommand("underline")}>
+          U
+        </button>
+        <button type="button" onClick={() => execCommand("strikeThrough")}>
+          S
+        </button>
+        <button type="button" onClick={clearFormat}>
+          Обычный
+        </button>
       </div>
 
       {/* форма */}
