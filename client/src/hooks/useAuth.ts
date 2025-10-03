@@ -1,10 +1,33 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { useApolloClient } from "@apollo/client/react";
+import { gql } from "@apollo/client";
+import { setRefreshTokenFn } from '../apollo/client'; // путь к вашему client.ts
 
 interface User {
   id: string;
   email: string;
   name: string;
 }
+
+interface RefreshTokenResponse {
+  refreshToken: {
+    accessToken: string;
+    user: User;
+  };
+}
+
+const REFRESH_TOKEN_MUTATION = gql`
+  mutation RefreshToken {
+    refreshToken {
+      accessToken
+      user {
+        id
+        email
+        name
+      }
+    }
+  }
+`;
 
 export const useAuth = () => {
   const [accessToken, setAccessToken] = useState<string | null>(
@@ -15,43 +38,37 @@ export const useAuth = () => {
     return storedUser ? JSON.parse(storedUser) : null;
   });
 
-  // useRef для хранения текущего refresh-промиса
+  const client = useApolloClient();
+  
   const refreshingToken = useRef<Promise<string | null> | null>(null);
 
   const refreshAccessToken = useCallback(async () => {
     if (refreshingToken.current) {
-      // Ждём уже выполняющийся refresh
       return refreshingToken.current;
     }
 
     refreshingToken.current = (async () => {
-      // console.log("🔄 Refreshing access token...");
+      console.log("🔄 Refreshing access token...");
 
       try {
-        const query = `
-          mutation RefreshToken {
-            refreshToken {
-              accessToken
-              user {
-                id
-                email
-                name
-              }
+        const result = await client.mutate<RefreshTokenResponse>({
+          mutation: REFRESH_TOKEN_MUTATION,
+          context: {
+            headers: {
+              authorization: "",
             }
           }
-        `;
-
-        const response = await fetch("http://localhost:3000/graphql", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ query }),
         });
 
-        const result = await response.json();
-        // console.log("💻 Refresh token result:", result);
+        console.log("💻 Refresh token result:", result);
 
-        if (result.errors) throw result.errors;
+        if (result.error) {
+          throw new Error(result.error.message || 'Refresh token failed');
+        }
+
+        if (!result.data?.refreshToken) {
+          throw new Error('Invalid refresh token response');
+        }
 
         const newToken = result.data.refreshToken.accessToken;
         const newUser = result.data.refreshToken.user;
@@ -62,56 +79,60 @@ export const useAuth = () => {
         setAccessToken(newToken);
         setUser(newUser);
 
+        console.log("✅ Token refreshed successfully");
         return newToken;
       } catch (err) {
         console.error("❌ Refresh token error:", err);
+        
         setAccessToken(null);
         setUser(null);
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
+        
+        await client.clearStore();
+        
         return null;
       } finally {
-        refreshingToken.current = null; // сбрасываем
+        refreshingToken.current = null;
       }
     })();
 
     return refreshingToken.current;
-  }, []);
+  }, [client]);
 
-  const fetchWithAuth = useCallback(
-    async (url: string, options: RequestInit = {}) => {
-      const performFetch = async (token: string | null) => {
-        const headers = options.headers
-          ? new Headers(options.headers)
-          : new Headers();
+  // Регистрируем функцию refresh в Apollo Client при монтировании хука
+  useEffect(() => {
+    setRefreshTokenFn(refreshAccessToken);
+    
+    // Очищаем при размонтировании
+    return () => {
+      setRefreshTokenFn(null);
+    };
+  }, [refreshAccessToken]);
 
-        if (token) headers.set("Authorization", `Bearer ${token}`);
+  const logout = useCallback(async () => {
+    try {
+      // Дополнительная логика logout если нужно
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setAccessToken(null);
+      setUser(null);
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("user");
+      await client.clearStore();
+    }
+  }, [client]);
 
-        return fetch(url, { ...options, headers, credentials: "include" });
-      };
+  const isAuthenticated = useCallback(() => {
+    return !!accessToken && !!user;
+  }, [accessToken, user]);
 
-      let response = await performFetch(accessToken);
-
-      if (response.status === 401) {
-        // console.log("⚠️ Access token expired, attempting refresh...");
-        const newToken = await refreshAccessToken();
-
-        if (!newToken) {
-          console.log("❌ Refresh failed, returning 401 response");
-          return response;
-        }
-
-        response = await performFetch(newToken);
-        // console.log(
-        //   "✅ Request retried after refresh, status:",
-        //   response.status,
-        // );
-      }
-
-      return response;
-    },
-    [accessToken, refreshAccessToken],
-  );
-
-  return { accessToken, user, fetchWithAuth, refreshAccessToken };
+  return { 
+    accessToken, 
+    user, 
+    refreshAccessToken, 
+    logout,
+    isAuthenticated 
+  };
 };

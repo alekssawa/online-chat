@@ -1,16 +1,24 @@
 .container {
+  display: flex;
+  flex-direction: column;
   width: 200px;
   min-width: 200px;
-  /* border-left: 5px solid #53bd8d; */
   height: 100vh;
   overflow-y: auto;
   text-align: center;
-  padding: 20px;
+  /* padding: 20px; */
   color: white;
   background-color: #182533;
 
   margin-left: auto;
   /* прижимаем вправо */
+}
+
+.container_users {
+  flex: 1; /* занимает всё доступное место */
+  overflow-y: auto; /* скроллится только список */
+  padding: 20px;
+  text-align: center;
 }
 
 .container h4 {

@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
+import { gql } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import styles from "./RoomsList.module.css";
-import { useAuth } from "../../hooks/useAuth";
+// import { useAuth } from "../../hooks/useAuth";
 
 import roomsIcon from "../../assets/icons/rooms2.svg";
+import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
+
+
 
 interface Room {
   id: string;
@@ -33,141 +38,173 @@ interface FullRoom extends Room {
   }[];
 }
 
+// GraphQL запросы
+const GET_USER_ROOMS = gql`
+  query GetUserRooms($userId: ID!) {
+    user(id: $userId) {
+      rooms {
+        id
+        name
+        createdAt
+      }
+    }
+  }
+`;
+
+const GET_ROOM_DETAILS = gql`
+  query GetRoomDetails($roomId: ID!) {
+    room(id: $roomId) {
+      id
+      name
+      createdAt
+      users {
+        id
+        email
+        name
+      }
+      messages {
+        id
+        text
+        sentAt
+        updatedAt
+        sender {
+          id
+          email
+          name
+        }
+      }
+    }
+  }
+`;
+
+// Типы для GraphQL ответов
+interface UserRoomsData {
+  user: {
+    rooms: Room[];
+  };
+}
+
+interface RoomDetailsData {
+  room: FullRoom;
+}
+
+interface UserRoomsVariables {
+  userId: string;
+}
+
+interface RoomDetailsVariables {
+  roomId: string;
+}
+
 function RoomsList({
   onSelectRoom,
   loading,
   setLoading,
   setError,
 }: RoomsListProps) {
-  const { fetchWithAuth } = useAuth();
   const [rooms, setRooms] = useState<Room[]>([]);
-  // const [loading, setLoading] = useState(true);
+  const [/*refreshCounter*/, setRefreshCounter] = useState(0);
+
+  const userStr = localStorage.getItem("user");
+  const user: User | null = userStr ? JSON.parse(userStr) : null;
+
+  // console.log(refreshCounter);
+
+  // Запрос для получения комнат пользователя
+   const { 
+    data, 
+    loading: queryLoading, 
+    error, 
+    refetch 
+  } = useQuery<UserRoomsData, UserRoomsVariables>(GET_USER_ROOMS, {
+    variables: { userId: user?.id || "" },
+    skip: !user?.id,
+    fetchPolicy: "network-only",
+  });
+
+  // Lazy query для загрузки деталей комнаты с правильными типами
+  const [loadRoomDetails] = useLazyQuery<RoomDetailsData, RoomDetailsVariables>(GET_ROOM_DETAILS);
+
+  // Обработка загрузки и ошибок
+  useEffect(() => {
+    setLoading(queryLoading);
+  }, [queryLoading, setLoading]);
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    const user: User | null = userStr ? JSON.parse(userStr) : null;
+    if (error) {
+      setError(error.message);
+    }
+  }, [error, setError]);
 
-    let intervalId: ReturnType<typeof setInterval> | null = null;
+  // Обновление списка комнат при получении данных
+  useEffect(() => {
+    if (data?.user?.rooms) {
+      setRooms(data.user.rooms);
+      setError(null);
+    }
+  }, [data, setError]);
 
-    const fetchRooms = async () => {
-      try {
-        const res = await fetchWithAuth("http://localhost:3000/graphql", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: `
-            query {
-              user(id: "${user?.id}") {
-                rooms {
-                  id
-                  name
-                  createdAt
-                }
-              }
-            }
-          `,
-          }),
-        });
+  // Функция для принудительного обновления списка комнат
+  const refreshRooms = () => {
+    setRefreshCounter(prev => prev + 1);
+    refetch();
+  };
 
-        const data = await res.json();
-        if (data.errors) {
-          setError(data.errors[0].message);
-          if (!intervalId) {
-            intervalId = setInterval(fetchRooms, 5000);
-          }
-        } else {
-          setRooms(data.data.user?.rooms || []);
-          setError(null);
-          setLoading(false);
+  // Автоматическое обновление каждые 30 секунд
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refetch();
+    }, 30000);
 
-          if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
-          }
-        }
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : String(err));
-        if (!intervalId) {
-          intervalId = setInterval(fetchRooms, 5000);
-        }
-      }
-    };
-
-    fetchRooms();
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [fetchWithAuth, setLoading, setError]);
+    return () => clearInterval(intervalId);
+  }, [refetch]);
 
   const handleSelectRoom = async (roomId: string) => {
     try {
-      const res = await fetchWithAuth("http://localhost:3000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-          query {
-            room(id: "${roomId}") {
-              id
-              name
-              createdAt
-              users {
-                id
-                email
-                name
-              }
-              messages {
-                id
-                text
-                sentAt
-                updatedAt
-                sender {
-                  id
-                  email
-                  name
-                }
-              }
-            }
-          }
-        `,
-        }),
+      const result = await loadRoomDetails({ 
+        variables: { roomId } 
       });
-
-      const data = await res.json();
-      if (data.errors) {
-        console.error("GraphQL error:", data.errors);
-        return;
+      
+      if (result.data?.room) {
+        onSelectRoom(result.data.room);
       }
-
-      onSelectRoom(data.data.room); // передаём целую комнату
-      // console.log("Комната выбрана:", data.data.room);
-    } catch (err) {
+      
+      if (result.error) {
+        console.error("Ошибка при загрузке комнаты:", result.error);
+        setError(result.error.message);
+      }
+    } catch (err: unknown) {
       console.error("Ошибка при загрузке комнаты:", err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Unknown error occurred");
+      }
     }
   };
-
-  // if (loading) return <p>Загрузка...</p>;
 
   return (
     <>
       {!loading && (
         <div className={styles.container}>
-          <h2 className={styles.text}>
-            <img src={roomsIcon} className={styles.roomsIcon}></img>Rooms:
-          </h2>
-          <ul>
-            {rooms.map((room) => (
-              <li key={room.id}>
-                <button
-                  className={styles.roomButton}
-                  onClick={() => handleSelectRoom(room.id)}
-                >
-                  {room.name}
-                </button>
-              </li>
-            ))}
-          </ul>
+          <div className={styles.container_rooms}>
+            <h2 className={styles.text}>
+              <img src={roomsIcon} className={styles.roomsIcon}></img>Rooms:
+            </h2>
+            <ul>
+              {rooms.map((room) => (
+                <li key={room.id}>
+                  <button
+                    className={styles.roomButton}
+                    onClick={() => handleSelectRoom(room.id)}
+                  >
+                    {room.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <ToolsbarAddRooms onRoomCreated={refreshRooms} />
         </div>
       )}
     </>

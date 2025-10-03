@@ -22,19 +22,152 @@
   flex-shrink: 0; /* кнопка не сжимается */
 }
 
+.wrapper {
+  position: relative; /* для позиционирования placeholder */
+}
+
+.toolbar {
+  color: white;
+}
+
+.toolbar button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+  margin-right: 8px;
+}
+
 .editor {
   flex: 1; /* редактор занимает всё свободное место */
   min-height: 40px;
-  border: 1px solid #ccc;
+  /* border: 1px solid #ccc; */
   padding: 6px;
-  color: black;
+  color: white;
   border-radius: 4px;
+  background: none;
+  text-align: left;
+  outline: none;
+}
+
+.placeholder {
+  position: absolute;
+  bottom: 21px;
+  left: 20px;
+  color: #aaa;
+  pointer-events: none;
+  user-select: none;
+}
+
+.editor:focus {
+  outline: none; /* точно убираем при фокусе */
+}
+
+.contextMenu {
+  background: #182533;
+  border: 1px solid black;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  min-width: 180px;
+  padding: 4px 0;
+}
+
+.contextMenuHeader {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #666;
+  border-bottom: 1px solid #eee;
+  margin-bottom: 4px;
+}
+
+.contextMenuItem {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: white;
+}
+
+.contextMenuItem:hover {
+  background-color: #0f1722;
+}
+
+.linkInputContainer,
+.codeInputContainer {
+  padding: 8px 12px;
+}
+
+.linkInput,
+.codeInput {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.linkInput:focus,
+.codeInput:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.linkButtons,
+.codeButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.linkButton,
+.codeButton {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
   background: white;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.linkButton:hover,
+.codeButton:hover {
+  background: #f5f5f5;
+}
+
+.linkButton:first-child,
+.codeButton:first-child {
+  background: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.linkButton:first-child:hover,
+.codeButton:first-child:hover {
+  background: #0056b3;
+}
+
+.codeTypeButtons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.codeTypeButton {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
   text-align: left;
 }
 
-.editor:empty:before {
-  content: "Введите сообщение...";
-  color: #aaa;
-  pointer-events: none;
+.codeTypeButton:hover {
+  background: #f5f5f5;
 }

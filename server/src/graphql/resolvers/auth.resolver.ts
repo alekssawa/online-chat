@@ -125,10 +125,38 @@ export const authResolvers = {
       };
     },
 
-    logout: async (_: any, __: any, { user }: any) => {
-      if (!user) throw new Error("Not authenticated");
-      await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
-      return true;
+    logout: async (_: any, __: any, { user, req }: any) => {
+      // Получаем refresh token из cookies
+      const refreshToken = req.cookies?.refreshToken;
+
+      if (!user && !refreshToken) {
+        throw new Error("Not authenticated");
+      }
+
+      try {
+        // Если есть пользователь из контекста, удаляем по userId
+        if (user) {
+          await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+        }
+        // Если нет пользователя, но есть refresh token, ищем и удаляем по токену
+        else if (refreshToken) {
+          await prisma.refreshToken.deleteMany({
+            where: { token: refreshToken },
+          });
+        }
+
+        // Очищаем cookie на сервере
+        req.res?.cookie("refreshToken", "", {
+          expires: new Date(0),
+          httpOnly: true,
+          path: "/",
+        });
+
+        return true;
+      } catch (error) {
+        console.error("Logout error:", error);
+        throw new Error("Logout failed");
+      }
     },
   },
 };

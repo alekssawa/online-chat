@@ -13,22 +13,25 @@
     "tree-cli": "npx tree-cli -l 10 --ignore node_modules"
   },
   "dependencies": {
-    "@apollo/client": "^4.0.5",
+    "@apollo/client": "^4.0.7",
     "graphql": "^16.11.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.9.1",
     "react-toastify": "^11.0.5",
+    "rehype-raw": "^7.0.0",
     "remark-gfm": "^4.0.1",
     "rxjs": "^7.8.2",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "turndown": "^7.2.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",
     "@types/react": "^19.1.10",
     "@types/react-dom": "^19.1.7",
     "@types/socket.io-client": "^1.4.36",
+    "@types/turndown": "^5.0.5",
     "@vitejs/plugin-react": "^5.0.0",
     "eslint": "^9.33.0",
     "eslint-plugin-react-hooks": "^5.2.0",
@@ -36,6 +39,7 @@
     "globals": "^16.3.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.1",
-    "vite": "^7.1.2"
+    "vite": "^7.1.2",
+    "vite-plugin-svgr": "^4.5.0"
   }
 }

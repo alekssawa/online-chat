@@ -1,13 +1,18 @@
 .container {
   width: 200px;
   min-width: 200px;
-  /* border-right: 5px solid #53bd8d; */
   height: 100vh;
-  overflow-y: auto;
-  text-align: center;
-  padding: 20px;
+  display: flex;
+  flex-direction: column; /* вертикальная раскладка */
   color: white;
   background-color: #182533;
+}
+
+.container_rooms {
+  flex: 1; /* занимает всё доступное место */
+  overflow-y: auto; /* скроллится только список */
+  padding: 20px;
+  text-align: center;
 }
 
 .text {
@@ -18,8 +23,8 @@
   margin-right: 10px;
   width: 20px;
   height: 20px;
-  color: white; /* будет работать, если fill="currentColor" */
-  fill: currentColor; /* для совместимости */
+  color: white;
+  fill: currentColor;
 }
 
 .roomsIcon path {

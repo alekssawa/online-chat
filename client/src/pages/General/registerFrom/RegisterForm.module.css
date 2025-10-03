@@ -40,7 +40,7 @@ input[type="password"]::-webkit-password-reveal-button {
   position: relative;
 }
 
-.first_password_input{
+.first_password_input {
   margin-bottom: 24px;
 }
 
@@ -94,8 +94,6 @@ input[type="password"]::-webkit-password-reveal-button {
   color: #06b6d4;
   font-weight: 500;
 }
-
-
 
 /* Error States */
 .error_message {
@@ -529,7 +527,7 @@ input[type="password"]::-webkit-password-reveal-button {
   white-space: nowrap;
 }
 
-.logIn_options span{
+.logIn_options span {
   color: white;
   /* font-weight: 500; */
 }

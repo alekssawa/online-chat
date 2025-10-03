@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
 import prisma from "../lib/prismaClient.js";
 
@@ -14,10 +15,19 @@ export const refreshMiddleware = async (
   try {
     const { refreshToken } = req.body;
     if (!refreshToken) {
-      return res.status(400).json({ message: "Refresh token required" });
+      throw new GraphQLError("Refresh token required", {
+        extensions: { code: "FORBIDDEN" },
+      });
     }
 
-    const decoded: any = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    } catch {
+      throw new GraphQLError("Invalid refresh token", {
+        extensions: { code: "UNAUTHENTICATED" },
+      });
+    }
 
     // Проверяем, есть ли токен в БД
     const storedToken = await prisma.refreshToken.findUnique({
@@ -25,13 +35,21 @@ export const refreshMiddleware = async (
     });
 
     if (!storedToken) {
-      return res.status(401).json({ message: "Refresh token revoked" });
+      throw new GraphQLError("Refresh token revoked", {
+        extensions: { code: "UNAUTHENTICATED" },
+      });
     }
 
     // Присваиваем userId в объект запроса
     req.userId = decoded.userId;
     next();
   } catch (err) {
-    return res.status(401).json({ message: "Invalid refresh token" });
+    // Если это GraphQLError, пробрасываем дальше
+    if (err instanceof GraphQLError) throw err;
+
+    // На всякий случай стандартная ошибка
+    throw new GraphQLError("Refresh token error", {
+      extensions: { code: "UNAUTHENTICATED" },
+    });
   }
 };

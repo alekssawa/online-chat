@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { GraphQLError } from 'graphql';
 import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
@@ -8,16 +9,21 @@ export interface AuthRequest extends Request {
 // Middleware для проверки access-токена
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "No token provided" });
+  if (!authHeader) throw new GraphQLError('No token provided', {
+    extensions: {
+    code: 'UNAUTHENTICATED',
+  }});
 
   const token = authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "Invalid token format" });
+  if (!token) throw new GraphQLError("Invalid token format", { extensions: { code: "UNAUTHENTICATED" }});
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
     req.user = decoded as { userId: string };
     next();
   } catch (e) {
-    return res.status(401).json({ message: "Invalid token" });
+    throw new GraphQLError("Invalid token", {
+    extensions: { code: "UNAUTHENTICATED" },
+  });
   }
 };

@@ -81,7 +81,10 @@ function RegisterForm({ setIsAuthForm }: RegisterFormProps) {
       navigate("/Chat");
     } catch (err) {
       console.error(err);
-      setErrors({ email: "Ошибка регистрации", password: "Ошибка регистрации" });
+      setErrors({
+        email: "Ошибка регистрации",
+        password: "Ошибка регистрации",
+      });
     } finally {
       setIsSubmitting(false);
     }

@@ -539,7 +539,7 @@ input[type="password"]::-webkit-password-reveal-button {
   white-space: nowrap;
 }
 
-.signUp_options span{
+.signUp_options span {
   color: white;
   /* font-weight: 500; */
 }

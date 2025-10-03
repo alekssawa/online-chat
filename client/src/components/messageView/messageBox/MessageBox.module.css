@@ -45,21 +45,33 @@
 .message {
   display: flex;
   text-align: left;
-  gap: 30px;
+  gap: 10px;
+  align-items: flex-end;
+  max-width: 100%;
+}
+
+.messageContent {
+  flex: 1;
+  min-width: 10px;
+  /* важно для правильного переноса длинного текста */
+  max-width: 500px;
+  /* max-width: calc(100% - 80px); оставляем место для времени */
 }
 
 .timestamp {
   font-size: 12px;
   color: #6d7f8f;
-  align-self: flex-end;
   white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
 .MyTimestamp {
   font-size: 12px;
   color: #7da8d3;
-  align-self: flex-end;
   white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
 }
 
 /* @media (max-width: 1024px) {

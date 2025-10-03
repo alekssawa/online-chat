@@ -1,0 +1,87 @@
+.toolsbarSettings {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* padding: 0 20px; */
+  /* height: 50px; */
+  text-align: center;
+  background-color: #121c27;
+}
+
+.settingsButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 17px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.settingsIcon {
+  width: 26px;
+  height: 26px;
+  stroke: grey; /* красная обводка по умолчанию */
+  fill: none; /* отключаем заливку */
+  transition: stroke 0.2s ease; /* плавное изменение цвета обводки */
+}
+
+.settingsButton:hover {
+  background-color: grey;
+}
+
+.settingsButton:hover .settingsIcon {
+  stroke: white;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.addButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.addIcon {
+  width: 26px;
+  height: 26px;
+  stroke: green; /* красная обводка по умолчанию */
+  fill: none; /* отключаем заливку */
+  transition: stroke 0.2s ease; /* плавное изменение цвета обводки */
+}
+
+.addButton:hover {
+  background-color: green;
+}
+
+/* .divider{
+  width: 1px;
+  height: 100%;
+  background-color: #ffffff;
+  opacity: 0.2;
+} */
+
+.addButton:hover .addIcon {
+  stroke: white; /* белая обводка при наведении */
+}
+
+.addButton {
+  width: 100px;
+  height: 100%;
+}
+
+.settingsButton {
+  width: 100px;
+  height: 100%;
+}
