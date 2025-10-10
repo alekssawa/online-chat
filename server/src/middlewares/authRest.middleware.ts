@@ -1,38 +1,31 @@
 import type { Request, Response, NextFunction } from "express";
-import { GraphQLError } from "graphql";
 import jwt from "jsonwebtoken";
 
 export interface AuthRequest extends Request {
   user?: { userId: string };
 }
 
-// Middleware для проверки access-токена
+// Middleware для проверки access-токена (REST)
 export const authMiddleware = (
   req: AuthRequest,
   res: Response,
   next: NextFunction,
 ) => {
   const authHeader = req.headers.authorization;
-  if (!authHeader)
-    throw new GraphQLError("No token provided", {
-      extensions: {
-        code: "UNAUTHENTICATED",
-      },
-    });
+  if (!authHeader) {
+    return res.status(401).json({ error: "No token provided" });
+  }
 
   const token = authHeader.split(" ")[1];
-  if (!token)
-    throw new GraphQLError("Invalid token format", {
-      extensions: { code: "UNAUTHENTICATED" },
-    });
+  if (!token) {
+    return res.status(401).json({ error: "Invalid token format" });
+  }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET!);
     req.user = decoded as { userId: string };
     next();
   } catch (e) {
-    throw new GraphQLError("Invalid token", {
-      extensions: { code: "UNAUTHENTICATED" },
-    });
+    return res.status(401).json({ error: "Invalid token" });
   }
 };

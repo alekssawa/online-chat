@@ -10,7 +10,7 @@ export interface RefreshRequest extends Request {
 export const refreshMiddleware = async (
   req: RefreshRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   try {
     const { refreshToken } = req.body;

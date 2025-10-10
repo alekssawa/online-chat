@@ -7,6 +7,7 @@ export const typeDefs = `#graphql
     # password: String!
     rooms: [Room!]!
     messages: [Message!]!
+    avatar: UserAvatar
   }
 
   type AuthPayload {
@@ -22,6 +23,7 @@ export const typeDefs = `#graphql
     createdAt: String!
     users: [User!]!
     messages: [Message!]!
+    avatar: RoomAvatar
   }
 
   # Связь пользователей и комнат
@@ -42,6 +44,26 @@ export const typeDefs = `#graphql
     room: Room!
   }
 
+  # Аватар пользователя
+  type UserAvatar {
+    id: ID!
+    filename: String!
+    mimeType: String!
+    uploadedAt: String!
+    user: User!
+    url: String!
+  }
+
+  # Аватар комнаты
+  type RoomAvatar {
+    id: ID!
+    filename: String!
+    mimeType: String!
+    uploadedAt: String!
+    room: Room!
+    url: String!
+  }
+
   type Query {
     users: [User!]!
     user(id: ID!): User
@@ -50,6 +72,8 @@ export const typeDefs = `#graphql
     messages(roomId: ID!): [Message!]!
   }
 
+  scalar Upload
+
   type Mutation {
     register(email: String!, password: String!, name: String): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
@@ -57,10 +81,12 @@ export const typeDefs = `#graphql
     logout: Boolean!
 
     createUser(email: String!, name: String, password: String!): User!
+    uploadUserAvatar(userId: ID!, file: Upload!): UserAvatar!
     updateUser(id: ID!, email: String, name: String, password: String): User!
     deleteUser(id: ID!): User!
 
     createRoom(name: String!, userId: ID!): Room!
+    uploadRoomAvatar(roomId: ID!, file: Upload!): RoomAvatar!
     updateRoom(id: ID!, name: String!): Room!
     deleteRoom(id: ID!): Room!
 

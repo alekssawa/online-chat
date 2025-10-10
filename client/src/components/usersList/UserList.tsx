@@ -4,19 +4,8 @@ import styles from "./UserList.module.css";
 import userIcon from "../../assets/icons/users.svg";
 import ToolsbarAddRooms from "./toolsbarSettings/ToolsbarSettings";
 
-interface FullRoom {
-  id: string;
-  name: string;
-  createdAt: string;
-  users: { id: string; email: string; name: string }[];
-  messages: {
-    id: string;
-    text: string;
-    sentAt: string;
-    updatedAt: string;
-    sender: { id: string; email: string; name: string };
-  }[];
-}
+import type { FullRoom } from "../type";
+
 interface UserListProps {
   selectedRoom: FullRoom | null;
   loading: boolean;
@@ -43,6 +32,7 @@ function UserList({ selectedRoom, loading, onlineUsers }: UserListProps) {
                 {users.map((u) => (
                   <li key={u.id}>
                     <UserBox
+                      avatar={u.avatar}
                       userName={u.name}
                       userId={u.id}
                       onlineUsers={onlineUsers}
@@ -52,7 +42,7 @@ function UserList({ selectedRoom, loading, onlineUsers }: UserListProps) {
               </ul>
             ) : null}
           </div>
-          <ToolsbarAddRooms />
+          <ToolsbarAddRooms selectedRoom={selectedRoom} />
         </div>
       )}
     </>

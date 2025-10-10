@@ -15,13 +15,17 @@ const requireAuth = async (req: AuthRequest, res: Response) => {
 
 // Декоратор для резолвера
 export const withAuth = <TArgs = any, TResult = any>(
-  resolver: GraphQLFieldResolver<any, { req: AuthRequest; res: Response }, TArgs>
+  resolver: GraphQLFieldResolver<
+    any,
+    { req: AuthRequest; res: Response },
+    TArgs
+  >,
 ) => {
   return async (
     parent: any,
     args: TArgs,
     context: { req: AuthRequest; res: Response },
-    info: GraphQLResolveInfo
+    info: GraphQLResolveInfo,
   ) => {
     await requireAuth(context.req, context.res); // проверяем токен
     return resolver(parent, args, context, info); // теперь передаём 4-й аргумент

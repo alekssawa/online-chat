@@ -4,12 +4,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-// import remarkMarkdownV2 from "../../../utils/markdown/remarkMarkdownV2";
+import type { User } from "../../type";
 
-interface User {
-  id: string;
-  name: string;
-}
+// import remarkMarkdownV2 from "../../../utils/markdown/remarkMarkdownV2";
 
 interface MessageBoxProps {
   id: string;
@@ -20,11 +17,6 @@ interface MessageBoxProps {
   updatedAt: string;
   sender?: User;
 }
-
-// interface SpanProps {
-//   children?: React.ReactNode;
-//   "data-underline"?: string;
-// }
 
 function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
   const userStr = localStorage.getItem("user");

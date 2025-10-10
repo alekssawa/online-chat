@@ -5,39 +5,7 @@ import styles from "./MessageView.module.css";
 import MessageBox from "./messageBox/MessageBox";
 import SendMessage from "./sendMessage/SendMessage";
 
-interface FullRoom {
-  id: string;
-  name: string;
-  createdAt: string;
-  users: { id: string; email: string; name: string }[];
-  messages: {
-    id: string;
-    text: string;
-    sentAt: string;
-    updatedAt: string;
-    sender: { id: string; email: string; name: string };
-  }[];
-}
-
-interface User {
-  id: string;
-  name: string;
-}
-
-interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  roomId: string;
-  sentAt: string;
-  updatedAt: string;
-  sender?: User;
-}
-
-interface OnlineUser {
-  userId: string;
-  online: boolean;
-}
+import type { User, Message, FullRoom, OnlineUser } from "../type";
 
 interface MessageViewProps {
   selectedRoom: FullRoom | null;
@@ -75,7 +43,7 @@ function MessageView({ selectedRoom, setOnlineUsers }: MessageViewProps) {
       roomId: selectedRoom.id,
       sentAt: m.sentAt,
       updatedAt: m.updatedAt,
-      sender: { id: m.sender.id, name: m.sender.name },
+      sender: { id: m.sender.id, name: m.sender.name, email: m.sender.email },
     }));
 
     setMessages(initialMessages);

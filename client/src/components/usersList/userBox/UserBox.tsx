@@ -1,34 +1,48 @@
 import styles from "./UserBox.module.css";
 
+import DefaultUserAvatar from "../../../assets/icons/DefaultUserAvatar.svg?react";
+
+import type { User, Avatar } from "../../type";
+
 interface UserBoxProps {
+  avatar?: Avatar;
   userName: string;
   userId: string;
   onlineUsers: { userId: string; online: boolean }[];
   // userStatus: string;
 }
 
-interface User {
-  id: string;
-  name: string;
-}
-
-function UserBox({ userName, userId, onlineUsers }: UserBoxProps) {
+function UserBox({ avatar, userName, userId, onlineUsers }: UserBoxProps) {
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.userName}>
-        {userName}
-        {userId === user?.id && <span className={styles.selectUser}> you</span>}
-      </h2>
-      {onlineUsers.find((ou) => ou.userId === userId)?.online ? (
-        <p className={`${styles.userStatus} ${styles.statusOnline}`}>Online</p>
+      {avatar ? (
+        <img className={styles.user_avatar} src={avatar.url} />
       ) : (
-        <p className={`${styles.userStatus} ${styles.statusOffline}`}>
-          Offline
-        </p>
+        <DefaultUserAvatar
+          className={`${styles.user_avatar} ${styles.defaultAvatar}`}
+        />
       )}
+
+      <div className={styles.userInfo}>
+        <span className={styles.userName}>
+          {userName}
+          {userId === user?.id && (
+            <span className={styles.selectUser}> you</span>
+          )}
+        </span>
+        {onlineUsers.find((ou) => ou.userId === userId)?.online ? (
+          <p className={`${styles.userStatus} ${styles.statusOnline}`}>
+            Online
+          </p>
+        ) : (
+          <p className={`${styles.userStatus} ${styles.statusOffline}`}>
+            Offline
+          </p>
+        )}
+      </div>
     </div>
   );
 }

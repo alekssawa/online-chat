@@ -15,6 +15,7 @@ model users {
   rooms    room_users[]
   messages messages[] @relation("SentMessages")
   tokens   RefreshToken[]
+  avatar     user_avatars?
 }
 
 model RefreshToken {
@@ -24,7 +25,6 @@ model RefreshToken {
   user      users     @relation(fields: [userId], references: [id])
   expiresAt DateTime
   createdAt DateTime @default(now())
-  jti       String   @unique   // добавляем уникальный идентификатор токена
 }
 
 model rooms {
@@ -33,6 +33,7 @@ model rooms {
   createdAt DateTime   @default(now())
   users     room_users[]
   messages  messages[]
+  avatar     room_avatars?
 }
 
 model room_users {
@@ -55,4 +56,27 @@ model messages {
   text      String
   sentAt    DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
+}
+
+
+model user_avatars {
+  id          String      @id @default(uuid())
+  user_id     String   @unique
+  filename    String
+  mime_type   String
+  data        Bytes
+  uploaded_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model room_avatars {
+  id          String      @id @default(uuid())
+  room_id     String   @unique
+  filename    String
+  mime_type   String
+  data        Bytes
+  uploaded_at DateTime @default(now())
+
+  room rooms @relation(fields: [room_id], references: [id], onDelete: Cascade)
 }

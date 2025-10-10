@@ -3,10 +3,7 @@ import { Socket } from "socket.io-client";
 import TurndownService from "turndown";
 import styles from "./SendMessage.module.css";
 
-interface User {
-  id: string;
-  name: string;
-}
+import type { User } from "../../type";
 
 interface SendMessageProps {
   roomId: string;

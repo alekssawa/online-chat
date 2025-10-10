@@ -1,6 +1,15 @@
 .container {
+  display: flex;
   width: fit-content;
   text-align: left;
+  align-items: center; /* аватар и колонка выровнены по центру */
+  color: white;
+  cursor: pointer;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column; /* имя сверху, статус снизу */
 }
 
 .selectUser {
@@ -16,4 +25,23 @@
 .statusOffline {
   color: #6d7f8f;
   font-size: 14px;
+}
+
+.user_avatar {
+  width: 40px;
+  height: 40px;
+  margin-right: 10px;
+
+  color: rgb(0, 0, 0);
+  fill: currentColor;
+  border-radius: 50%; /* делает форму круглой */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* чтобы контент не выходил за круг */
+}
+
+.defaultAvatar {
+  background-color: white;
 }

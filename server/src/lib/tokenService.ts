@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import prisma from "./prismaClient.js";
 
-const ACCESS_TOKEN_EXPIRY = "1m";
+const ACCESS_TOKEN_EXPIRY = "2m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 
 export const generateTokens = async (userId: string) => {

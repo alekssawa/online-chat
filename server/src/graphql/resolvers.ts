@@ -3,7 +3,6 @@ import { userResolvers } from "./resolvers/user.resolver.js";
 import { roomResolvers } from "./resolvers/room.resolver.js";
 import { messageResolvers } from "./resolvers/message.resolver.js";
 
-
 export const resolvers = {
   Query: {
     ...userResolvers.Query,

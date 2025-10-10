@@ -8,17 +8,7 @@ import AddIcon from "../../../assets/icons/addIcon.svg?react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-interface User {
-  id: string;
-  email: string;
-}
-
-interface Room {
-  id: string;
-  name: string;
-  createdAt: string;
-  users: User[];
-}
+import type { Room } from "../../type";
 
 interface ToolsbarAddRoomsProps {
   onRoomCreated?: () => void;

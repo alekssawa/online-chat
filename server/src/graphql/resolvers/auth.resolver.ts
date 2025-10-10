@@ -17,7 +17,7 @@ export const authResolvers = {
         password,
         name,
       }: { email: string; password: string; name?: string },
-      context: { res: Response } // получаем res из Express
+      context: { res: Response }, // получаем res из Express
     ) => {
       // Проверяем, есть ли пользователь с таким email
       const existingUser = await prisma.users.findUnique({ where: { email } });
@@ -51,7 +51,7 @@ export const authResolvers = {
     login: async (
       _: any,
       { email, password }: { email: string; password: string },
-      context: { res: Response }
+      context: { res: Response },
     ) => {
       const user = await prisma.users.findUnique({ where: { email } });
       if (!user) throw new Error("User not found");
@@ -84,7 +84,7 @@ export const authResolvers = {
     refreshToken: async (
       _: any,
       __: any,
-      context: { req: RefreshRequest; res: Response }
+      context: { req: RefreshRequest; res: Response },
     ) => {
       const tokenFromCookie = context.req.cookies?.refreshToken;
       if (!tokenFromCookie) throw new Error("Refresh token required");

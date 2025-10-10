@@ -3,12 +3,30 @@ export interface User {
   email: string;
   // password: string;
   name: string;
+  avatar?: UserAvatar | null;
+}
+
+export interface UserAvatar {
+  id: string;
+  filename: string;
+  mimeType: string;
+  uploadedAt: string;
+  user: User;
 }
 
 export interface Room {
   id: string;
   name: string;
   createdAt: string;
+  avatar?: RoomAvatar | null;
+}
+
+export interface RoomAvatar {
+  id: string;
+  filename: string;
+  mimeType: string;
+  uploadedAt: string;
+  room: Room;
 }
 
 export interface Message {

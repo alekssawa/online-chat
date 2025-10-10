@@ -1,41 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
 import styles from "./RoomsList.module.css";
 // import { useAuth } from "../../hooks/useAuth";
 
+import type { Room, User, FullRoom } from ".././type";
+
+import DefaultGroupAvatar from "../../assets/icons/DefaultGroupAvatar.svg";
 import roomsIcon from "../../assets/icons/rooms2.svg";
 import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
-
-
-
-interface Room {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-}
 
 interface RoomsListProps {
   onSelectRoom: (room: FullRoom) => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-}
-
-interface FullRoom extends Room {
-  users: { id: string; email: string; name: string }[];
-  messages: {
-    id: string;
-    text: string;
-    sentAt: string;
-    updatedAt: string;
-    sender: { id: string; email: string; name: string };
-  }[];
 }
 
 // GraphQL запросы
@@ -46,6 +25,9 @@ const GET_USER_ROOMS = gql`
         id
         name
         createdAt
+        avatar {
+          url
+        }
       }
     }
   }
@@ -61,6 +43,9 @@ const GET_ROOM_DETAILS = gql`
         id
         email
         name
+        avatar {
+          url
+        }
       }
       messages {
         id
@@ -103,7 +88,8 @@ function RoomsList({
   setError,
 }: RoomsListProps) {
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [/*refreshCounter*/, setRefreshCounter] = useState(0);
+  const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
+  const retryInterval = useRef<number | null>(null);
 
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
@@ -111,11 +97,11 @@ function RoomsList({
   // console.log(refreshCounter);
 
   // Запрос для получения комнат пользователя
-   const { 
-    data, 
-    loading: queryLoading, 
-    error, 
-    refetch 
+  const {
+    data,
+    loading: queryLoading,
+    error,
+    refetch,
   } = useQuery<UserRoomsData, UserRoomsVariables>(GET_USER_ROOMS, {
     variables: { userId: user?.id || "" },
     skip: !user?.id,
@@ -123,7 +109,9 @@ function RoomsList({
   });
 
   // Lazy query для загрузки деталей комнаты с правильными типами
-  const [loadRoomDetails] = useLazyQuery<RoomDetailsData, RoomDetailsVariables>(GET_ROOM_DETAILS);
+  const [loadRoomDetails] = useLazyQuery<RoomDetailsData, RoomDetailsVariables>(
+    GET_ROOM_DETAILS,
+  );
 
   // Обработка загрузки и ошибок
   useEffect(() => {
@@ -132,43 +120,76 @@ function RoomsList({
 
   useEffect(() => {
     if (error) {
-      setError(error.message);
+      console.error("Server connection error, starting retry interval", error);
+
+      setLoading(true);
+
+      if (!retryInterval.current) {
+        retryInterval.current = window.setInterval(async () => {
+          try {
+            console.log(
+              `[${new Date().toLocaleTimeString()}] retrying connection...`,
+            );
+            await refetch();
+            console.log("✅ Server reconnected, stopping retry interval");
+            setLoading(false);
+            if (retryInterval.current) {
+              clearInterval(retryInterval.current);
+              retryInterval.current = null;
+            }
+          } catch (err) {
+            console.warn("Retry failed:", err);
+            setLoading(true);
+          }
+        }, 10000);
+      }
     }
-  }, [error, setError]);
+
+    return () => {
+      if (retryInterval.current) {
+        clearInterval(retryInterval.current);
+        retryInterval.current = null;
+      }
+    };
+  }, [error, refetch]);
 
   // Обновление списка комнат при получении данных
   useEffect(() => {
     if (data?.user?.rooms) {
       setRooms(data.user.rooms);
+      console.log(data.user.rooms);
       setError(null);
     }
   }, [data, setError]);
 
   // Функция для принудительного обновления списка комнат
   const refreshRooms = () => {
-    setRefreshCounter(prev => prev + 1);
+    setRefreshCounter((prev) => prev + 1);
     refetch();
   };
 
   // Автоматическое обновление каждые 30 секунд
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      refetch();
-    }, 30000);
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     console.log(`[${new Date().toLocaleTimeString()}] refresh RoomList`);
+  //     refetch();
+  //   }, 30000);
 
-    return () => clearInterval(intervalId);
-  }, [refetch]);
+  //   console.log("refresh RoomList")
+
+  //   return () => clearInterval(intervalId);
+  // }, [refetch]);
 
   const handleSelectRoom = async (roomId: string) => {
     try {
-      const result = await loadRoomDetails({ 
-        variables: { roomId } 
+      const result = await loadRoomDetails({
+        variables: { roomId },
       });
-      
+
       if (result.data?.room) {
         onSelectRoom(result.data.room);
       }
-      
+
       if (result.error) {
         console.error("Ошибка при загрузке комнаты:", result.error);
         setError(result.error.message);
@@ -198,7 +219,33 @@ function RoomsList({
                     className={styles.roomButton}
                     onClick={() => handleSelectRoom(room.id)}
                   >
-                    {room.name}
+                    {room.avatar ? (
+                      <div className={styles.group_element}>
+                        <img
+                          className={styles.group_avatar}
+                          src={room.avatar.url}
+                        />
+                        <div className={styles.groupInfo}>
+                          <p className={styles.groupName}>{room.name}</p>
+                          <p className={styles.groupMessagePreview}>
+                            Max: testmasdasdasdasd
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={styles.group_element}>
+                        <img
+                          className={styles.group_avatar}
+                          src={DefaultGroupAvatar}
+                        />
+                        <div className={styles.groupInfo}>
+                          <p className={styles.groupName}>{room.name}</p>
+                          <p className={styles.groupMessagePreview}>
+                            Max: testmasdasdasdasd
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </button>
                 </li>
               ))}

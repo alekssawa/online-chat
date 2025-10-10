@@ -2,20 +2,22 @@ import { Server } from "socket.io";
 import prisma from "../lib/prismaClient.js";
 import { v4 as uuidv4 } from "uuid";
 
-interface User {
-  id: string;
-  name: string;
-}
+import type { User, Message} from "../../src/graphql/types.js";
 
-interface Message {
-  id: string;
-  text: string;
-  senderId: string;
-  roomId: string;
-  sentAt: string;
-  updatedAt: string;
-  sender?: User;
-}
+// interface User {
+//   id: string;
+//   name: string;
+// }
+
+// interface Message {
+//   id: string;
+//   text: string;
+//   senderId: string;
+//   roomId: string;
+//   sentAt: string;
+//   updatedAt: string;
+//   sender?: User;
+// }
 
 // Хранилище онлайн-статусов
 const onlineUsers = new Map<string, boolean>();
@@ -31,7 +33,9 @@ export function registerSocketHandlers(io: Server) {
     onlineUsers.set(userId, true);
 
     // 1️⃣ Отправляем новому сокету весь текущий список онлайн
-    const currentOnline = Array.from(onlineUsers.entries()).map(([id, online]) => ({ userId: id, online }));
+    const currentOnline = Array.from(onlineUsers.entries()).map(
+      ([id, online]) => ({ userId: id, online }),
+    );
     socket.emit("onlineUsersList", currentOnline);
 
     // 2️⃣ Сообщаем остальным, что этот пользователь онлайн
@@ -49,10 +53,20 @@ export function registerSocketHandlers(io: Server) {
 
     socket.on(
       "sendMessage",
-      async (data: { text: string; roomId: string; senderId: string; sender: { id: string; name: string } }) => {
+      async (data: {
+        text: string;
+        roomId: string;
+        senderId: string;
+        sender: { id: string; name: string };
+      }) => {
         try {
           const savedMessage = await prisma.messages.create({
-            data: { id: uuidv4(), text: data.text, roomId: data.roomId, senderId: data.senderId },
+            data: {
+              id: uuidv4(),
+              text: data.text,
+              roomId: data.roomId,
+              senderId: data.senderId,
+            },
             include: { sender: true },
           });
 
@@ -69,9 +83,11 @@ export function registerSocketHandlers(io: Server) {
           io.to(data.roomId).emit("newMessage", message);
         } catch (err) {
           console.error(err);
-          socket.emit("errorMessage", { message: "Не удалось отправить сообщение" });
+          socket.emit("errorMessage", {
+            message: "Не удалось отправить сообщение",
+          });
         }
-      }
+      },
     );
 
     socket.on("disconnect", () => {
