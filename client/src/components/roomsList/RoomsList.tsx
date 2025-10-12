@@ -28,6 +28,17 @@ const GET_USER_ROOMS = gql`
         avatar {
           url
         }
+        messages {
+          id
+          text
+          sentAt
+          updatedAt
+          sender {
+            id
+            email
+            name
+          }
+        }
       }
     }
   }
@@ -39,6 +50,9 @@ const GET_ROOM_DETAILS = gql`
       id
       name
       createdAt
+      avatar {
+          url
+        }
       users {
         id
         email
@@ -111,6 +125,9 @@ function RoomsList({
   // Lazy query для загрузки деталей комнаты с правильными типами
   const [loadRoomDetails] = useLazyQuery<RoomDetailsData, RoomDetailsVariables>(
     GET_ROOM_DETAILS,
+    {
+      fetchPolicy: "cache-and-network",
+    }
   );
 
   // Обработка загрузки и ошибок
@@ -128,7 +145,7 @@ function RoomsList({
         retryInterval.current = window.setInterval(async () => {
           try {
             console.log(
-              `[${new Date().toLocaleTimeString()}] retrying connection...`,
+              `[${new Date().toLocaleTimeString()}] retrying connection...`
             );
             await refetch();
             console.log("✅ Server reconnected, stopping retry interval");
@@ -157,7 +174,7 @@ function RoomsList({
   useEffect(() => {
     if (data?.user?.rooms) {
       setRooms(data.user.rooms);
-      console.log(data.user.rooms);
+      // console.log(data.user.rooms);
       setError(null);
     }
   }, [data, setError]);
@@ -188,6 +205,7 @@ function RoomsList({
 
       if (result.data?.room) {
         onSelectRoom(result.data.room);
+        // console.log(result.data.room);
       }
 
       if (result.error) {
@@ -228,7 +246,14 @@ function RoomsList({
                         <div className={styles.groupInfo}>
                           <p className={styles.groupName}>{room.name}</p>
                           <p className={styles.groupMessagePreview}>
-                            Max: testmasdasdasdasd
+                            {room.messages.length > 0
+                              ? `${
+                                  room.messages[room.messages.length - 1].sender
+                                    ?.name
+                                }:${" "}${
+                                  room.messages[room.messages.length - 1].text
+                                }`
+                              : ""}
                           </p>
                         </div>
                       </div>
@@ -241,7 +266,14 @@ function RoomsList({
                         <div className={styles.groupInfo}>
                           <p className={styles.groupName}>{room.name}</p>
                           <p className={styles.groupMessagePreview}>
-                            Max: testmasdasdasdasd
+                            {room.messages.length > 0
+                              ? `${
+                                  room.messages[room.messages.length - 1].sender
+                                    ?.name
+                                }:${" "}${
+                                  room.messages[room.messages.length - 1].text
+                                }`
+                              : ""}
                           </p>
                         </div>
                       </div>

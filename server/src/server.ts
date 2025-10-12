@@ -8,7 +8,6 @@ import { graphqlUploadExpress, GraphQLUpload } from "graphql-upload-minimal";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 
-
 import prisma from "./lib/prismaClient.js";
 import { typeDefs } from "./graphql/schema.js";
 import { resolvers } from "./graphql/resolvers.js";

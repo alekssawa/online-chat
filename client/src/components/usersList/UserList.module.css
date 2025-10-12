@@ -25,9 +25,17 @@
   margin-bottom: 10px;
 }
 
+.container ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
 .container ul li {
-  /* justify-items: center; */
-  padding-bottom: 10px;
+  display: flex;          /* превращаем li в flex-контейнер */
+  align-items: center;    /* центрируем по вертикали */
+  justify-content: flex-start; /* контент прижат влево */
+  padding: 5px 10px;      /* отступы сверху/снизу и слева/справа */
 }
 
 .userIcon {

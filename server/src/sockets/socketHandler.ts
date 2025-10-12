@@ -2,7 +2,7 @@ import { Server } from "socket.io";
 import prisma from "../lib/prismaClient.js";
 import { v4 as uuidv4 } from "uuid";
 
-import type { User, Message} from "../../src/graphql/types.js";
+import type { User, Message } from "../../src/graphql/types.js";
 
 // interface User {
 //   id: string;

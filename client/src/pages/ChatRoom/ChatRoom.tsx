@@ -36,6 +36,7 @@ function ChatRoom() {
           <>
             <MessageView
               selectedRoom={selectedRoom}
+              onlineUsers={onlineUsers}
               setOnlineUsers={setOnlineUsers}
             />
           </>

@@ -121,8 +121,8 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
             }
           >
             {new Date(sentAt).toLocaleString(undefined, {
-              month: "numeric",
-              day: "numeric",
+              // month: "numeric",
+              // day: "numeric",
               hour: "2-digit",
               minute: "2-digit",
             })}

@@ -1,0 +1,120 @@
+.roomHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background-color: #182533;
+  border-bottom: 1px solid #2a3b52;
+  height: 70px;
+  box-sizing: border-box;
+}
+
+.chatInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #2b5278;
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.chatDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chatName {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+}
+
+.onlineStatus {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #4ade80;
+  animation: pulse 2s infinite;
+}
+
+.statusText {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.actionButton:hover {
+  background-color: #2a3b52;
+  color: white;
+}
+
+.actionButton:active {
+  background-color: #1e293b;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .roomHeader {
+    padding: 12px 16px;
+  }
+  
+  .statusText {
+    font-size: 11px;
+  }
+  
+  .actions {
+    gap: 4px;
+  }
+  
+  .actionButton {
+    width: 36px;
+    height: 36px;
+  }
+}

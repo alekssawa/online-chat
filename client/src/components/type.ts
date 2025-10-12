@@ -14,6 +14,7 @@ export interface Room {
   name: string;
   createdAt: string;
   avatar?: Avatar; // 👈 добавлено поле для аватара
+  messages: Message[];
 }
 
 export interface Message {
@@ -31,13 +32,8 @@ export interface FullRoom extends Room {
   name: string;
   createdAt: string;
   users: { id: string; email: string; name: string; avatar?: Avatar }[];
-  messages: {
-    id: string;
-    text: string;
-    sentAt: string;
-    updatedAt: string;
-    sender: { id: string; email: string; name: string };
-  }[];
+  messages: Message[];
+  avatar?: Avatar;
 }
 
 export interface OnlineUser {
