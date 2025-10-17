@@ -154,7 +154,7 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
           <p>Connecting...</p>
         </div>
       )}
-      <RoomHeader onlineUsers={onlineUsers} selectedRoom={selectedRoom} />
+      <RoomHeader onlineUsers={onlineUsers} selectedRoom={selectedRoom} socket={socketRef.current}/>
       <ul>
         {Object.entries(groupMessagesByDate(messages)).map(([dateKey, group]) => (
           <div key={dateKey}>

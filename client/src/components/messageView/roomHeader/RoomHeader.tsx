@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import styles from "./RoomHeader.module.css";
 import DefaultGroupAvatar from "../../../assets/icons/DefaultGroupAvatar.svg";
 import type { FullRoom } from "../../type";
-import { io, Socket } from 'socket.io-client';
+import { Socket } from 'socket.io-client';
 
 interface RoomHeaderProps {
   selectedRoom: FullRoom | null;
   onlineUsers: { userId: string; online: boolean }[];
+  socket: typeof Socket | null; // ← Исправлен тип
 }
 
 // WebRTC interfaces
@@ -22,7 +23,7 @@ interface SocketSignalData {
   signal: WebRTCSignal;
 }
 
-function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
+function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Refs для WebRTC
   const localAudioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -32,10 +33,9 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
   const [isCallActive, setIsCallActive] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // WebRTC variables (using refs to avoid re-renders)
+  // WebRTC variables
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
-  const socketRef = useRef<typeof Socket | null>(null);
   const currentRoomRef = useRef<string | null>(null);
 
   // Update status message
@@ -74,8 +74,8 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
 
     // ICE candidates
     pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
-      if (event.candidate && socketRef.current) {
-        socketRef.current.emit('webrtc-signal', {
+      if (event.candidate && socket) {
+        socket.emit('webrtc-signal', { // ← Используем переданный socket
           to: userId,
           signal: {
             type: 'ice-candidate',
@@ -112,7 +112,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       
-      socketRef.current?.emit('webrtc-signal', {
+      socket?.emit('webrtc-signal', { // ← Используем переданный socket
         to: userId,
         signal: {
           type: 'offer',
@@ -155,7 +155,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
       
-      socketRef.current?.emit('webrtc-signal', {
+      socket?.emit('webrtc-signal', { // ← Используем переданный socket
         to: from,
         signal: {
           type: 'answer',
@@ -199,10 +199,49 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
     }
   };
 
+  // Setup socket listeners for WebRTC
+  useEffect(() => {
+    if (!socket) return;
+
+    // Обработчики для WebRTC
+    socket.on('users-in-room', (users: string[]) => {
+      updateCallStatus(`👥 ${users.length} пользователей в комнате`);
+      
+      // Create offers for existing users
+      users.forEach(userId => {
+        setTimeout(() => createOffer(userId), 1000);
+      });
+    });
+
+    socket.on('user-joined', (userId: string) => {
+      updateCallStatus(`🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`);
+      createOffer(userId);
+    });
+
+    socket.on('user-left', (userId: string) => {
+      updateCallStatus(`👋 Пользователь ${userId.slice(-6)} покинул комнату`);
+      const pc = peerConnectionsRef.current.get(userId);
+      if (pc) {
+        pc.close();
+        peerConnectionsRef.current.delete(userId);
+      }
+    });
+
+    socket.on('webrtc-signal', handleSignal);
+
+    return () => {
+      // Cleanup listeners
+      socket.off('users-in-room');
+      socket.off('user-joined');
+      socket.off('user-left');
+      socket.off('webrtc-signal');
+    };
+  }, [socket]);
+
   // Join room for calls
   const joinCallRoom = async (): Promise<void> => {
-    if (!selectedRoom) {
-      alert('Пожалуйста, выберите комнату');
+    if (!selectedRoom || !socket) {
+      alert('Пожалуйста, выберите комнату и убедитесь в подключении');
       return;
     }
 
@@ -227,48 +266,13 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
       }
       updateCallStatus('✅ Доступ к микрофону получен');
 
-      // Connect to signaling server (замените на ваш URL сервера)
-      const socket = io('http://localhost:5000');
-      socketRef.current = socket;
+      // Используем существующий socket
       currentRoomRef.current = roomIdValue;
-
-      // Socket event handlers
-      socket.on('connect', () => {
-        updateCallStatus('🔌 Подключено к серверу сигнализации');
-        socket.emit('join-room', roomIdValue);
-        setIsConnected(true);
-      });
-
-      socket.on('users-in-room', (users: string[]) => {
-        updateCallStatus(`👥 ${users.length} пользователей в комнате`);
-        
-        // Create offers for existing users
-        users.forEach(userId => {
-          setTimeout(() => createOffer(userId), 1000);
-        });
-      });
-
-      socket.on('user-joined', (userId: string) => {
-        updateCallStatus(`🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`);
-        createOffer(userId);
-      });
-
-      socket.on('user-left', (userId: string) => {
-        updateCallStatus(`👋 Пользователь ${userId.slice(-6)} покинул комнату`);
-        const pc = peerConnectionsRef.current.get(userId);
-        if (pc) {
-          pc.close();
-          peerConnectionsRef.current.delete(userId);
-        }
-      });
-
-      socket.on('webrtc-signal', handleSignal);
-
-      socket.on('disconnect', () => {
-        updateCallStatus('❌ Отключено от сервера сигнализации');
-        setIsConnected(false);
-        setIsCallActive(false);
-      });
+      
+      // Присоединяемся к комнате звонков
+      socket.emit('join-room', roomIdValue);
+      setIsConnected(true);
+      updateCallStatus('🔌 Подключено к комнате звонков');
 
     } catch (error) {
       console.error('Error joining room:', error);
@@ -301,12 +305,6 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
       localStreamRef.current = null;
     }
     
-    // Disconnect from server
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
-    }
-    
     // Reset UI
     if (localAudioRef.current) {
       localAudioRef.current.srcObject = null;
@@ -324,7 +322,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
 
   // Start audio call
   const startAudioCall = async (): Promise<void> => {
-    if (!selectedRoom) {
+    if (!selectedRoom || !socket) {
       alert('Пожалуйста, выберите комнату для звонка');
       return;
     }
@@ -336,7 +334,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
     }
   };
 
-  // Start video call (заглушка - можно реализовать аналогично)
+  // Start video call (заглушка)
   const startVideoCall = (): void => {
     alert('Видеозвонки пока не реализованы');
   };
@@ -385,6 +383,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
           className={`${styles.actionButton} ${isCallActive ? styles.activeCall : ''}`} 
           title={isConnected ? "Завершить звонок" : "Аудиозвонок"}
           onClick={startAudioCall}
+          disabled={!socket} // Отключаем если нет socket
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
@@ -395,6 +394,7 @@ function RoomHeader({ selectedRoom, onlineUsers }: RoomHeaderProps) {
           className={styles.actionButton} 
           title="Видеозвонок"
           onClick={startVideoCall}
+          disabled={!socket}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
             <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
