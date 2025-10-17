@@ -40,6 +40,7 @@
   text-align: left;
   padding-bottom: 5px;
   color: #62d4e3;
+  user-select: none;
 }
 
 .message {

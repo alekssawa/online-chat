@@ -30,10 +30,18 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [codeLanguage, setCodeLanguage] = useState("");
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   const turndown = new TurndownService({
     codeBlockStyle: "fenced",
     emDelimiter: "_",
   });
+
 
   // кастом для underline
   turndown.addRule("underline", {
@@ -490,6 +498,7 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
           className={styles.editor}
           contentEditable
           onInput={handleInput}
+          onKeyDown={handleKeyDown}
           onContextMenu={handleContextMenu}
           suppressContentEditableWarning
         ></div>
