@@ -64,6 +64,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   align-self: flex-end;
+  user-select: none;
 }
 
 .MyTimestamp {
@@ -72,6 +73,7 @@
   white-space: nowrap;
   flex-shrink: 0;
   align-self: flex-end;
+  user-select: none;
 }
 
 /* @media (max-width: 1024px) {
