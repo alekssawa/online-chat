@@ -1,8 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import styles from "./RoomHeader.module.css";
 import DefaultGroupAvatar from "../../../assets/icons/DefaultGroupAvatar.svg";
+import AudioIcon from "../../../assets/icons/audioIcon.svg?react";
+import VideoIcon from "../../../assets/icons/videoIcon.svg?react";
+import MenuIcon from "../../../assets/icons/menuIcon.svg?react";
+import SearchIcon from "../../../assets/icons/searchIcon.svg?react";
 import type { FullRoom } from "../../type";
-import { Socket } from 'socket.io-client';
+import { Socket } from "socket.io-client";
 
 interface RoomHeaderProps {
   selectedRoom: FullRoom | null;
@@ -12,7 +16,7 @@ interface RoomHeaderProps {
 
 // WebRTC interfaces
 interface WebRTCSignal {
-  type: 'offer' | 'answer' | 'ice-candidate';
+  type: "offer" | "answer" | "ice-candidate";
   offer?: RTCSessionDescriptionInit;
   answer?: RTCSessionDescriptionInit;
   candidate?: RTCIceCandidate;
@@ -27,9 +31,9 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Refs для WebRTC
   const localAudioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
-  
+
   // State для звонков
-  const [callStatus, setCallStatus] = useState<string>('Готов к звонку');
+  const [callStatus, setCallStatus] = useState<string>("Готов к звонку");
   const [isCallActive, setIsCallActive] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
@@ -41,30 +45,32 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Update status message
   const updateCallStatus = (message: string) => {
     setCallStatus(message);
-    console.log('Call Status:', message);
+    console.log("Call Status:", message);
   };
 
   // Create peer connection for a specific user
   const createPeerConnection = (userId: string): RTCPeerConnection => {
     updateCallStatus(`Создание соединения с пользователем ${userId.slice(-6)}`);
-    
+
     const pc = new RTCPeerConnection({
       iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-      ]
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+      ],
     });
 
     // Add local tracks
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => {
+      localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current!);
       });
     }
 
     // Handle remote stream
     pc.ontrack = (event: RTCTrackEvent) => {
-      updateCallStatus(`✅ Получен аудиопоток от пользователя ${userId.slice(-6)}`);
+      updateCallStatus(
+        `✅ Получен аудиопоток от пользователя ${userId.slice(-6)}`
+      );
       const remoteStream = event.streams[0];
       if (remoteStream && remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = remoteStream;
@@ -75,23 +81,29 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     // ICE candidates
     pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate && socket) {
-        socket.emit('webrtc-signal', { // ← Используем переданный socket
+        socket.emit("webrtc-signal", {
+          // ← Используем переданный socket
           to: userId,
           signal: {
-            type: 'ice-candidate',
-            candidate: event.candidate
-          } as WebRTCSignal
+            type: "ice-candidate",
+            candidate: event.candidate,
+          } as WebRTCSignal,
         });
       }
     };
 
     // Connection state changes
     pc.onconnectionstatechange = () => {
-      updateCallStatus(`Соединение с ${userId.slice(-6)}: ${pc.connectionState}`);
-      
-      if (pc.connectionState === 'connected') {
+      updateCallStatus(
+        `Соединение с ${userId.slice(-6)}: ${pc.connectionState}`
+      );
+
+      if (pc.connectionState === "connected") {
         setIsCallActive(true);
-      } else if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+      } else if (
+        pc.connectionState === "disconnected" ||
+        pc.connectionState === "failed"
+      ) {
         setIsCallActive(false);
       }
     };
@@ -111,39 +123,49 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     try {
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
-      
-      socket?.emit('webrtc-signal', { // ← Используем переданный socket
+
+      socket?.emit("webrtc-signal", {
+        // ← Используем переданный socket
         to: userId,
         signal: {
-          type: 'offer',
-          offer: offer
-        } as WebRTCSignal
+          type: "offer",
+          offer: offer,
+        } as WebRTCSignal,
       });
-      
-      updateCallStatus(`📤 Отправлено предложение пользователю ${userId.slice(-6)}`);
+
+      updateCallStatus(
+        `📤 Отправлено предложение пользователю ${userId.slice(-6)}`
+      );
     } catch (error) {
-      console.error('Error creating offer:', error);
-      updateCallStatus(`❌ Ошибка создания предложения: ${(error as Error).message}`);
+      console.error("Error creating offer:", error);
+      updateCallStatus(
+        `❌ Ошибка создания предложения: ${(error as Error).message}`
+      );
     }
   };
 
   // Handle incoming signal
   const handleSignal = async (data: SocketSignalData): Promise<void> => {
     const { from, signal } = data;
-    
-    if (signal.type === 'offer') {
+
+    if (signal.type === "offer") {
       await handleOffer(from, signal.offer!);
-    } else if (signal.type === 'answer') {
+    } else if (signal.type === "answer") {
       await handleAnswer(from, signal.answer!);
-    } else if (signal.type === 'ice-candidate') {
+    } else if (signal.type === "ice-candidate") {
       await handleIceCandidate(from, signal.candidate!);
     }
   };
 
   // Handle incoming offer
-  const handleOffer = async (from: string, offer: RTCSessionDescriptionInit): Promise<void> => {
-    updateCallStatus(`📨 Получено предложение от пользователя ${from.slice(-6)}`);
-    
+  const handleOffer = async (
+    from: string,
+    offer: RTCSessionDescriptionInit
+  ): Promise<void> => {
+    updateCallStatus(
+      `📨 Получено предложение от пользователя ${from.slice(-6)}`
+    );
+
     let pc = peerConnectionsRef.current.get(from);
     if (!pc) {
       pc = createPeerConnection(from);
@@ -154,47 +176,62 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
       await pc.setRemoteDescription(offer);
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
-      
-      socket?.emit('webrtc-signal', { // ← Используем переданный socket
+
+      socket?.emit("webrtc-signal", {
+        // ← Используем переданный socket
         to: from,
         signal: {
-          type: 'answer',
-          answer: answer
-        } as WebRTCSignal
+          type: "answer",
+          answer: answer,
+        } as WebRTCSignal,
       });
-      
+
       updateCallStatus(`📤 Отправлен ответ пользователю ${from.slice(-6)}`);
     } catch (error) {
-      console.error('Error handling offer:', error);
-      updateCallStatus(`❌ Ошибка обработки предложения: ${(error as Error).message}`);
+      console.error("Error handling offer:", error);
+      updateCallStatus(
+        `❌ Ошибка обработки предложения: ${(error as Error).message}`
+      );
     }
   };
 
   // Handle incoming answer
-  const handleAnswer = async (from: string, answer: RTCSessionDescriptionInit): Promise<void> => {
+  const handleAnswer = async (
+    from: string,
+    answer: RTCSessionDescriptionInit
+  ): Promise<void> => {
     updateCallStatus(`📨 Получен ответ от пользователя ${from.slice(-6)}`);
-    
+
     const pc = peerConnectionsRef.current.get(from);
     if (pc) {
       try {
         await pc.setRemoteDescription(answer);
-        updateCallStatus(`✅ Соединение установлено с пользователем ${from.slice(-6)}`);
+        updateCallStatus(
+          `✅ Соединение установлено с пользователем ${from.slice(-6)}`
+        );
       } catch (error) {
-        console.error('Error handling answer:', error);
-        updateCallStatus(`❌ Ошибка обработки ответа: ${(error as Error).message}`);
+        console.error("Error handling answer:", error);
+        updateCallStatus(
+          `❌ Ошибка обработки ответа: ${(error as Error).message}`
+        );
       }
     }
   };
 
   // Handle ICE candidate
-  const handleIceCandidate = async (from: string, candidate: RTCIceCandidate): Promise<void> => {
+  const handleIceCandidate = async (
+    from: string,
+    candidate: RTCIceCandidate
+  ): Promise<void> => {
     const pc = peerConnectionsRef.current.get(from);
     if (pc) {
       try {
         await pc.addIceCandidate(candidate);
-        updateCallStatus(`🧊 Обмен ICE-кандидатами с пользователем ${from.slice(-6)}`);
+        updateCallStatus(
+          `🧊 Обмен ICE-кандидатами с пользователем ${from.slice(-6)}`
+        );
       } catch (error) {
-        console.error('Error adding ICE candidate:', error);
+        console.error("Error adding ICE candidate:", error);
       }
     }
   };
@@ -204,21 +241,23 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     if (!socket) return;
 
     // Обработчики для WebRTC
-    socket.on('users-in-room', (users: string[]) => {
+    socket.on("users-in-room", (users: string[]) => {
       updateCallStatus(`👥 ${users.length} пользователей в комнате`);
-      
+
       // Create offers for existing users
-      users.forEach(userId => {
+      users.forEach((userId) => {
         setTimeout(() => createOffer(userId), 1000);
       });
     });
 
-    socket.on('user-joined', (userId: string) => {
-      updateCallStatus(`🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`);
+    socket.on("user-joined", (userId: string) => {
+      updateCallStatus(
+        `🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`
+      );
       createOffer(userId);
     });
 
-    socket.on('user-left', (userId: string) => {
+    socket.on("user-left", (userId: string) => {
       updateCallStatus(`👋 Пользователь ${userId.slice(-6)} покинул комнату`);
       const pc = peerConnectionsRef.current.get(userId);
       if (pc) {
@@ -227,65 +266,66 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
       }
     });
 
-    socket.on('webrtc-signal', handleSignal);
+    socket.on("webrtc-signal", handleSignal);
 
     return () => {
       // Cleanup listeners
-      socket.off('users-in-room');
-      socket.off('user-joined');
-      socket.off('user-left');
-      socket.off('webrtc-signal');
+      socket.off("users-in-room");
+      socket.off("user-joined");
+      socket.off("user-left");
+      socket.off("webrtc-signal");
     };
   }, [socket]);
 
   // Join room for calls
   const joinCallRoom = async (): Promise<void> => {
     if (!selectedRoom || !socket) {
-      alert('Пожалуйста, выберите комнату и убедитесь в подключении');
+      alert("Пожалуйста, выберите комнату и убедитесь в подключении");
       return;
     }
 
     const roomIdValue = selectedRoom.id;
-    
+
     try {
-      updateCallStatus('🎤 Запрос доступа к микрофону...');
-      
+      updateCallStatus("🎤 Запрос доступа к микрофону...");
+
       // Get microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
         },
-        video: false 
+        video: false,
       });
-      
+
       localStreamRef.current = stream;
       if (localAudioRef.current) {
         localAudioRef.current.srcObject = stream;
       }
-      updateCallStatus('✅ Доступ к микрофону получен');
+      updateCallStatus("✅ Доступ к микрофону получен");
 
       // Используем существующий socket
       currentRoomRef.current = roomIdValue;
-      
-      // Присоединяемся к комнате звонков
-      socket.emit('join-room', roomIdValue);
-      setIsConnected(true);
-      updateCallStatus('🔌 Подключено к комнате звонков');
 
+      // Присоединяемся к комнате звонков
+      socket.emit("join-room", roomIdValue);
+      setIsConnected(true);
+      updateCallStatus("🔌 Подключено к комнате звонков");
     } catch (error) {
-      console.error('Error joining room:', error);
-      
-      if ((error as Error).name === 'NotAllowedError') {
-        updateCallStatus('❌ Доступ к микрофону запрещен');
-        alert('Для аудиозвонков необходим доступ к микрофону. Пожалуйста, разрешите доступ в настройках браузера.');
+      console.error("Error joining room:", error);
+
+      if ((error as Error).name === "NotAllowedError") {
+        updateCallStatus("❌ Доступ к микрофону запрещен");
+        alert(
+          "Для аудиозвонков необходим доступ к микрофону. Пожалуйста, разрешите доступ в настройках браузера."
+        );
       } else {
         updateCallStatus(`❌ Ошибка: ${(error as Error).message}`);
       }
-      
+
       if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
         localStreamRef.current = null;
       }
     }
@@ -293,18 +333,18 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
   // Leave call room
   const leaveCallRoom = (): void => {
-    updateCallStatus('Выход из комнаты...');
-    
+    updateCallStatus("Выход из комнаты...");
+
     // Close all peer connections
-    peerConnectionsRef.current.forEach(pc => pc.close());
+    peerConnectionsRef.current.forEach((pc) => pc.close());
     peerConnectionsRef.current.clear();
-    
+
     // Stop local stream
     if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
       localStreamRef.current = null;
     }
-    
+
     // Reset UI
     if (localAudioRef.current) {
       localAudioRef.current.srcObject = null;
@@ -312,18 +352,18 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     if (remoteAudioRef.current) {
       remoteAudioRef.current.srcObject = null;
     }
-    
+
     setIsConnected(false);
     setIsCallActive(false);
     currentRoomRef.current = null;
-    
-    updateCallStatus('Готов к звонку');
+
+    updateCallStatus("Готов к звонку");
   };
 
   // Start audio call
   const startAudioCall = async (): Promise<void> => {
     if (!selectedRoom || !socket) {
-      alert('Пожалуйста, выберите комнату для звонка');
+      alert("Пожалуйста, выберите комнату для звонка");
       return;
     }
 
@@ -336,7 +376,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
   // Start video call (заглушка)
   const startVideoCall = (): void => {
-    alert('Видеозвонки пока не реализованы');
+    alert("Видеозвонки пока не реализованы");
   };
 
   // Cleanup on unmount
@@ -346,14 +386,22 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("🔄 Online users changed:", onlineUsers);
+  }, [onlineUsers]);
+
   return (
     <div className={styles.roomHeader}>
       {/* Левая часть - информация о чате */}
       <div className={styles.chatInfo}>
         <div className={styles.avatar}>
-          <img 
-            src={selectedRoom?.avatar ? selectedRoom.avatar.url: DefaultGroupAvatar}
-            alt="Chat avatar" 
+          <img
+            src={
+              selectedRoom?.avatar
+                ? selectedRoom.avatar.url
+                : DefaultGroupAvatar
+            }
+            alt="Chat avatar"
             className={styles.avatarImage}
           />
         </div>
@@ -362,16 +410,24 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
           <div className={styles.onlineStatus}>
             <span className={styles.statusDot}></span>
             <span className={styles.statusText}>
-              {onlineUsers.length > 5 ? 
-                `${onlineUsers.length +' участников онлайн'}`: 
-                onlineUsers.length === 1 ? 
-                  `${onlineUsers.length +' участник онлайн'}`:
-                  `${onlineUsers.length +' участника онлайн'}`}
+              {onlineUsers.filter((u) => u.online).length > 5
+                ? `${
+                    onlineUsers.filter((u) => u.online).length
+                  } участников онлайн`
+                : onlineUsers.filter((u) => u.online).length === 1
+                ? `${
+                    onlineUsers.filter((u) => u.online).length
+                  } участник онлайн`
+                : `${
+                    onlineUsers.filter((u) => u.online).length
+                  } участника онлайн`}
             </span>
           </div>
           {isCallActive && (
             <div className={styles.callStatus}>
-              <span className={styles.callStatusText}>🔴 В звонке • {callStatus}</span>
+              <span className={styles.callStatusText}>
+                🔴 В звонке • {callStatus}
+              </span>
             </div>
           )}
         </div>
@@ -379,44 +435,38 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
       {/* Правая часть - кнопки действий */}
       <div className={styles.actions}>
-        <button 
-          className={`${styles.actionButton} ${isCallActive ? styles.activeCall : ''}`} 
+        <button
+          className={`${styles.actionButton} ${
+            isCallActive ? styles.activeCall : ""
+          }`}
           title={isConnected ? "Завершить звонок" : "Аудиозвонок"}
           onClick={startAudioCall}
           disabled={!socket} // Отключаем если нет socket
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
-          </svg>
+          <AudioIcon />
         </button>
-        
-        <button 
-          className={styles.actionButton} 
+
+        <button
+          className={styles.actionButton}
           title="Видеозвонок"
           onClick={startVideoCall}
           disabled={!socket}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/>
-          </svg>
+          <VideoIcon />
         </button>
-        
+
         <button className={styles.actionButton} title="Поиск в чате">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-          </svg>
+          <SearchIcon />
         </button>
-        
+
         <button className={styles.actionButton} title="Меню">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
-          </svg>
+          <MenuIcon />
         </button>
       </div>
 
       {/* Скрытые аудио элементы для звонков */}
-      <audio ref={localAudioRef} autoPlay muted style={{ display: 'none' }} />
-      <audio ref={remoteAudioRef} autoPlay style={{ display: 'none' }} />
+      <audio ref={localAudioRef} autoPlay muted style={{ display: "none" }} />
+      <audio ref={remoteAudioRef} autoPlay style={{ display: "none" }} />
     </div>
   );
 }

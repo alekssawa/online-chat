@@ -19,8 +19,11 @@ interface MessageGroup {
   messages: Message[];
 }
 
-
-function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewProps) {
+function MessageView({
+  selectedRoom,
+  onlineUsers,
+  setOnlineUsers,
+}: MessageViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
 
@@ -32,9 +35,7 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
 
   const roomId = selectedRoom?.id ?? null;
 
-  console.log(selectedRoom?.avatar)
-
-  
+  // console.log(selectedRoom?.avatar)
 
   // Прокрутка вниз при новых сообщениях
   useEffect(() => {
@@ -55,11 +56,19 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
       roomId: selectedRoom.id,
       sentAt: m.sentAt,
       updatedAt: m.updatedAt,
-      sender: { id: m.sender!.id, name: m.sender!.name, email: m.sender!.email },
+      sender: {
+        id: m.sender!.id,
+        name: m.sender!.name,
+        email: m.sender!.email,
+      },
     }));
 
     setMessages(initialMessages);
   }, [selectedRoom]);
+
+  useEffect(() => {
+    console.log("🔄 Online users changed:", onlineUsers);
+  }, [onlineUsers]);
 
   // Подключение Socket.IO
   useEffect(() => {
@@ -75,7 +84,7 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
       socket.on("disconnect", () => setIsSocketConnected(false));
 
       socket.on("newMessage", (message: Message) =>
-        setMessages((prev) => [...prev, message]),
+        setMessages((prev) => [...prev, message])
       );
 
       // 1️⃣ Слушаем список всех онлайн при подключении
@@ -88,8 +97,9 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
         setOnlineUsers((prev) => {
           const filtered = prev.filter((u) => u.userId !== status.userId);
           return [...filtered, status];
-        }),
+        })
       );
+      console.log(onlineUsers);
     }
 
     const socket = socketRef.current;
@@ -110,41 +120,41 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
-      return 'Today';
+      return "Today";
     } else if (date.toDateString() === yesterday.toDateString()) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return date.toLocaleDateString('en-US', {
-        day: 'numeric',
-        month: 'long'
+      return date.toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "long",
       }); // "12 октября"
     }
   };
 
   // В группировке используем эту функцию
-  const groupMessagesByDate = (messages: Message[]): { [key: string]: MessageGroup } => {
+  const groupMessagesByDate = (
+    messages: Message[]
+  ): { [key: string]: MessageGroup } => {
     const groups: { [key: string]: MessageGroup } = {};
-    
-    messages.forEach(message => {
+
+    messages.forEach((message) => {
       const dateKey = new Date(message.sentAt).toDateString(); // уникальный ключ
       const readableDate = getReadableDate(message.sentAt); // читаемая дата
-      
+
       if (!groups[dateKey]) {
         groups[dateKey] = {
           date: readableDate,
-          messages: []
+          messages: [],
         };
       }
-      
+
       groups[dateKey].messages.push(message);
     });
-    
+
     return groups;
   };
-
-  
 
   return (
     <div className={styles.container}>
@@ -154,34 +164,42 @@ function MessageView({ selectedRoom, onlineUsers, setOnlineUsers }: MessageViewP
           <p>Connecting...</p>
         </div>
       )}
-      <RoomHeader onlineUsers={onlineUsers} selectedRoom={selectedRoom} socket={socketRef.current}/>
+      <RoomHeader
+        onlineUsers={onlineUsers}
+        selectedRoom={selectedRoom}
+        socket={socketRef.current}
+      />
       <ul>
-        {Object.entries(groupMessagesByDate(messages)).map(([dateKey, group]) => (
-          <div key={dateKey}>
-            <div className={styles.dateSeparator}>
-              <span className={styles.dateText}>{group.date}</span>
+        {Object.entries(groupMessagesByDate(messages)).map(
+          ([dateKey, group]) => (
+            <div key={dateKey}>
+              <div className={styles.dateSeparator}>
+                <span className={styles.dateText}>{group.date}</span>
+              </div>
+
+              {group.messages.map((m: Message) => (
+                <li
+                  key={m.id}
+                  className={
+                    m.senderId === user?.id
+                      ? styles.MyMessageLi
+                      : styles.messageLi
+                  }
+                >
+                  <MessageBox
+                    id={m.id}
+                    text={m.text}
+                    senderId={m.senderId}
+                    roomId={m.roomId}
+                    sender={m.sender}
+                    sentAt={m.sentAt}
+                    updatedAt={m.updatedAt}
+                  />
+                </li>
+              ))}
             </div>
-            
-            {group.messages.map((m:Message) => (
-              <li
-                key={m.id}
-                className={
-                  m.senderId === user?.id ? styles.MyMessageLi : styles.messageLi
-                }
-              >
-                <MessageBox
-                  id={m.id}
-                  text={m.text}
-                  senderId={m.senderId}
-                  roomId={m.roomId}
-                  sender={m.sender}
-                  sentAt={m.sentAt}
-                  updatedAt={m.updatedAt}
-                />
-              </li>
-            ))}
-          </div>
-        ))}
+          )
+        )}
         <div ref={messagesEndRef} />
       </ul>
       <SendMessage
