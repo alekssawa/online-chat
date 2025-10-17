@@ -118,3 +118,25 @@
     height: 36px;
   }
 }
+
+/* Добавьте эти стили в RoomHeader.module.css */
+
+.activeCall {
+  background-color: #ff4444 !important;
+  color: white !important;
+}
+
+.callStatus {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.callStatusText {
+  color: #ff4444;
+  font-weight: 500;
+}
+
+.roomHeader {
+  /* остальные стили остаются без изменений */
+  position: relative;
+}
