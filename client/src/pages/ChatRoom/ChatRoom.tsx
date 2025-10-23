@@ -5,13 +5,17 @@ import RoomsList from "../../components/roomsList/RoomsList";
 import UserList from "../../components/usersList/UserList";
 import MessageView from "../../components/messageView/MessageView";
 
-import type { FullRoom, OnlineUser } from "../../components/type";
+import type { FullRoom, User, OnlineUser } from "../../components/type";
+import UserInfoPanel from "../../components/userInfoPanel/UserInfoPanel";
 
 function ChatRoom() {
   const [selectedRoom, setSelectedRoom] = useState<FullRoom | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [, /*error*/ setError] = useState<string | null>(null);
+
+  const [isUserPageOpen, setIsUserPageOpen] = useState(false);
 
   // console.log("Selected Room:", selectedRoom);
 
@@ -41,11 +45,21 @@ function ChatRoom() {
             />
           </>
         )}
-        <UserList
-          selectedRoom={selectedRoom}
-          loading={loading}
-          onlineUsers={onlineUsers}
-        />
+        {isUserPageOpen ? (
+          <UserInfoPanel
+            selectedUser={selectedUser}
+            setIsUserPageOpen={setIsUserPageOpen}
+            onlineUsers={onlineUsers}
+          />
+        ) : (
+          <UserList
+            selectedRoom={selectedRoom}
+            loading={loading}
+            onlineUsers={onlineUsers}
+            setSelectedUser={setSelectedUser}
+            setIsUserPageOpen={setIsUserPageOpen}
+          />
+        )}
       </>
     </div>
   );

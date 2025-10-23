@@ -31,7 +31,7 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
   const [codeLanguage, setCodeLanguage] = useState("");
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -41,7 +41,6 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
     codeBlockStyle: "fenced",
     emDelimiter: "_",
   });
-
 
   // кастом для underline
   turndown.addRule("underline", {

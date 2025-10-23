@@ -66,10 +66,6 @@ function MessageView({
     setMessages(initialMessages);
   }, [selectedRoom]);
 
-  useEffect(() => {
-    console.log("🔄 Online users changed:", onlineUsers);
-  }, [onlineUsers]);
-
   // Подключение Socket.IO
   useEffect(() => {
     if (!roomId || !user) return;
@@ -84,7 +80,7 @@ function MessageView({
       socket.on("disconnect", () => setIsSocketConnected(false));
 
       socket.on("newMessage", (message: Message) =>
-        setMessages((prev) => [...prev, message])
+        setMessages((prev) => [...prev, message]),
       );
 
       // 1️⃣ Слушаем список всех онлайн при подключении
@@ -97,7 +93,7 @@ function MessageView({
         setOnlineUsers((prev) => {
           const filtered = prev.filter((u) => u.userId !== status.userId);
           return [...filtered, status];
-        })
+        }),
       );
       console.log(onlineUsers);
     }
@@ -135,7 +131,7 @@ function MessageView({
 
   // В группировке используем эту функцию
   const groupMessagesByDate = (
-    messages: Message[]
+    messages: Message[],
   ): { [key: string]: MessageGroup } => {
     const groups: { [key: string]: MessageGroup } = {};
 
@@ -198,7 +194,7 @@ function MessageView({
                 </li>
               ))}
             </div>
-          )
+          ),
         )}
         <div ref={messagesEndRef} />
       </ul>

@@ -51,8 +51,8 @@ const GET_ROOM_DETAILS = gql`
       name
       createdAt
       avatar {
-          url
-        }
+        url
+      }
       users {
         id
         email
@@ -127,7 +127,7 @@ function RoomsList({
     GET_ROOM_DETAILS,
     {
       fetchPolicy: "cache-and-network",
-    }
+    },
   );
 
   // Обработка загрузки и ошибок
@@ -145,7 +145,7 @@ function RoomsList({
         retryInterval.current = window.setInterval(async () => {
           try {
             console.log(
-              `[${new Date().toLocaleTimeString()}] retrying connection...`
+              `[${new Date().toLocaleTimeString()}] retrying connection...`,
             );
             await refetch();
             console.log("✅ Server reconnected, stopping retry interval");

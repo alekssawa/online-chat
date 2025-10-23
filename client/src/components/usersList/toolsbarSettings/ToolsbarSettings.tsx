@@ -5,7 +5,7 @@ import SettingsIcon from "../../../assets/icons/settingsIcon.svg?react";
 import AddIcon from "../../../assets/icons/addIcon.svg?react";
 import { useState } from "react";
 
-import type { FullRoom } from "../UserList";
+import type { FullRoom } from "../../type";
 
 interface ToolsbarSettingsProps {
   selectedRoom: FullRoom | null;

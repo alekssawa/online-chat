@@ -21,14 +21,23 @@
   text-align: center;
 }
 
-/* .text {
+.container_rooms h2 {
   margin-bottom: 10px;
-} */
-.container ul li {
-  /* justify-items: center; */
-  padding-bottom: 10px;
-  text-align: start;
 }
+
+.container ul li {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: start;
+  padding: 5px 10px;
+}
+
+.container ul li:hover {
+  background-color: #2a3b52;
+  border-radius: 8px;
+}
+
 .roomsIcon {
   margin-right: 10px;
   width: 20px;
@@ -43,7 +52,6 @@
 
 .group_element {
   display: flex;
-  margin-bottom: 10px;
   align-items: center;
 }
 

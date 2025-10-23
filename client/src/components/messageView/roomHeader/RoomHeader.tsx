@@ -69,7 +69,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     // Handle remote stream
     pc.ontrack = (event: RTCTrackEvent) => {
       updateCallStatus(
-        `✅ Получен аудиопоток от пользователя ${userId.slice(-6)}`
+        `✅ Получен аудиопоток от пользователя ${userId.slice(-6)}`,
       );
       const remoteStream = event.streams[0];
       if (remoteStream && remoteAudioRef.current) {
@@ -95,7 +95,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     // Connection state changes
     pc.onconnectionstatechange = () => {
       updateCallStatus(
-        `Соединение с ${userId.slice(-6)}: ${pc.connectionState}`
+        `Соединение с ${userId.slice(-6)}: ${pc.connectionState}`,
       );
 
       if (pc.connectionState === "connected") {
@@ -134,12 +134,12 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
       });
 
       updateCallStatus(
-        `📤 Отправлено предложение пользователю ${userId.slice(-6)}`
+        `📤 Отправлено предложение пользователю ${userId.slice(-6)}`,
       );
     } catch (error) {
       console.error("Error creating offer:", error);
       updateCallStatus(
-        `❌ Ошибка создания предложения: ${(error as Error).message}`
+        `❌ Ошибка создания предложения: ${(error as Error).message}`,
       );
     }
   };
@@ -160,10 +160,10 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Handle incoming offer
   const handleOffer = async (
     from: string,
-    offer: RTCSessionDescriptionInit
+    offer: RTCSessionDescriptionInit,
   ): Promise<void> => {
     updateCallStatus(
-      `📨 Получено предложение от пользователя ${from.slice(-6)}`
+      `📨 Получено предложение от пользователя ${from.slice(-6)}`,
     );
 
     let pc = peerConnectionsRef.current.get(from);
@@ -190,7 +190,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     } catch (error) {
       console.error("Error handling offer:", error);
       updateCallStatus(
-        `❌ Ошибка обработки предложения: ${(error as Error).message}`
+        `❌ Ошибка обработки предложения: ${(error as Error).message}`,
       );
     }
   };
@@ -198,7 +198,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Handle incoming answer
   const handleAnswer = async (
     from: string,
-    answer: RTCSessionDescriptionInit
+    answer: RTCSessionDescriptionInit,
   ): Promise<void> => {
     updateCallStatus(`📨 Получен ответ от пользователя ${from.slice(-6)}`);
 
@@ -207,12 +207,12 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
       try {
         await pc.setRemoteDescription(answer);
         updateCallStatus(
-          `✅ Соединение установлено с пользователем ${from.slice(-6)}`
+          `✅ Соединение установлено с пользователем ${from.slice(-6)}`,
         );
       } catch (error) {
         console.error("Error handling answer:", error);
         updateCallStatus(
-          `❌ Ошибка обработки ответа: ${(error as Error).message}`
+          `❌ Ошибка обработки ответа: ${(error as Error).message}`,
         );
       }
     }
@@ -221,14 +221,14 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   // Handle ICE candidate
   const handleIceCandidate = async (
     from: string,
-    candidate: RTCIceCandidate
+    candidate: RTCIceCandidate,
   ): Promise<void> => {
     const pc = peerConnectionsRef.current.get(from);
     if (pc) {
       try {
         await pc.addIceCandidate(candidate);
         updateCallStatus(
-          `🧊 Обмен ICE-кандидатами с пользователем ${from.slice(-6)}`
+          `🧊 Обмен ICE-кандидатами с пользователем ${from.slice(-6)}`,
         );
       } catch (error) {
         console.error("Error adding ICE candidate:", error);
@@ -252,7 +252,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
     socket.on("user-joined", (userId: string) => {
       updateCallStatus(
-        `🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`
+        `🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`,
       );
       createOffer(userId);
     });
@@ -318,7 +318,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
       if ((error as Error).name === "NotAllowedError") {
         updateCallStatus("❌ Доступ к микрофону запрещен");
         alert(
-          "Для аудиозвонков необходим доступ к микрофону. Пожалуйста, разрешите доступ в настройках браузера."
+          "Для аудиозвонков необходим доступ к микрофону. Пожалуйста, разрешите доступ в настройках браузера.",
         );
       } else {
         updateCallStatus(`❌ Ошибка: ${(error as Error).message}`);
@@ -386,10 +386,6 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     };
   }, []);
 
-  useEffect(() => {
-    console.log("🔄 Online users changed:", onlineUsers);
-  }, [onlineUsers]);
-
   return (
     <div className={styles.roomHeader}>
       {/* Левая часть - информация о чате */}
@@ -415,12 +411,12 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
                     onlineUsers.filter((u) => u.online).length
                   } участников онлайн`
                 : onlineUsers.filter((u) => u.online).length === 1
-                ? `${
-                    onlineUsers.filter((u) => u.online).length
-                  } участник онлайн`
-                : `${
-                    onlineUsers.filter((u) => u.online).length
-                  } участника онлайн`}
+                  ? `${
+                      onlineUsers.filter((u) => u.online).length
+                    } участник онлайн`
+                  : `${
+                      onlineUsers.filter((u) => u.online).length
+                    } участника онлайн`}
             </span>
           </div>
           {isCallActive && (

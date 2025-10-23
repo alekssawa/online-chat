@@ -49,7 +49,14 @@ function AuthForm({ setIsAuthForm }: AuthFormProps) {
       mutation Login($email: String!, $password: String!) {
         login(email: $email, password: $password) {
           accessToken
-          user { id email name }
+          user { 
+            id 
+            email 
+            name 
+            avatar {  
+              url
+            }
+          }
         }
       }
     `;

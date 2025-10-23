@@ -19,6 +19,9 @@ const REFRESH_TOKEN_MUTATION = gql`
         id
         email
         name
+        avatar {
+          url
+        }
       }
     }
   }
@@ -66,6 +69,8 @@ export const useAuth = () => {
 
         const newToken = result.data.refreshToken.accessToken;
         const newUser = result.data.refreshToken.user;
+
+        // console.log(newUser);
 
         localStorage.setItem("accessToken", newToken);
         localStorage.setItem("user", JSON.stringify(newUser));
