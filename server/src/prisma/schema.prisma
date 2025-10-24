@@ -8,14 +8,53 @@ generator client {
 }
 
 model users {
-  id       String       @id @default(uuid())
-  email    String    @unique
-  name     String   @default("unknown")
-  password String
-  rooms    room_users[]
-  messages messages[] @relation("SentMessages")
-  tokens   RefreshToken[]
-  avatar     user_avatars?
+  id          String         @id @default(uuid())
+  email       String         @unique
+  name        String         @default("unknown")
+  nickname    String?         @unique        // ✅ Уникальный ник
+  password    String
+  about       String?                         // ✅ Информация о себе
+  birthDate   DateTime?                       // ✅ Дата рождения
+  lastOnline  DateTime?                       // ✅ Для отображения "времени захода"
+  rooms       room_users[]
+  messages    messages[]      @relation("SentMessages")
+  tokens      RefreshToken[]
+  avatar      user_avatars?
+  friends     friends[]       @relation("UserFriends")
+  privacy     privacy_settings?
+
+  // обратная сторона дружбы (чтобы видеть, кто добавил тебя)
+  friendOf    friends[]       @relation("FriendOf")
+}
+
+model friends {
+  id         String   @id @default(uuid())
+  userId     String
+  friendId   String
+  createdAt  DateTime @default(now())
+
+  user       users    @relation("UserFriends", fields: [userId], references: [id])
+  friend     users    @relation("FriendOf", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])  // нельзя добавить одного и того же друга дважды
+}
+
+model privacy_settings {
+  id                   String   @id @default(uuid())
+  userId               String   @unique
+  user                 users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  showLastOnline       PrivacyLevel @default(ALL)
+  showAbout            PrivacyLevel @default(ALL)
+  showEmail            PrivacyLevel @default(FRIENDS)
+  showBirthDate PrivacyLevel @default(FRIENDS)
+  allowCalls           PrivacyLevel @default(FRIENDS)
+}
+
+enum PrivacyLevel {
+  ALL       // видно всем
+  FRIENDS   // видно только друзьям
+  NONE      // видно никому
 }
 
 model RefreshToken {

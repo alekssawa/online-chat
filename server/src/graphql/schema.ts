@@ -1,13 +1,37 @@
 export const typeDefs = `#graphql
-  # Пользователь
   type User {
     id: ID!
     email: String!
     name: String!
-    # password: String!
+    nickname: String
+    about: String
+    birthDate: String
+    lastOnline: String
+    avatar: UserAvatar
+    friends: [Friend!]!
+    privacy: PrivacySettings
     rooms: [Room!]!
     messages: [Message!]!
-    avatar: UserAvatar
+  }
+
+  type Friend {
+    id: ID!
+    friend: User!
+    createdAt: String!
+  }
+
+  type PrivacySettings {
+    id: ID!
+    showLastOnline: PrivacyLevel!
+    showAbout: PrivacyLevel!
+    showEmail: PrivacyLevel!
+    allowCalls: PrivacyLevel!
+  }
+
+  enum PrivacyLevel {
+    ALL
+    FRIENDS
+    NONE
   }
 
   type AuthPayload {
@@ -16,7 +40,6 @@ export const typeDefs = `#graphql
     user: User!
   }
 
-  # Комната
   type Room {
     id: ID!
     name: String!
@@ -26,7 +49,6 @@ export const typeDefs = `#graphql
     avatar: RoomAvatar
   }
 
-  # Связь пользователей и комнат
   type RoomUser {
     id: ID!
     room: Room!
@@ -34,17 +56,15 @@ export const typeDefs = `#graphql
     joinedAt: String!
   }
 
-  # Сообщение
   type Message {
     id: ID!
     text: String!
     sentAt: String!
-    updatedAt: String!  
+    updatedAt: String!
     sender: User!
     room: Room!
   }
 
-  # Аватар пользователя
   type UserAvatar {
     id: ID!
     filename: String!
@@ -54,7 +74,6 @@ export const typeDefs = `#graphql
     url: String!
   }
 
-  # Аватар комнаты
   type RoomAvatar {
     id: ID!
     filename: String!
@@ -82,7 +101,29 @@ export const typeDefs = `#graphql
 
     createUser(email: String!, name: String, password: String!): User!
     uploadUserAvatar(userId: ID!, file: Upload!): UserAvatar!
-    updateUser(id: ID!, email: String, name: String, password: String): User!
+    updateUser(
+      id: ID!,
+      email: String,
+      name: String,
+      password: String,
+      nickname: String,
+      about: String,
+      birthDate: String
+    ): User!
+    updateProfile(
+      id: ID!,
+      nickname: String,
+      about: String,
+      birthDate: String
+    ): User!
+
+    updatePrivacySettings(
+      userId: ID!,
+      showEmail: Boolean,
+      showLastOnline: Boolean,
+      showBirthDate: Boolean
+    ): PrivacySettings!
+
     deleteUser(id: ID!): User!
 
     createRoom(name: String!, userId: ID!): Room!

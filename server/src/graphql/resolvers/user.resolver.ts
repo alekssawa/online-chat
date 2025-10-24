@@ -9,28 +9,26 @@ import { withAuth } from "../../lib/authDecorator.js"; // путь к твоем
 export const userResolvers = {
   Upload: GraphQLUpload,
   Query: {
-    users: withAuth(
-      async (
-        _: any,
-        __: any,
-        context: { req: AuthRequest; res: Response },
-      ): Promise<User[]> => {
-        return prisma.users.findMany();
-      },
-    ),
+    users: withAuth(async (_: any, __: any): Promise<User[]> => {
+      const users = await prisma.users.findMany();
+      return users.map((u) => ({
+        ...u,
+        birthDate: u.birthDate ? u.birthDate.toISOString() : null,
+        lastOnline: u.lastOnline ? u.lastOnline.toISOString() : null,
+      }));
+    }),
 
     // Поиск пользователя по ID
     user: withAuth(
-      async (
-        _: any,
-        { id }: { id: string },
-        context: { req: AuthRequest; res: Response },
-      ): Promise<User | null> => {
-        const user = await prisma.users.findUnique({
-          where: { id },
-        });
-        return user; // вернёт null, если не найден
-      },
+      async (_: any, { id }: { id: string }): Promise<User | null> => {
+        const user = await prisma.users.findUnique({ where: { id } });
+        if (!user) return null;
+        return {
+          ...user,
+          birthDate: user.birthDate ? user.birthDate.toISOString() : null,
+          lastOnline: user.lastOnline ? user.lastOnline.toISOString() : null,
+        };
+      }
     ),
   },
 
@@ -44,7 +42,7 @@ export const userResolvers = {
           password,
           name,
         }: { id: string; email?: string; password?: string; name?: string },
-        context: { req: AuthRequest; res: Response },
+        context: { req: AuthRequest; res: Response }
       ) => {
         const data: any = {};
         if (email) data.email = email;
@@ -52,12 +50,12 @@ export const userResolvers = {
         if (name) data.name = name;
 
         return prisma.users.update({ where: { id }, data });
-      },
+      }
     ),
     uploadUserAvatar: withAuth(
       async (
         _: any,
-        { userId, file }: { userId: string; file: Promise<FileUpload> },
+        { userId, file }: { userId: string; file: Promise<FileUpload> }
       ) => {
         const { createReadStream, filename, mimetype } = await file;
         const stream = createReadStream();
@@ -92,18 +90,74 @@ export const userResolvers = {
           url: `${process.env.API_URL}/avatar/${avatar.user.id}`,
           user: avatar.user,
         };
-      },
+      }
+    ),
+
+    updatePrivacySettings: withAuth(
+      async (
+        _: any,
+        {
+          userId,
+          showEmail,
+          showLastOnline,
+          showBirthDate,
+        }: {
+          userId: string;
+          showEmail?: boolean;
+          showLastOnline?: boolean;
+          showBirthDate?: boolean;
+        }
+      ) => {
+        const data: any = {};
+        if (showEmail !== undefined) data.showEmail = showEmail;
+        if (showLastOnline !== undefined) data.showLastOnline = showLastOnline;
+        if (showBirthDate !== undefined) data.showBirthDate = showBirthDate;
+
+        const updated = await prisma.privacy_settings.upsert({
+          where: { userId },
+          update: data,
+          create: { userId, ...data },
+          include: { user: true },
+        });
+
+        return {
+          id: updated.id,
+          showEmail: updated.showEmail,
+          showLastOnline: updated.showLastOnline,
+          showBirthDate: updated.showBirthDate,
+          user: updated.user,
+        };
+      }
+    ),
+
+    updateProfile: withAuth(
+      async (
+        _: any,
+        {
+          id,
+          nickname,
+          about,
+          birthDate,
+        }: { id: string; nickname?: string; about?: string; birthDate?: string }
+      ) => {
+        const data: any = {};
+        if (nickname !== undefined) data.nickname = nickname;
+        if (about !== undefined) data.about = about;
+        if (birthDate !== undefined) data.birthDate = new Date(birthDate);
+
+        return prisma.users.update({ where: { id }, data });
+      }
     ),
 
     deleteUser: withAuth(
       async (
         _: any,
         { id }: { id: string },
-        context: { req: AuthRequest; res: Response },
+        context: { req: AuthRequest; res: Response }
       ) => {
         await prisma.users.delete({ where: { id } });
         return true;
-      },
+      }
     ),
   },
 
@@ -127,7 +181,7 @@ export const userResolvers = {
       async (
         parent: User,
         _: any,
-        context: { req: AuthRequest; res: Response },
+        context: { req: AuthRequest; res: Response }
       ): Promise<Room[]> => {
         const roomUsers = await prisma.room_users.findMany({
           where: { userId: parent.id },
@@ -140,27 +194,53 @@ export const userResolvers = {
           ...ru.room,
           createdAt: ru.room.createdAt.toISOString(),
         }));
-      },
+      }
     ),
 
-    messages: withAuth(
-      async (
-        parent: User,
-        _: any,
-        context: { req: AuthRequest; res: Response },
-      ): Promise<Message[]> => {
-        const msgs = await prisma.messages.findMany({
-          where: { senderId: parent.id },
-          include: { sender: true, room: true },
-        });
+    messages: withAuth(async (parent: User): Promise<Message[]> => {
+      const msgs = await prisma.messages.findMany({
+        where: { senderId: parent.id },
+        include: { sender: true, room: true },
+      });
 
-        return msgs.map((m) => ({
-          ...m,
-          sentAt: m.sentAt.toISOString(),
-          updatedAt: m.updatedAt.toISOString(),
-          room: { ...m.room, createdAt: m.room.createdAt.toISOString() },
-        }));
-      },
-    ),
+      return msgs.map((m) => ({
+        ...m,
+        sentAt: m.sentAt.toISOString(),
+        updatedAt: m.updatedAt.toISOString(),
+        room: { ...m.room, createdAt: m.room.createdAt.toISOString() },
+        sender: {
+          ...m.sender,
+          birthDate: m.sender.birthDate
+            ? m.sender.birthDate.toISOString()
+            : null,
+          lastOnline: m.sender.lastOnline
+            ? m.sender.lastOnline.toISOString()
+            : null,
+        },
+      }));
+    }),
+
+    friends: async (parent: User) => {
+      const friends = await prisma.friends.findMany({
+        where: { userId: parent.id },
+        include: { friend: true },
+      });
+      return friends.map((f) => f.friend);
+    },
+
+    privacy: async (parent: User) => {
+      const settings = await prisma.privacy_settings.findUnique({
+        where: { userId: parent.id },
+      });
+      if (!settings) return null;
+
+      return {
+        id: settings.id,
+        showEmail: settings.showEmail,
+        showLastOnline: settings.showLastOnline,
+        showBirthDate: settings.showBirthDate,
+        user: parent,
+      };
+    },
   },
 };
