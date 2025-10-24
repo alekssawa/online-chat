@@ -124,6 +124,9 @@ export const typeDefs = `#graphql
       showBirthDate: Boolean
     ): PrivacySettings!
 
+    addFriend(userId: ID!, friendIdentifier: String!): User!
+    removeFriend(userId: ID!, friendIdentifier: String!): User!
+
     deleteUser(id: ID!): User!
 
     createRoom(name: String!, userId: ID!): Room!

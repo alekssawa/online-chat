@@ -149,6 +149,72 @@ export const userResolvers = {
       }
     ),
 
+    addFriend: withAuth(
+      async (
+        _: any,
+        {
+          userId,
+          friendIdentifier,
+        }: { userId: string; friendIdentifier: string }
+      ) => {
+        // Ищем пользователя, которого добавляем
+        const friend = await prisma.users.findFirst({
+          where: {
+            OR: [
+              { id: friendIdentifier },
+              { nickname: friendIdentifier },
+              { email: friendIdentifier },
+            ],
+          },
+        });
+
+        if (!friend) throw new Error("Пользователь не найден");
+
+        // Проверяем, что связь еще не существует
+        const existing = await prisma.friends.findFirst({
+          where: { userId, friendId: friend.id },
+        });
+
+        if (existing) throw new Error("Этот пользователь уже в друзьях");
+
+        // Создаем связь
+        await prisma.friends.create({
+          data: { userId, friendId: friend.id },
+        });
+
+        return prisma.users.findUnique({ where: { id: userId } });
+      }
+    ),
+
+    // Удаление друга
+    removeFriend: withAuth(
+      async (
+        _: any,
+        {
+          userId,
+          friendIdentifier,
+        }: { userId: string; friendIdentifier: string }
+      ) => {
+        const friend = await prisma.users.findFirst({
+          where: {
+            OR: [
+              { id: friendIdentifier },
+              { nickname: friendIdentifier },
+              { email: friendIdentifier },
+            ],
+          },
+        });
+
+        if (!friend) throw new Error("Пользователь не найден");
+
+        await prisma.friends.deleteMany({
+          where: { userId, friendId: friend.id },
+        });
+
+        return prisma.users.findUnique({ where: { id: userId } });
+      }
+    ),
+
     deleteUser: withAuth(
       async (
         _: any,
