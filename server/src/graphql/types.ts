@@ -1,16 +1,21 @@
+// ✅ Пользователь
 export interface User {
   id: string;
   email: string;
   name: string;
-  nickname?: string | null; // ✅ опциональный ник
-  about?: string | null;    // ✅ информация о себе
-  birthDate?: string | null; // ✅ дата рождения (ISO string)
-  lastOnline?: string | null; // ✅ время последнего входа
+  nickname?: string | null;
+  about?: string | null;
+  birthDate?: string | null; // ISO string
+  lastOnline?: string | null;
   avatar?: UserAvatar | null;
-  privacy?: PrivacySettings | null; // ✅ настройки конфиденциальности
-  friends?: Friend[]; // ✅ список друзей
+  privacy?: PrivacySettings | null;
+  friends?: Friend[];
+  groups?: GroupUser[]; // ✅ участие в группах
+  privateChats1?: PrivateChat[]; // ✅ чаты, где он user1
+  privateChats2?: PrivateChat[]; // ✅ чаты, где он user2
 }
 
+// ✅ Аватар пользователя
 export interface UserAvatar {
   id: string;
   filename: string;
@@ -19,53 +24,75 @@ export interface UserAvatar {
   user: User;
 }
 
-export interface Room {
+// ✅ Группы
+export interface Group {
   id: string;
   name: string;
   createdAt: string;
-  avatar?: RoomAvatar | null;
+  avatar?: GroupAvatar | null;
+  users?: GroupUser[];
+  messages?: Message[];
 }
 
-export interface RoomAvatar {
+// ✅ Аватар группы
+export interface GroupAvatar {
   id: string;
   filename: string;
   mimeType: string;
   uploadedAt: string;
-  room: Room;
+  group: Group;
 }
 
+// ✅ Участник группы
+export interface GroupUser {
+  id: string;
+  groupId: string;
+  userId: string;
+  joinedAt: string;
+  user: User;
+  group: Group;
+}
+
+// ✅ Приватный чат
+export interface PrivateChat {
+  id: string;
+  user1Id: string;
+  user2Id: string;
+  createdAt: string;
+  user1: User;
+  user2: User;
+  messages?: Message[];
+}
+
+// ✅ Сообщение
 export interface Message {
   id: string;
   text: string;
   senderId: string;
-  roomId: string;
   sentAt: string;
   updatedAt: string;
   sender?: User;
-  room?: Room;
+  // сообщение может быть либо в приватном чате, либо в группе
+  privateChatId?: string | null;
+  privateChat?: PrivateChat | null;
+  groupId?: string | null;
+  group?: Group | null;
 }
 
-export interface RoomUser {
-  id: string;
-  roomId: string;
-  userId: string;
-  joinedAt: string;
-  user: User;
-  room: Room;
-}
-
-// ✅ Новые интерфейсы
+// ✅ Друзья
 export interface Friend {
   id: string;
   friend: User;
   createdAt: string;
 }
 
+// ✅ Настройки приватности
 export interface PrivacySettings {
   id: string;
   showLastOnline: PrivacyLevel;
   showAbout: PrivacyLevel;
   showEmail: PrivacyLevel;
+  showBirthDate: PrivacyLevel; // ✅ добавлено, как в Prisma
   allowCalls: PrivacyLevel;
 }
 
