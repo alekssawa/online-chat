@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from "uuid";
 import { add } from "date-fns";
 
 import { generateTokens } from "../../lib/tokenService.js";
-import { refreshMiddleware } from "../../middlewares/refresh.middleware.js";
+import { refreshTokenCheck } from "../../middlewares/refresh.middleware.js";
 import type { RefreshRequest } from "../../middlewares/refresh.middleware.js";
 import type { Response } from "express";
 
@@ -17,7 +17,7 @@ export const authResolvers = {
         password,
         name,
       }: { email: string; password: string; name?: string },
-      context: { res: Response }, // получаем res из Express
+      context: { res: Response } // получаем res из Express
     ) => {
       // Проверяем, есть ли пользователь с таким email
       const existingUser = await prisma.users.findUnique({ where: { email } });
@@ -51,7 +51,7 @@ export const authResolvers = {
     login: async (
       _: any,
       { email, password }: { email: string; password: string },
-      context: { res: Response },
+      context: { res: Response }
     ) => {
       const user = await prisma.users.findUnique({ where: { email } });
       if (!user) throw new Error("User not found");
@@ -84,33 +84,24 @@ export const authResolvers = {
     refreshToken: async (
       _: any,
       __: any,
-      context: { req: RefreshRequest; res: Response },
+      context: { req: RefreshRequest; res: Response }
     ) => {
       const tokenFromCookie = context.req.cookies?.refreshToken;
-      if (!tokenFromCookie) throw new Error("Refresh token required");
 
-      // Передаём токен в middleware
-      context.req.body = { refreshToken: tokenFromCookie };
+      // Проверка токена
+      const userId = await refreshTokenCheck(tokenFromCookie);
 
-      await new Promise<void>((resolve, reject) => {
-        refreshMiddleware(context.req, context.res, (err?: any) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-
-      const userId = context.req.userId!;
+      // Генерация новых токенов
       const { accessToken, refreshToken } = await generateTokens(userId);
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-      // Удаляем старый токен
+      // Удаляем старый и сохраняем новый токен
       await prisma.refreshToken.deleteMany({ where: { userId } });
-
-      // Создаём новый
       await prisma.refreshToken.create({
         data: { token: refreshToken, userId, expiresAt },
       });
 
+      // Ставим cookie
       context.res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: false, // локально
@@ -119,6 +110,7 @@ export const authResolvers = {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
+      // Возвращаем новые токены и пользователя
       return {
         accessToken,
         user: await prisma.users.findUnique({ where: { id: userId } }),

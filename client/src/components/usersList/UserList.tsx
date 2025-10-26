@@ -6,18 +6,24 @@ import userIcon from "../../assets/icons/users.svg";
 import ToolsbarAddRooms from "./toolsbarSettings/ToolsbarSettings";
 import DefaultUserAvatar from "../../assets/icons/DefaultUserAvatar.svg?react";
 
-import type { FullRoom, User } from "../type";
+import type { GroupChat, PrivateChat, User } from "../type";
 
 interface UserListProps {
-  selectedRoom: FullRoom | null;
+  selectedChat: GroupChat | PrivateChat | null;
   loading: boolean;
   onlineUsers: { userId: string; online: boolean }[];
   setSelectedUser?: (user: User | null) => void;
   setIsUserPageOpen?: (isUserPageOpen: boolean) => void;
 }
 
+interface DisplayUser {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
 function UserList({
-  selectedRoom,
+  selectedChat,
   loading,
   onlineUsers,
   setSelectedUser,
@@ -25,9 +31,30 @@ function UserList({
 }: UserListProps) {
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
-  // console.log("UserList selectedRoom:", selectedRoom);
 
-  const users = selectedRoom?.users ?? [];
+  console.log(selectedChat);
+
+  // Получаем массив пользователей корректно
+  const users: DisplayUser[] = (() => {
+    if (!selectedChat) return [];
+
+    if ("users" in selectedChat) {
+      // GroupChat — теперь users это просто User[]
+      return (selectedChat.users ?? []).map((u) => ({
+        id: u.id,
+        name: u.name,
+        avatar: u.avatar?.url,
+      }));
+    } else {
+      // PrivateChat
+      return [
+        { id: (selectedChat as PrivateChat).user1Id, name: "User 1" },
+        { id: (selectedChat as PrivateChat).user2Id, name: "User 2" },
+      ];
+    }
+  })();
+
+  console.log("Users in UserList:", users);
 
   const sortedUsers = [...users].sort((a, b) => {
     // 1️⃣ Сначала наш юзер — всегда первый
@@ -41,13 +68,9 @@ function UserList({
     if (aOnline && !bOnline) return -1;
     if (!aOnline && bOnline) return 1;
 
-    // 3️⃣ Остальные — как есть (по алфавиту, если хочешь)
+    // 3️⃣ Остальные — по имени
     return a.name.localeCompare(b.name);
   });
-
-  console.log("UserList onlineUsers:", onlineUsers);
-  console.log(users);
-  console.log(user);
 
   return (
     <>
@@ -67,34 +90,47 @@ function UserList({
               )}
             </div>
           </div>
+
           <div className={styles.container_users}>
-            {selectedRoom && users.length > 0 ? (
-              <h4>
-                <img src={userIcon} className={styles.userIcon}></img>Users:
-              </h4>
-            ) : null}
-            {selectedRoom && users.length > 0 ? (
-              <ul>
-                {sortedUsers.map((u) => (
-                  <li
-                    key={u.id}
-                    onClick={() => {
-                      setSelectedUser?.(u);
-                      setIsUserPageOpen?.(true);
-                    }}
-                  >
-                    <UserBox
-                      avatar={u.avatar}
-                      userName={u.name}
-                      userId={u.id}
-                      onlineUsers={onlineUsers}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : null}
+            {selectedChat && users.length > 0 && (
+              <>
+                <h4>
+                  <img src={userIcon} className={styles.userIcon} /> Users:
+                </h4>
+                <ul>
+                  {sortedUsers.map((u) => (
+                    <li
+                      key={u.id}
+                      onClick={() => {
+                        let fullUser: User | null = null;
+
+                        if (selectedChat && "users" in selectedChat) {
+                          fullUser =
+                            selectedChat.users?.find((gu) => gu.id === u.id) ??
+                            null;
+                        } else {
+                          // Для PrivateChat пока оставляем null
+                          fullUser = null;
+                        }
+
+                        setSelectedUser?.(fullUser);
+                        setIsUserPageOpen?.(true);
+                      }}
+                    >
+                      <UserBox
+                        avatar={u.avatar ? { url: u.avatar } : undefined} // передаем строку URL
+                        userName={u.name}
+                        userId={u.id}
+                        onlineUsers={onlineUsers}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </div>
-          <ToolsbarAddRooms selectedRoom={selectedRoom} />
+
+          <ToolsbarAddRooms selectedRoom={selectedChat} />
         </div>
       )}
     </>

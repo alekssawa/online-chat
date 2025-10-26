@@ -6,7 +6,7 @@ import styles from "./SendMessage.module.css";
 import type { User } from "../../type";
 
 interface SendMessageProps {
-  roomId: string;
+  chatId: string;
   socket: typeof Socket | null;
   isSocketConnected: boolean;
 }
@@ -16,7 +16,7 @@ interface ContextMenuPosition {
   y: number;
 }
 
-function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
+function SendMessage({ chatId, socket, isSocketConnected }: SendMessageProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState(""); // Markdown
@@ -299,7 +299,7 @@ function SendMessage({ roomId, socket, isSocketConnected }: SendMessageProps) {
     // console.log("Отправляемый Markdown:", markdown);
 
     const message = {
-      roomId,
+      chatId,
       text: markdown,
       senderId: user.id,
       sender: { id: user.id, name: user.name },

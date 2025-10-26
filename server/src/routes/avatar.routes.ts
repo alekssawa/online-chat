@@ -33,13 +33,13 @@ router.get(
 );
 
 router.get(
-  "/room/:roomId",
+  "/group/:groupId",
   /*authMiddleware,*/ async (req: AuthRequest, res) => {
     try {
-      const { roomId } = req.params;
+      const { groupId } = req.params;
 
-      const avatar = await prisma.room_avatars.findUnique({
-        where: { room_id: roomId as string },
+      const avatar = await prisma.group_avatars.findUnique({
+        where: { group_id: groupId as string },
       });
 
       if (!avatar) return res.status(404).send("Avatar not found");

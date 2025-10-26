@@ -5,11 +5,11 @@ import styles from "./MessageView.module.css";
 import MessageBox from "./messageBox/MessageBox";
 import SendMessage from "./sendMessage/SendMessage";
 
-import type { User, Message, FullRoom, OnlineUser } from "../type";
+import type { GroupChat, PrivateChat, User, Message, OnlineUser } from "../type";
 import RoomHeader from "./roomHeader/RoomHeader";
 
 interface MessageViewProps {
-  selectedRoom: FullRoom | null;
+  selectedChat: GroupChat | PrivateChat | null;
   onlineUsers: { userId: string; online: boolean }[];
   setOnlineUsers: React.Dispatch<React.SetStateAction<OnlineUser[]>>;
 }
@@ -20,7 +20,7 @@ interface MessageGroup {
 }
 
 function MessageView({
-  selectedRoom,
+  selectedChat,
   onlineUsers,
   setOnlineUsers,
 }: MessageViewProps) {
@@ -33,9 +33,7 @@ function MessageView({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  const roomId = selectedRoom?.id ?? null;
-
-  // console.log(selectedRoom?.avatar)
+  const chatId = selectedChat?.id ?? null;
 
   // Прокрутка вниз при новых сообщениях
   useEffect(() => {
@@ -44,31 +42,35 @@ function MessageView({
 
   // Загрузка начальных сообщений
   useEffect(() => {
-    if (!selectedRoom) {
+    if (!selectedChat) {
       setMessages([]);
       return;
     }
 
-    const initialMessages: Message[] = selectedRoom.messages.map((m) => ({
+    const initialMessages: Message[] = selectedChat.messages.map((m) => ({
       id: m.id,
       text: m.text,
-      senderId: m.sender!.id,
-      roomId: selectedRoom.id,
+      senderId: m.sender?.id ?? "", 
+      chatId, // используем chatId вместо roomId
       sentAt: m.sentAt,
       updatedAt: m.updatedAt,
-      sender: {
-        id: m.sender!.id,
-        name: m.sender!.name,
-        email: m.sender!.email,
-      },
+      sender: m.sender
+        ? {
+            id: m.sender.id,
+            name: m.sender.name,
+            email: m.sender.email,
+          }
+        : { id: "", name: "Unknown", email: "" },
+      privateChatId: "user1Id" in selectedChat ? selectedChat.id : null,
+      groupId: "users" in selectedChat ? selectedChat.id : null,
     }));
 
     setMessages(initialMessages);
-  }, [selectedRoom]);
+  }, [selectedChat]);
 
   // Подключение Socket.IO
   useEffect(() => {
-    if (!roomId || !user) return;
+    if (!chatId || !user) return;
 
     if (!socketRef.current) {
       const socket = socketIOClient("http://localhost:3000", {
@@ -80,75 +82,49 @@ function MessageView({
       socket.on("disconnect", () => setIsSocketConnected(false));
 
       socket.on("newMessage", (message: Message) =>
-        setMessages((prev) => [...prev, message]),
+        setMessages((prev) => [...prev, message])
       );
 
-      // 1️⃣ Слушаем список всех онлайн при подключении
-      socket.on("onlineUsersList", (users: OnlineUser[]) => {
-        setOnlineUsers(users);
-      });
+      socket.on("onlineUsersList", (users: OnlineUser[]) => setOnlineUsers(users));
 
-      // 2️⃣ Слушаем изменения статуса
       socket.on("userStatusChanged", (status: OnlineUser) =>
         setOnlineUsers((prev) => {
           const filtered = prev.filter((u) => u.userId !== status.userId);
           return [...filtered, status];
-        }),
+        })
       );
-      console.log(onlineUsers);
     }
 
     const socket = socketRef.current;
-
-    // Входим в комнату
-    socket.emit("joinRoom", roomId);
+    socket.emit("joinRoom", chatId);
 
     return () => {
-      socket.emit("leaveRoom", roomId);
+      socket.emit("leaveRoom", chatId);
     };
-  }, [roomId]);
+  }, [chatId]);
 
-  if (!roomId) return <p>Выберите комнату</p>;
+  if (!chatId) return null;
 
-  // Функция для получения читаемой даты
   const getReadableDate = (dateString: string) => {
     const date = new Date(dateString);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    } else if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    } else {
-      return date.toLocaleDateString("en-US", {
-        day: "numeric",
-        month: "long",
-      }); // "12 октября"
-    }
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+
+    return date.toLocaleDateString("en-US", { day: "numeric", month: "long" });
   };
 
-  // В группировке используем эту функцию
-  const groupMessagesByDate = (
-    messages: Message[],
-  ): { [key: string]: MessageGroup } => {
+  const groupMessagesByDate = (messages: Message[]) => {
     const groups: { [key: string]: MessageGroup } = {};
-
     messages.forEach((message) => {
-      const dateKey = new Date(message.sentAt).toDateString(); // уникальный ключ
-      const readableDate = getReadableDate(message.sentAt); // читаемая дата
-
-      if (!groups[dateKey]) {
-        groups[dateKey] = {
-          date: readableDate,
-          messages: [],
-        };
-      }
-
+      const dateKey = new Date(message.sentAt).toDateString();
+      const readableDate = getReadableDate(message.sentAt);
+      if (!groups[dateKey]) groups[dateKey] = { date: readableDate, messages: [] };
       groups[dateKey].messages.push(message);
     });
-
     return groups;
   };
 
@@ -160,46 +136,45 @@ function MessageView({
           <p>Connecting...</p>
         </div>
       )}
+
       <RoomHeader
         onlineUsers={onlineUsers}
-        selectedRoom={selectedRoom}
+        selectedRoom={selectedChat}
         socket={socketRef.current}
       />
-      <ul>
-        {Object.entries(groupMessagesByDate(messages)).map(
-          ([dateKey, group]) => (
-            <div key={dateKey}>
-              <div className={styles.dateSeparator}>
-                <span className={styles.dateText}>{group.date}</span>
-              </div>
 
-              {group.messages.map((m: Message) => (
-                <li
-                  key={m.id}
-                  className={
-                    m.senderId === user?.id
-                      ? styles.MyMessageLi
-                      : styles.messageLi
-                  }
-                >
-                  <MessageBox
-                    id={m.id}
-                    text={m.text}
-                    senderId={m.senderId}
-                    roomId={m.roomId}
-                    sender={m.sender}
-                    sentAt={m.sentAt}
-                    updatedAt={m.updatedAt}
-                  />
-                </li>
-              ))}
+      <ul>
+        {Object.entries(groupMessagesByDate(messages)).map(([dateKey, group]) => (
+          <div key={dateKey}>
+            <div className={styles.dateSeparator}>
+              <span className={styles.dateText}>{group.date}</span>
             </div>
-          ),
-        )}
+
+            {group.messages.map((m) => (
+              <li
+                key={m.id}
+                className={m.senderId === user?.id ? styles.MyMessageLi : styles.messageLi}
+              >
+                <MessageBox
+                  id={m.id}
+                  text={m.text}
+                  senderId={m.senderId}
+                  chatId={chatId} // передаем chatId
+                  sender={m.sender}
+                  sentAt={m.sentAt}
+                  updatedAt={m.updatedAt}
+                  privateChatId={m.privateChatId}
+                  groupId={m.groupId}
+                />
+              </li>
+            ))}
+          </div>
+        ))}
         <div ref={messagesEndRef} />
       </ul>
+
       <SendMessage
-        roomId={roomId}
+        chatId={chatId}
         socket={socketRef.current}
         isSocketConnected={isSocketConnected}
       />

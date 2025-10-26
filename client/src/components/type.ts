@@ -31,7 +31,7 @@ export interface GroupChat {
   name: string;
   createdAt: string;
   avatar?: GroupAvatar | null;
-  users?: GroupUser[];
+  users?: User[];
   messages: Message[];
 }
 

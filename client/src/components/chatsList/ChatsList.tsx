@@ -193,7 +193,7 @@ function ChatsList({
 
       if (result.data?.groupChat) {
         setSelectedChat(result.data.groupChat);
-        // console.log(result.data.room);
+        // console.log(result.data.groupChat);
       }
 
       if (result.error) {

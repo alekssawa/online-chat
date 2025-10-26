@@ -12,10 +12,12 @@ interface MessageBoxProps {
   id: string;
   text: string;
   senderId: string;
-  roomId: string;
+  chatId: string;
   sentAt: string;
   updatedAt: string;
   sender?: User;
+  privateChatId?: string | null;
+  groupId?: string | null;
 }
 
 function MessageBox({ text, sentAt, sender }: MessageBoxProps) {

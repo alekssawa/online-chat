@@ -67,6 +67,7 @@ export const groupResolvers = {
 
         const group = await prisma.groups.findUnique({
           where: { id: groupId },
+          include: { users: { include: { user: true } } }, // чтобы вернуть пользователей
         });
         if (!group) {
           throw new GraphQLError("Группа не найдена", {
@@ -91,11 +92,24 @@ export const groupResolvers = {
         }
 
         try {
-          const groupUser = await prisma.group_users.create({
+          // Добавляем пользователя в группу
+          await prisma.group_users.create({
             data: { groupId, userId },
-            include: { user: true, group: true },
           });
-          return groupUser;
+
+          // Возвращаем саму группу с актуальными пользователями
+          const updatedGroup = await prisma.groups.findUnique({
+            where: { id: groupId },
+            include: { users: { include: { user: true } } },
+          });
+
+          if (!updatedGroup) {
+            throw new GraphQLError("Группа не найдена после обновления", {
+              extensions: { code: "NOT_FOUND" },
+            });
+          }
+
+          return updatedGroup;
         } catch (err) {
           console.error("Ошибка добавления пользователя в группу:", err);
           throw new GraphQLError("Не удалось добавить пользователя в группу", {
