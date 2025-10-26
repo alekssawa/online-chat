@@ -9,22 +9,9 @@ export interface User {
   avatar?: Avatar; // 👈 добавлено поле для аватара
 }
 
-// export interface Room {
-//   id: string;
-//   name: string;
-//   createdAt: string;
-//   avatar?: Avatar; // 👈 добавлено поле для аватара
-//   messages: Message[];
-// }
-
-// export interface FullRoom extends Room {
-//   id: string;
-//   name: string;
-//   createdAt: string;
-//   users: { id: string; email: string; name: string; avatar?: Avatar }[];
-//   messages: Message[];
-//   avatar?: Avatar;
-// }
+export type SelectedChat =
+  | { chat: GroupChat; type: "group" }
+  | { chat: PrivateChat; type: "private" };
 
 export interface GroupChat {
   id: string;
@@ -53,6 +40,8 @@ export interface PrivateChat {
   id: string;
   user1Id: string;
   user2Id: string;
+  user1: User;
+  user2: User;
   createdAt: string;
   messages: Message[];
 }

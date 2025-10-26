@@ -1,24 +1,34 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
 import styles from "./ChatsList.module.css";
-// import { useAuth } from "../../hooks/useAuth";
 
-import type { GroupChat, PrivateChat, User } from "../type";
+import type { GroupChat, PrivateChat, SelectedChat } from "../type";
 
 import DefaultGroupAvatar from "../../assets/icons/DefaultGroupAvatar.svg";
 import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
+// import { c } from "@apollo/client/react/internal/compiler-runtime";
+
+
 
 interface ChatsListProps {
-  setSelectedChat: (chat: GroupChat | PrivateChat) => void;
+  setSelectedChat: (chat: SelectedChat) => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
-// GraphQL запросы
-const GET_USER_GROUPCHAT = gql`
-  query GetUserGroupChats($userId: ID!) {
+interface ChatItem {
+  id: string;
+  name: string;
+  type: "group" | "private";
+  lastMessage?: string;
+  senderName?: string;
+  avatarUrl?: string;
+}
+
+const GET_USER_CHATS = gql`
+  query GetUserChats($userId: ID!) {
     user(id: $userId) {
       groupChats {
         id
@@ -31,10 +41,32 @@ const GET_USER_GROUPCHAT = gql`
           id
           text
           sentAt
-          updatedAt
           sender {
-            id
-            email
+            name
+          }
+        }
+      }
+      privateChats {
+        id
+        user1 {
+          id
+          name
+          avatar {
+            url
+          }
+        }
+        user2 {
+          id
+          name
+          avatar {
+            url
+          }
+        }
+        messages {
+          id
+          text
+          sentAt
+          sender {
             name
           }
         }
@@ -54,7 +86,6 @@ const GET_GROUPCHAT_DETAILS = gql`
       }
       users {
         id
-        email
         name
         avatar {
           url
@@ -64,10 +95,41 @@ const GET_GROUPCHAT_DETAILS = gql`
         id
         text
         sentAt
-        updatedAt
         sender {
           id
           email
+          name
+        }
+      }
+    }
+  }
+`;
+
+const GET_PRIVATECHAT_DETAILS = gql`
+  query GetPrivateChat($chatId: ID!) {
+    privateChat(chatId: $chatId) {
+      id
+      createdAt
+      user1 {
+        id
+        name
+        avatar {
+          url
+        }
+      }
+      user2 {
+        id
+        name
+        avatar {
+          url
+        }
+      }
+      messages {
+        id
+        text
+        sentAt
+        sender {
+          id
           name
         }
       }
@@ -81,199 +143,166 @@ function ChatsList({
   setLoading,
   setError,
 }: ChatsListProps) {
-  const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
+  const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
   const retryInterval = useRef<number | null>(null);
 
-  const userStr = localStorage.getItem("user");
-  const user: User | null = userStr ? JSON.parse(userStr) : null;
+  const user = useMemo(() => {
+    const userStr = localStorage.getItem("user");
+    return userStr ? JSON.parse(userStr) : null;
+  }, []);
 
-  // console.log(refreshCounter);
-
-  // Запрос для получения комнат пользователя
   const {
     data,
     loading: queryLoading,
     error,
     refetch,
   } = useQuery<
-  {
-    user: {
-      groupChats: GroupChat[];
-    } 
-  }, 
-  {
-    userId: string
-  }
-  >(GET_USER_GROUPCHAT, {
+    { user: { groupChats: GroupChat[]; privateChats: PrivateChat[] } },
+    { userId: string }
+  >(GET_USER_CHATS, {
     variables: { userId: user?.id || "" },
     skip: !user?.id,
     fetchPolicy: "network-only",
   });
 
-  // Lazy query для загрузки деталей комнаты с правильными типами
-  const [loadGroupChatDetails] = useLazyQuery<{groupChat: GroupChat}, {groupId: string}>(
-    GET_GROUPCHAT_DETAILS,
-    {
-      fetchPolicy: "cache-and-network",
-    },
-  );
+  const [loadGroupChatDetails] = useLazyQuery<
+    { groupChat: GroupChat },
+    { groupId: string }
+  >(GET_GROUPCHAT_DETAILS, { fetchPolicy: "cache-and-network" });
+  
+  const [loadPrivateChatDetails] = useLazyQuery<
+    { privateChat: PrivateChat },
+    { chatId: string }
+  >(GET_PRIVATECHAT_DETAILS, { fetchPolicy: "cache-and-network" });
 
-  // Обработка загрузки и ошибок
   useEffect(() => {
     setLoading(queryLoading);
   }, [queryLoading, setLoading]);
 
   useEffect(() => {
     if (error) {
-      console.error("Server connection error, starting retry interval", error);
-
       setLoading(true);
-
       if (!retryInterval.current) {
         retryInterval.current = window.setInterval(async () => {
           try {
-            console.log(
-              `[${new Date().toLocaleTimeString()}] retrying connection...`,
-            );
             await refetch();
-            console.log("✅ Server reconnected, stopping retry interval");
             setLoading(false);
             if (retryInterval.current) {
               clearInterval(retryInterval.current);
               retryInterval.current = null;
             }
-          } catch (err) {
-            console.warn("Retry failed:", err);
+          } catch {
             setLoading(true);
           }
         }, 10000);
       }
     }
-
     return () => {
-      if (retryInterval.current) {
-        clearInterval(retryInterval.current);
-        retryInterval.current = null;
-      }
+      if (retryInterval.current) clearInterval(retryInterval.current);
     };
   }, [error, refetch]);
 
-  // Обновление списка комнат при получении данных
   useEffect(() => {
-    if (data?.user?.groupChats) {
-      setGroupChats(data.user.groupChats);
-      setError(null);
-    }
-  }, [data, setError]);
+    if (!data?.user) return;
 
-  // Функция для принудительного обновления списка комнат
+    const items: ChatItem[] = [];
+
+    // group chats
+    data.user.groupChats.forEach((g) => {
+      const lastMsg = g.messages[g.messages.length - 1];
+      items.push({
+        id: g.id,
+        name: g.name,
+        type: "group",
+        lastMessage: lastMsg?.text,
+        senderName: lastMsg?.sender?.name,
+        avatarUrl: g.avatar?.url,
+      });
+    });
+
+    // private chats
+    data.user.privateChats.forEach((p) => {
+      const otherUser = p.user1.id === user?.id ? p.user2 : p.user1;
+      const lastMsg = p.messages[p.messages.length - 1];
+      items.push({
+        id: p.id,
+        name: otherUser.name,
+        type: "private",
+        lastMessage: lastMsg?.text,
+        senderName: lastMsg?.sender?.name,
+        avatarUrl: otherUser.avatar?.url,
+      });
+    });
+
+    setChatItems(items);
+    console.log("Chat items:", items);
+  }, [data, user]);
+
   const refreshChats = () => {
     setRefreshCounter((prev) => prev + 1);
     refetch();
   };
 
-  // Автоматическое обновление каждые 30 секунд
-  // useEffect(() => {
-  //   const intervalId = setInterval(() => {
-  //     console.log(`[${new Date().toLocaleTimeString()}] refresh RoomList`);
-  //     refetch();
-  //   }, 30000);
-
-  //   console.log("refresh RoomList")
-
-  //   return () => clearInterval(intervalId);
-  // }, [refetch]);
-
-  const handleSelectChat = async (groupId: string) => {
+  const handleSelectChat = async (item: ChatItem) => {
     try {
-      const result = await loadGroupChatDetails({
-        variables: { groupId },
-      });
-
-      if (result.data?.groupChat) {
-        setSelectedChat(result.data.groupChat);
-        // console.log(result.data.groupChat);
-      }
-
-      if (result.error) {
-        console.error("Ошибка при загрузке комнаты:", result.error);
-        setError(result.error.message);
-      }
-    } catch (err: unknown) {
-      console.error("Ошибка при загрузке комнаты:", err);
-      if (err instanceof Error) {
-        setError(err.message);
+      if (item.type === "group") {
+        const result = await loadGroupChatDetails({
+          variables: { groupId: item.id },
+        });
+        if (result.data?.groupChat)
+          setSelectedChat({ chat: result.data.groupChat, type: "group" });
       } else {
-        setError("Unknown error occurred");
+        const result = await loadPrivateChatDetails({
+          variables: { chatId: item.id },
+        });
+        if (result.data?.privateChat)
+          setSelectedChat({ chat: result.data.privateChat, type: "private" });
       }
+    } catch (err) {
+      if (err instanceof Error) setError(err.message);
+      else setError("Unknown error occurred");
     }
   };
 
   return (
     <>
-      {!loading && (
-        <div className={styles.container}>
-          <div className={styles.container_rooms}>
-            <h2 className={styles.text}>
-              search:
-            </h2>
+      <div className={styles.container}>
+        <div className={styles.container_rooms}>
+          <h2 className={styles.text}>search:</h2>
+
+          {!loading && (
             <ul>
-              {groupChats.map((groupChat) => (
-                <li key={groupChat.id}>
+              {chatItems.map((item) => (
+                <li key={item.id}>
                   <button
                     className={styles.roomButton}
-                    onClick={() => handleSelectChat(groupChat.id)}
+                    onClick={() => handleSelectChat(item)}
                   >
-                    {groupChat.avatar ? (
-                      <div className={styles.group_element}>
-                        <img
-                          className={styles.group_avatar}
-                          src={groupChat.avatar.url}
-                        />
-                        <div className={styles.groupInfo}>
-                          <p className={styles.groupName}>{groupChat.name}</p>
-                          <p className={styles.groupMessagePreview}>
-                            {groupChat.messages.length > 0
-                              ? `${
-                                  groupChat.messages[groupChat.messages.length - 1].sender
-                                    ?.name
-                                }:${" "}${
-                                  groupChat.messages[groupChat.messages.length - 1].text
-                                }`
-                              : ""}
-                          </p>
-                        </div>
+                    <div className={styles.group_element}>
+                      <img
+                        className={styles.group_avatar}
+                        src={item.avatarUrl || DefaultGroupAvatar}
+                        alt={item.name}
+                      />
+                      <div className={styles.groupInfo}>
+                        <p className={styles.groupName}>{item.name}</p>
+                        <p className={styles.groupMessagePreview}>
+                          {item.senderName
+                            ? `${item.senderName}: ${item.lastMessage}`
+                            : item.lastMessage}
+                        </p>
                       </div>
-                    ) : (
-                      <div className={styles.group_element}>
-                        <img
-                          className={styles.group_avatar}
-                          src={DefaultGroupAvatar}
-                        />
-                        <div className={styles.groupInfo}>
-                          <p className={styles.groupName}>{groupChat.name}</p>
-                          <p className={styles.groupMessagePreview}>
-                            {groupChat.messages.length > 0
-                              ? `${
-                                  groupChat.messages[groupChat.messages.length - 1].sender
-                                    ?.name
-                                }:${" "}${
-                                  groupChat.messages[groupChat.messages.length - 1].text
-                                }`
-                              : ""}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </button>
                 </li>
               ))}
             </ul>
-          </div>
-          <ToolsbarAddRooms onRoomCreated={refreshChats} />
+          )}
         </div>
-      )}
+
+        {!loading && <ToolsbarAddRooms onRoomCreated={refreshChats} />}
+      </div>
     </>
   );
 }

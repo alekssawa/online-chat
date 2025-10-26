@@ -6,10 +6,10 @@ import userIcon from "../../assets/icons/users.svg";
 import ToolsbarAddRooms from "./toolsbarSettings/ToolsbarSettings";
 import DefaultUserAvatar from "../../assets/icons/DefaultUserAvatar.svg?react";
 
-import type { GroupChat, PrivateChat, User } from "../type";
+import type { GroupChat, PrivateChat, SelectedChat, User } from "../type";
 
 interface UserListProps {
-  selectedChat: GroupChat | PrivateChat | null;
+  selectedChat: SelectedChat | null;
   loading: boolean;
   onlineUsers: { userId: string; online: boolean }[];
   setSelectedUser?: (user: User | null) => void;
@@ -34,41 +34,51 @@ function UserList({
 
   console.log(selectedChat);
 
-  // Получаем массив пользователей корректно
+  // 🧩 Определяем список пользователей в зависимости от типа чата
   const users: DisplayUser[] = (() => {
     if (!selectedChat) return [];
 
-    if ("users" in selectedChat) {
-      // GroupChat — теперь users это просто User[]
-      return (selectedChat.users ?? []).map((u) => ({
+    if (selectedChat.type === "group") {
+      const group = selectedChat.chat as GroupChat;
+      return (group.users ?? []).map((u) => ({
         id: u.id,
         name: u.name,
         avatar: u.avatar?.url,
       }));
-    } else {
-      // PrivateChat
+    }
+
+    if (selectedChat.type === "private") {
+      const chat = selectedChat.chat as PrivateChat;
       return [
-        { id: (selectedChat as PrivateChat).user1Id, name: "User 1" },
-        { id: (selectedChat as PrivateChat).user2Id, name: "User 2" },
+        {
+          id: chat.user1.id,
+          name: chat.user1.name,
+          avatar: chat.user1.avatar?.url,
+        },
+        {
+          id: chat.user2.id,
+          name: chat.user2.name,
+          avatar: chat.user2.avatar?.url,
+        },
       ];
     }
+
+    return [];
   })();
 
   console.log("Users in UserList:", users);
 
+  // 🔄 Сортировка пользователей
   const sortedUsers = [...users].sort((a, b) => {
-    // 1️⃣ Сначала наш юзер — всегда первый
     if (a.id === user?.id) return -1;
     if (b.id === user?.id) return 1;
 
-    // 2️⃣ Потом по онлайн-статусу
     const aOnline = onlineUsers.some((ou) => ou.userId === a.id && ou.online);
     const bOnline = onlineUsers.some((ou) => ou.userId === b.id && ou.online);
 
     if (aOnline && !bOnline) return -1;
     if (!aOnline && bOnline) return 1;
 
-    // 3️⃣ Остальные — по имени
     return a.name.localeCompare(b.name);
   });
 
@@ -76,6 +86,7 @@ function UserList({
     <>
       {!loading && (
         <div className={styles.container}>
+          {/* Профиль текущего пользователя */}
           <div className={styles.container_profile}>
             <div className={styles.settings}>
               <button className={styles.settings_button}>
@@ -91,6 +102,7 @@ function UserList({
             </div>
           </div>
 
+          {/* Список пользователей */}
           <div className={styles.container_users}>
             {selectedChat && users.length > 0 && (
               <>
@@ -104,13 +116,18 @@ function UserList({
                       onClick={() => {
                         let fullUser: User | null = null;
 
-                        if (selectedChat && "users" in selectedChat) {
+                        if (selectedChat.type === "group") {
+                          const group = selectedChat.chat as GroupChat;
                           fullUser =
-                            selectedChat.users?.find((gu) => gu.id === u.id) ??
-                            null;
-                        } else {
-                          // Для PrivateChat пока оставляем null
-                          fullUser = null;
+                            group.users?.find((gu) => gu.id === u.id) ?? null;
+                        } else if (selectedChat.type === "private") {
+                          const chat = selectedChat.chat as PrivateChat;
+                          fullUser =
+                            chat.user1.id === u.id
+                              ? chat.user1
+                              : chat.user2.id === u.id
+                              ? chat.user2
+                              : null;
                         }
 
                         setSelectedUser?.(fullUser);
@@ -118,7 +135,7 @@ function UserList({
                       }}
                     >
                       <UserBox
-                        avatar={u.avatar ? { url: u.avatar } : undefined} // передаем строку URL
+                        avatar={u.avatar ? { url: u.avatar } : undefined}
                         userName={u.name}
                         userId={u.id}
                         onlineUsers={onlineUsers}
@@ -130,7 +147,8 @@ function UserList({
             )}
           </div>
 
-          <ToolsbarAddRooms selectedRoom={selectedChat} />
+          {/* Нижняя панель */}
+          <ToolsbarAddRooms selectedRoom={selectedChat?.chat ?? null} />
         </div>
       )}
     </>

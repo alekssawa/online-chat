@@ -78,20 +78,20 @@ export function registerSocketHandlers(io: Server) {
     // ==========================
     // ГРУППОВЫЕ СООБЩЕНИЯ
     // ==========================
-    socket.on("joinGroup", (groupId: string) => {
+    socket.on("joinGroupChat", (groupId: string) => {
       if (!groupId) return;
       socket.join(`group-${groupId}`);
       console.log(`👥 User ${userId} joined group ${groupId}`);
     });
 
-    socket.on("leaveGroup", (groupId: string) => {
+    socket.on("leaveGroupChat", (groupId: string) => {
       if (!groupId) return;
       socket.leave(`group-${groupId}`);
       console.log(`🚪 User ${userId} left group ${groupId}`);
     });
 
     socket.on(
-      "sendGroupMessage",
+      "sendGroupChatMessage",
       async (data: { groupId: string; senderId: string; text: string }) => {
         if (!data.groupId || !data.senderId || !data.text) return;
         try {
@@ -152,7 +152,7 @@ export function registerSocketHandlers(io: Server) {
     });
 
     socket.on(
-      "sendPrivateMessage",
+      "sendPrivateChatMessage",
       async (data: { chatId: string; senderId: string; text: string }) => {
         if (!data.chatId || !data.senderId || !data.text) return;
         try {

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import styles from "./RoomHeader.module.css";
+import styles from "./ChatHeader.module.css";
 import DefaultGroupAvatar from "../../../assets/icons/DefaultGroupAvatar.svg";
 import AudioIcon from "../../../assets/icons/audioIcon.svg?react";
 import VideoIcon from "../../../assets/icons/videoIcon.svg?react";

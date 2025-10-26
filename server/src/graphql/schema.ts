@@ -48,6 +48,8 @@ export const typeDefs = `#graphql
     id: ID!
     user1Id: ID!
     user2Id: ID!
+    user1: User!
+    user2: User!
     messages: [Message!]!
     createdAt: String!
   }
@@ -98,8 +100,8 @@ export const typeDefs = `#graphql
     users: [User!]!
     user(id: ID!): User
 
-    privateChats(userId: ID!): [PrivateChat!]!
-    privateChat(id: ID!): PrivateChat
+    privateChats: [PrivateChat!]!  
+    privateChat(chatId: ID!): PrivateChat
 
     groupChats: [GroupChat!]!
     groupChat(id: ID!): GroupChat
