@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import General from "./pages/General/General";
+import General from "./pages/AuthPage/AuthPage";
 import ChatRoom from "./pages/ChatRoom/ChatRoom";
 
 // import Footer from "./components/footer/Footer";

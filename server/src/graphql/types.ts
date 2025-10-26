@@ -25,7 +25,7 @@ export interface UserAvatar {
 }
 
 // ✅ Группы
-export interface Group {
+export interface GroupChat {
   id: string;
   name: string;
   createdAt: string;
@@ -40,7 +40,7 @@ export interface GroupAvatar {
   filename: string;
   mimeType: string;
   uploadedAt: string;
-  group: Group;
+  group: GroupChat;
 }
 
 // ✅ Участник группы
@@ -50,7 +50,7 @@ export interface GroupUser {
   userId: string;
   joinedAt: string;
   user: User;
-  group: Group;
+  group?: GroupChat;
 }
 
 // ✅ Приватный чат
@@ -59,8 +59,6 @@ export interface PrivateChat {
   user1Id: string;
   user2Id: string;
   createdAt: string;
-  user1: User;
-  user2: User;
   messages?: Message[];
 }
 
@@ -74,9 +72,7 @@ export interface Message {
   sender?: User;
   // сообщение может быть либо в приватном чате, либо в группе
   privateChatId?: string | null;
-  privateChat?: PrivateChat | null;
   groupId?: string | null;
-  group?: Group | null;
 }
 
 // ✅ Друзья

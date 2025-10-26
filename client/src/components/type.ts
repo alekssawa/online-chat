@@ -9,11 +9,51 @@ export interface User {
   avatar?: Avatar; // 👈 добавлено поле для аватара
 }
 
-export interface Room {
+// export interface Room {
+//   id: string;
+//   name: string;
+//   createdAt: string;
+//   avatar?: Avatar; // 👈 добавлено поле для аватара
+//   messages: Message[];
+// }
+
+// export interface FullRoom extends Room {
+//   id: string;
+//   name: string;
+//   createdAt: string;
+//   users: { id: string; email: string; name: string; avatar?: Avatar }[];
+//   messages: Message[];
+//   avatar?: Avatar;
+// }
+
+export interface GroupChat {
   id: string;
   name: string;
   createdAt: string;
-  avatar?: Avatar; // 👈 добавлено поле для аватара
+  avatar?: GroupAvatar | null;
+  users?: GroupUser[];
+  messages: Message[];
+}
+
+export interface GroupAvatar {
+  url: string;
+}
+
+// ✅ Участник группы
+export interface GroupUser {
+  id: string;
+  groupId: string;
+  userId: string;
+  joinedAt: string;
+  user: User;
+  group?: GroupChat;
+}
+
+export interface PrivateChat {
+  id: string;
+  user1Id: string;
+  user2Id: string;
+  createdAt: string;
   messages: Message[];
 }
 
@@ -21,19 +61,11 @@ export interface Message {
   id: string;
   text: string;
   senderId: string;
-  roomId: string;
   sentAt: string;
   updatedAt: string;
   sender?: User;
-}
-
-export interface FullRoom extends Room {
-  id: string;
-  name: string;
-  createdAt: string;
-  users: { id: string; email: string; name: string; avatar?: Avatar }[];
-  messages: Message[];
-  avatar?: Avatar;
+  privateChatId?: string | null;
+  groupId?: string | null;
 }
 
 export interface OnlineUser {

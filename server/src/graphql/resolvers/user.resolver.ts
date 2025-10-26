@@ -132,7 +132,7 @@ export const userResolvers = {
       };
     },
 
-    groups: async (parent: User) => {
+    groupChats: async (parent: User) => {
       const groupUsers = await prisma.group_users.findMany({
         where: { userId: parent.id },
         include: { group: true },

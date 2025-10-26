@@ -12,7 +12,8 @@
     "prisma:migrate-all": " prisma migrate deploy --schema ./src/prisma/schema.prisma",
     "prisma:migrate-reset": "prisma migrate reset dev --schema=./src/prisma/schema.prisma",
     "prettier": "prettier --write \"**/*.{ts,tsx,css,js,jsx}\"",
-    "tree-cli": "npx tree-cli -l 10 --ignore node_modules"
+    "tree-cli": "npx tree-cli -l 10 --ignore node_modules",
+    "kill-port": "npx kill-port 3000"
   },
   "dependencies": {
     "@apollo/server": "^5.0.0",

@@ -1,15 +1,15 @@
 import { useState } from "react";
 import styles from "./ChatRoom.module.css";
 
-import RoomsList from "../../components/roomsList/RoomsList";
+import RoomsList from "../../components/chatsList/ChatsList";
 import UserList from "../../components/usersList/UserList";
 import MessageView from "../../components/messageView/MessageView";
 
-import type { FullRoom, User, OnlineUser } from "../../components/type";
+import type { GroupChat, PrivateChat, User, OnlineUser } from "../../components/type";
 import UserInfoPanel from "../../components/userInfoPanel/UserInfoPanel";
 
 function ChatRoom() {
-  const [selectedRoom, setSelectedRoom] = useState<FullRoom | null>(null);
+  const [selectedChat, setSelectedChat] = useState<GroupChat | PrivateChat | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
@@ -31,15 +31,15 @@ function ChatRoom() {
 
       <>
         <RoomsList
-          onSelectRoom={setSelectedRoom}
+          setSelectedChat={setSelectedChat}
           loading={loading}
           setLoading={setLoading}
           setError={setError}
         />
-        {selectedRoom && (
+        {selectedChat && (
           <>
             <MessageView
-              selectedRoom={selectedRoom}
+              selectedChat={selectedChat}
               onlineUsers={onlineUsers}
               setOnlineUsers={setOnlineUsers}
             />
@@ -53,7 +53,7 @@ function ChatRoom() {
           />
         ) : (
           <UserList
-            selectedRoom={selectedRoom}
+            selectedChat={selectedChat}
             loading={loading}
             onlineUsers={onlineUsers}
             setSelectedUser={setSelectedUser}

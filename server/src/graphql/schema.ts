@@ -1,4 +1,6 @@
 export const typeDefs = `#graphql
+  scalar Upload
+
   type User {
     id: ID!
     email: String!
@@ -10,7 +12,6 @@ export const typeDefs = `#graphql
     avatar: UserAvatar
     friends: [Friend!]!
     privacy: PrivacySettings
-    # 🔸 Чаты и сообщения
     privateChats: [PrivateChat!]!
     groupChats: [GroupChat!]!
     messages: [Message!]!
@@ -42,53 +43,38 @@ export const typeDefs = `#graphql
     user: User!
   }
 
-  # 🔹 Приватные чаты
+  # Приватные чаты
   type PrivateChat {
     id: ID!
-    user1: User!
-    user2: User!
-    messages: [PrivateMessage!]!
+    user1Id: ID!
+    user2Id: ID!
+    messages: [Message!]!
     createdAt: String!
   }
 
-  # 🔹 Групповые чаты
+  # Групповые чаты
   type GroupChat {
     id: ID!
     name: String!
     createdAt: String!
     users: [User!]!
-    messages: [GroupMessage!]!
-    avatar: RoomAvatar
+    messages: [Message!]!
+    avatar: GroupAvatar
   }
 
-  # 🔹 Сообщения
-  interface Message {
+  type Message {
     id: ID!
     text: String!
     sentAt: String!
     updatedAt: String!
     sender: User!
+    privateChatId: ID
+    privateChat: PrivateChat
+    groupId: ID
+    groupChat: GroupChat
   }
 
-  type PrivateMessage implements Message {
-    id: ID!
-    text: String!
-    sentAt: String!
-    updatedAt: String!
-    sender: User!
-    chat: PrivateChat!
-  }
-
-  type GroupMessage implements Message {
-    id: ID!
-    text: String!
-    sentAt: String!
-    updatedAt: String!
-    sender: User!
-    chat: GroupChat!
-  }
-
-  # 🔹 Аватары
+  # Аватары
   type UserAvatar {
     id: ID!
     filename: String!
@@ -98,16 +84,16 @@ export const typeDefs = `#graphql
     url: String!
   }
 
-  type RoomAvatar {
+  type GroupAvatar {
     id: ID!
     filename: String!
     mimeType: String!
     uploadedAt: String!
-    room: GroupChat!
+    group: GroupChat!
     url: String!
   }
 
-  # 🔹 Запросы
+  # Запросы
   type Query {
     users: [User!]!
     user(id: ID!): User
@@ -119,9 +105,7 @@ export const typeDefs = `#graphql
     groupChat(id: ID!): GroupChat
   }
 
-  # 🔹 Мутации
-  scalar Upload
-
+  # Мутации
   type Mutation {
     # --- Аутентификация ---
     register(email: String!, password: String!, name: String): AuthPayload!
@@ -147,7 +131,6 @@ export const typeDefs = `#graphql
       about: String,
       birthDate: String
     ): User!
-
     updatePrivacySettings(
       userId: ID!,
       showEmail: Boolean,
@@ -163,21 +146,21 @@ export const typeDefs = `#graphql
 
     # --- Приватные чаты ---
     createPrivateChat(user1Id: ID!, user2Id: ID!): PrivateChat!
-    sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!): PrivateMessage!
-    updatePrivateMessage(id: ID!, text: String!): PrivateMessage!
-    deletePrivateMessage(id: ID!): PrivateMessage!
+    sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!): Message!
+    updatePrivateMessage(id: ID!, text: String!): Message!
+    deletePrivateMessage(id: ID!): Message!
 
-    # --- Группы ---
+    # --- Групповые чаты ---
     createGroupChat(name: String!, creatorId: ID!): GroupChat!
-    uploadGroupAvatar(roomId: ID!, file: Upload!): RoomAvatar!
+    uploadGroupAvatar(groupId: ID!, file: Upload!): GroupAvatar!
     updateGroupChat(id: ID!, name: String!): GroupChat!
     deleteGroupChat(id: ID!): GroupChat!
 
-    addUserToGroup(roomId: ID!, userId: ID!): GroupChat!
-    removeUserFromGroup(roomId: ID!, userId: ID!): GroupChat!
+    addUserToGroup(groupId: ID!, userId: ID!): GroupChat!
+    removeUserFromGroup(groupId: ID!, userId: ID!): GroupChat!
 
-    sendGroupMessage(roomId: ID!, senderId: ID!, text: String!): GroupMessage!
-    updateGroupMessage(id: ID!, text: String!): GroupMessage!
-    deleteGroupMessage(id: ID!): GroupMessage!
+    sendGroupMessage(groupId: ID!, senderId: ID!, text: String!): Message!
+    updateGroupMessage(id: ID!, text: String!): Message!
+    deleteGroupMessage(id: ID!): Message!
   }
 `;

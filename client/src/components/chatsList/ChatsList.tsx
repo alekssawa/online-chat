@@ -1,27 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
-import styles from "./RoomsList.module.css";
+import styles from "./ChatsList.module.css";
 // import { useAuth } from "../../hooks/useAuth";
 
-import type { Room, User, FullRoom } from ".././type";
+import type { GroupChat, PrivateChat, User } from "../type";
 
 import DefaultGroupAvatar from "../../assets/icons/DefaultGroupAvatar.svg";
-import roomsIcon from "../../assets/icons/rooms2.svg";
 import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
 
-interface RoomsListProps {
-  onSelectRoom: (room: FullRoom) => void;
+interface ChatsListProps {
+  setSelectedChat: (chat: GroupChat | PrivateChat) => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
 }
 
 // GraphQL запросы
-const GET_USER_ROOMS = gql`
-  query GetUserRooms($userId: ID!) {
+const GET_USER_GROUPCHAT = gql`
+  query GetUserGroupChats($userId: ID!) {
     user(id: $userId) {
-      rooms {
+      groupChats {
         id
         name
         createdAt
@@ -44,9 +43,9 @@ const GET_USER_ROOMS = gql`
   }
 `;
 
-const GET_ROOM_DETAILS = gql`
-  query GetRoomDetails($roomId: ID!) {
-    room(id: $roomId) {
+const GET_GROUPCHAT_DETAILS = gql`
+  query GetGroupChatDetails($groupId: ID!) {
+    groupChat(id: $groupId) {
       id
       name
       createdAt
@@ -76,32 +75,13 @@ const GET_ROOM_DETAILS = gql`
   }
 `;
 
-// Типы для GraphQL ответов
-interface UserRoomsData {
-  user: {
-    rooms: Room[];
-  };
-}
-
-interface RoomDetailsData {
-  room: FullRoom;
-}
-
-interface UserRoomsVariables {
-  userId: string;
-}
-
-interface RoomDetailsVariables {
-  roomId: string;
-}
-
-function RoomsList({
-  onSelectRoom,
+function ChatsList({
+  setSelectedChat,
   loading,
   setLoading,
   setError,
-}: RoomsListProps) {
-  const [rooms, setRooms] = useState<Room[]>([]);
+}: ChatsListProps) {
+  const [groupChats, setGroupChats] = useState<GroupChat[]>([]);
   const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
   const retryInterval = useRef<number | null>(null);
 
@@ -116,15 +96,24 @@ function RoomsList({
     loading: queryLoading,
     error,
     refetch,
-  } = useQuery<UserRoomsData, UserRoomsVariables>(GET_USER_ROOMS, {
+  } = useQuery<
+  {
+    user: {
+      groupChats: GroupChat[];
+    } 
+  }, 
+  {
+    userId: string
+  }
+  >(GET_USER_GROUPCHAT, {
     variables: { userId: user?.id || "" },
     skip: !user?.id,
     fetchPolicy: "network-only",
   });
 
   // Lazy query для загрузки деталей комнаты с правильными типами
-  const [loadRoomDetails] = useLazyQuery<RoomDetailsData, RoomDetailsVariables>(
-    GET_ROOM_DETAILS,
+  const [loadGroupChatDetails] = useLazyQuery<{groupChat: GroupChat}, {groupId: string}>(
+    GET_GROUPCHAT_DETAILS,
     {
       fetchPolicy: "cache-and-network",
     },
@@ -172,15 +161,14 @@ function RoomsList({
 
   // Обновление списка комнат при получении данных
   useEffect(() => {
-    if (data?.user?.rooms) {
-      setRooms(data.user.rooms);
-      // console.log(data.user.rooms);
+    if (data?.user?.groupChats) {
+      setGroupChats(data.user.groupChats);
       setError(null);
     }
   }, [data, setError]);
 
   // Функция для принудительного обновления списка комнат
-  const refreshRooms = () => {
+  const refreshChats = () => {
     setRefreshCounter((prev) => prev + 1);
     refetch();
   };
@@ -197,14 +185,14 @@ function RoomsList({
   //   return () => clearInterval(intervalId);
   // }, [refetch]);
 
-  const handleSelectRoom = async (roomId: string) => {
+  const handleSelectChat = async (groupId: string) => {
     try {
-      const result = await loadRoomDetails({
-        variables: { roomId },
+      const result = await loadGroupChatDetails({
+        variables: { groupId },
       });
 
-      if (result.data?.room) {
-        onSelectRoom(result.data.room);
+      if (result.data?.groupChat) {
+        setSelectedChat(result.data.groupChat);
         // console.log(result.data.room);
       }
 
@@ -228,30 +216,30 @@ function RoomsList({
         <div className={styles.container}>
           <div className={styles.container_rooms}>
             <h2 className={styles.text}>
-              <img src={roomsIcon} className={styles.roomsIcon}></img>Rooms:
+              search:
             </h2>
             <ul>
-              {rooms.map((room) => (
-                <li key={room.id}>
+              {groupChats.map((groupChat) => (
+                <li key={groupChat.id}>
                   <button
                     className={styles.roomButton}
-                    onClick={() => handleSelectRoom(room.id)}
+                    onClick={() => handleSelectChat(groupChat.id)}
                   >
-                    {room.avatar ? (
+                    {groupChat.avatar ? (
                       <div className={styles.group_element}>
                         <img
                           className={styles.group_avatar}
-                          src={room.avatar.url}
+                          src={groupChat.avatar.url}
                         />
                         <div className={styles.groupInfo}>
-                          <p className={styles.groupName}>{room.name}</p>
+                          <p className={styles.groupName}>{groupChat.name}</p>
                           <p className={styles.groupMessagePreview}>
-                            {room.messages.length > 0
+                            {groupChat.messages.length > 0
                               ? `${
-                                  room.messages[room.messages.length - 1].sender
+                                  groupChat.messages[groupChat.messages.length - 1].sender
                                     ?.name
                                 }:${" "}${
-                                  room.messages[room.messages.length - 1].text
+                                  groupChat.messages[groupChat.messages.length - 1].text
                                 }`
                               : ""}
                           </p>
@@ -264,14 +252,14 @@ function RoomsList({
                           src={DefaultGroupAvatar}
                         />
                         <div className={styles.groupInfo}>
-                          <p className={styles.groupName}>{room.name}</p>
+                          <p className={styles.groupName}>{groupChat.name}</p>
                           <p className={styles.groupMessagePreview}>
-                            {room.messages.length > 0
+                            {groupChat.messages.length > 0
                               ? `${
-                                  room.messages[room.messages.length - 1].sender
+                                  groupChat.messages[groupChat.messages.length - 1].sender
                                     ?.name
                                 }:${" "}${
-                                  room.messages[room.messages.length - 1].text
+                                  groupChat.messages[groupChat.messages.length - 1].text
                                 }`
                               : ""}
                           </p>
@@ -283,11 +271,11 @@ function RoomsList({
               ))}
             </ul>
           </div>
-          <ToolsbarAddRooms onRoomCreated={refreshRooms} />
+          <ToolsbarAddRooms onRoomCreated={refreshChats} />
         </div>
       )}
     </>
   );
 }
 
-export default RoomsList;
+export default ChatsList;
