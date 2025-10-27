@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "prettier": "prettier --write \"**/*.{ts,tsx,css,js,jsx}\"",
     "tree-cli": "npx tree-cli -l 10 --ignore node_modules",
+    "LLM": "set OLLAMA_MODELS=H:\\LLM_models && cd .. && ollama serve",
     "myOpenCommit": "cd .. && myoco"
   },
   "dependencies": {
