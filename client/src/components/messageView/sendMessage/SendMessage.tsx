@@ -3,10 +3,10 @@ import { Socket } from "socket.io-client";
 import TurndownService from "turndown";
 import styles from "./SendMessage.module.css";
 
-import type { User } from "../../type";
+import type { SelectedChat, User } from "../../type";
 
 interface SendMessageProps {
-  chatId: string;
+  selectedChat: SelectedChat | null;
   socket: typeof Socket | null;
   isSocketConnected: boolean;
 }
@@ -16,7 +16,11 @@ interface ContextMenuPosition {
   y: number;
 }
 
-function SendMessage({ chatId, socket, isSocketConnected }: SendMessageProps) {
+function SendMessage({
+  selectedChat,
+  socket,
+  isSocketConnected,
+}: SendMessageProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const [text, setText] = useState(""); // Markdown
@@ -288,7 +292,7 @@ function SendMessage({ chatId, socket, isSocketConnected }: SendMessageProps) {
   };
 
   const handleSend = () => {
-    if (!socket || !user) return;
+    if (!socket || !user || !selectedChat) return;
 
     const html = editorRef.current?.innerHTML || "";
     let markdown = turndown.turndown(html);
@@ -296,17 +300,23 @@ function SendMessage({ chatId, socket, isSocketConnected }: SendMessageProps) {
 
     if (!markdown.trim()) return;
 
-    // console.log("Отправляемый Markdown:", markdown);
+    if (selectedChat.type === "group") {
+      // Сообщение в групповой чат
+      socket.emit("sendGroupChatMessage", {
+        groupId: selectedChat.chat.id,
+        senderId: user.id,
+        text: markdown,
+      });
+    } else {
+      // Сообщение в приватный чат
+      socket.emit("sendPrivateChatMessage", {
+        chatId: selectedChat.chat.id,
+        senderId: user.id,
+        text: markdown,
+      });
+    }
 
-    const message = {
-      chatId,
-      text: markdown,
-      senderId: user.id,
-      sender: { id: user.id, name: user.name },
-    };
-
-    socket.emit("sendMessage", message);
-
+    // Очистка редактора
     if (editorRef.current) editorRef.current.innerHTML = "";
     setText("");
   };
@@ -318,10 +328,7 @@ function SendMessage({ chatId, socket, isSocketConnected }: SendMessageProps) {
 
   // Также добавим логирование в handleInput
   const handleInput = () => {
-    // console.log("=== handleInput вызван ===");
-    // console.log("editor innerHTML:", editorRef.current?.innerHTML);
     updateMarkdownState();
-    // console.log("text состояние после handleInput:", text);
   };
 
   return (

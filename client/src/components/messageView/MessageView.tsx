@@ -6,7 +6,7 @@ import MessageBox from "./messageBox/MessageBox";
 import SendMessage from "./sendMessage/SendMessage";
 
 import type { SelectedChat, User, Message, OnlineUser } from "../type";
-import RoomHeader from "./chatHeader/ChatHeader";
+import ChatHeader from "./chatHeader/ChatHeader";
 // import { c } from "@apollo/client/react/internal/compiler-runtime";
 
 interface MessageViewProps {
@@ -36,7 +36,7 @@ function MessageView({
 
   const chatId = selectedChat?.chat.id ?? null;
 
-  console.log("MessageView selectedChat:", selectedChat);
+  // console.log("MessageView selectedChat:", selectedChat);
 
   // Прокрутка вниз при новых сообщениях
   useEffect(() => {
@@ -70,7 +70,7 @@ function MessageView({
 
   // Подключение Socket.IO
   useEffect(() => {
-    if (!chatId || !user || !selectedChat?.type) return; // chatType = "private" | "group"
+    if (!chatId || !user || !selectedChat?.type) return;
 
     if (!socketRef.current) {
       const socket = socketIOClient("http://localhost:3000", {
@@ -81,35 +81,43 @@ function MessageView({
       socket.on("connect", () => setIsSocketConnected(true));
       socket.on("disconnect", () => setIsSocketConnected(false));
 
-      socket.on("newMessage", (message: Message) =>
-        setMessages((prev) => [...prev, message])
-      );
-
       socket.on("onlineUsersList", (users: OnlineUser[]) =>
-        setOnlineUsers(users)
+        setOnlineUsers(users),
       );
 
       socket.on("userStatusChanged", (status: OnlineUser) =>
         setOnlineUsers((prev) => {
           const filtered = prev.filter((u) => u.userId !== status.userId);
           return [...filtered, status];
-        })
+        }),
       );
     }
 
     const socket = socketRef.current;
 
-    // 🔹 различаем тип комнаты
-    const roomEvent =
-      selectedChat?.type === "group" ? "joinGroupChat" : "joinPrivateChat";
-      console.log("Emitting to room:", roomEvent, chatId);
-    const leaveEvent =
-      selectedChat?.type === "group" ? "leaveGroupChat" : "leavePrivateChat";
+    // 🔹 Подписка на новые сообщения в зависимости от типа чата
+    const handleNewMessage = (message: Message) => {
+      console.log("Received new message:", message);
+      setMessages((prev) => [...prev, message]);
+      console.log(messages);
+    };
 
-    socket.emit(roomEvent, chatId);
+    if (selectedChat.type === "group") {
+      socket.emit("joinGroupChat", chatId);
+      socket.on("newGroupMessage", handleNewMessage);
+    } else {
+      socket.emit("joinPrivateChat", chatId);
+      socket.on("newPrivateMessage", handleNewMessage);
+    }
 
     return () => {
-      socket.emit(leaveEvent, chatId);
+      if (selectedChat.type === "group") {
+        socket.emit("leaveGroupChat", chatId);
+        socket.off("newGroupMessage", handleNewMessage);
+      } else {
+        socket.emit("leavePrivateChat", chatId);
+        socket.off("newPrivateMessage", handleNewMessage);
+      }
     };
   }, [chatId, selectedChat?.type]);
 
@@ -128,14 +136,25 @@ function MessageView({
   };
 
   const groupMessagesByDate = (messages: Message[]) => {
+    // 1️⃣ Сначала сортируем сообщения по дате отправки
+    const sortedMessages = [...messages].sort(
+      (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
+    );
+
+    // 2️⃣ Группируем по дате
     const groups: { [key: string]: MessageGroup } = {};
-    messages.forEach((message) => {
+
+    sortedMessages.forEach((message) => {
       const dateKey = new Date(message.sentAt).toDateString();
       const readableDate = getReadableDate(message.sentAt);
-      if (!groups[dateKey])
+
+      if (!groups[dateKey]) {
         groups[dateKey] = { date: readableDate, messages: [] };
+      }
+
       groups[dateKey].messages.push(message);
     });
+
     return groups;
   };
 
@@ -148,15 +167,20 @@ function MessageView({
         </div>
       )}
 
-      <RoomHeader
+      <ChatHeader
         onlineUsers={onlineUsers}
-        selectedRoom={selectedChat?.chat ?? null}
+        selectedChat={selectedChat}
         socket={socketRef.current}
       />
 
       <ul>
-        {Object.entries(groupMessagesByDate(messages)).map(
-          ([dateKey, group]) => (
+        {Object.entries(groupMessagesByDate(messages))
+          // 3️⃣ Сортируем группы по дате (чтобы старые были сверху, новые — внизу)
+          .sort(
+            ([dateA], [dateB]) =>
+              new Date(dateA).getTime() - new Date(dateB).getTime(),
+          )
+          .map(([dateKey, group]) => (
             <div key={dateKey}>
               <div className={styles.dateSeparator}>
                 <span className={styles.dateText}>{group.date}</span>
@@ -185,13 +209,12 @@ function MessageView({
                 </li>
               ))}
             </div>
-          )
-        )}
+          ))}
         <div ref={messagesEndRef} />
       </ul>
 
       <SendMessage
-        chatId={chatId}
+        selectedChat={selectedChat}
         socket={socketRef.current}
         isSocketConnected={isSocketConnected}
       />
