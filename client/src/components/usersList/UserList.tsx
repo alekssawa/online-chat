@@ -32,7 +32,7 @@ function UserList({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  console.log(selectedChat);
+  // console.log(selectedChat);
 
   // 🧩 Определяем список пользователей в зависимости от типа чата
   const users: DisplayUser[] = (() => {
@@ -126,8 +126,8 @@ function UserList({
                             chat.user1.id === u.id
                               ? chat.user1
                               : chat.user2.id === u.id
-                              ? chat.user2
-                              : null;
+                                ? chat.user2
+                                : null;
                         }
 
                         setSelectedUser?.(fullUser);

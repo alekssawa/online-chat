@@ -9,8 +9,6 @@ import DefaultGroupAvatar from "../../assets/icons/DefaultGroupAvatar.svg";
 import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
 // import { c } from "@apollo/client/react/internal/compiler-runtime";
 
-
-
 interface ChatsListProps {
   setSelectedChat: (chat: SelectedChat) => void;
   loading: boolean;
@@ -116,12 +114,42 @@ const GET_PRIVATECHAT_DETAILS = gql`
         avatar {
           url
         }
+        nickname
+        about
+        birthDate
+        lastOnline
+        friends {
+            id
+            createdAt
+        }
+        privacy {
+            id
+            showLastOnline
+            showAbout
+            showEmail
+            allowCalls
+        }
       }
       user2 {
         id
         name
         avatar {
           url
+        }
+        nickname
+        about
+        birthDate
+        lastOnline
+        friends {
+            id
+            createdAt
+        }
+        privacy {
+            id
+            showLastOnline
+            showAbout
+            showEmail
+            allowCalls
         }
       }
       messages {
@@ -170,7 +198,7 @@ function ChatsList({
     { groupChat: GroupChat },
     { groupId: string }
   >(GET_GROUPCHAT_DETAILS, { fetchPolicy: "cache-and-network" });
-  
+
   const [loadPrivateChatDetails] = useLazyQuery<
     { privateChat: PrivateChat },
     { chatId: string }
@@ -236,7 +264,7 @@ function ChatsList({
     });
 
     setChatItems(items);
-    console.log("Chat items:", items);
+    // console.log("Chat items:", items);
   }, [data, user]);
 
   const refreshChats = () => {

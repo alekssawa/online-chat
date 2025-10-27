@@ -6,8 +6,25 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  avatar?: Avatar; // 👈 добавлено поле для аватара
+  avatar?: Avatar;
+  nickname?: string | null;
+  about?: string | null;
+  birthDate?: string | null;
+  lastOnline?: string | null;
+  privacy?: PrivacySettings | null;
 }
+
+export interface PrivacySettings {
+  id: string;
+  showLastOnline: PrivacyLevel;
+  showAbout: PrivacyLevel;
+  showEmail: PrivacyLevel;
+  showBirthDate: PrivacyLevel; // ✅ добавлено, как в Prisma
+  allowCalls: PrivacyLevel;
+}
+
+export type PrivacyLevel = "ALL" | "FRIENDS" | "NONE";
+
 
 export type SelectedChat =
   | { chat: GroupChat; type: "group" }

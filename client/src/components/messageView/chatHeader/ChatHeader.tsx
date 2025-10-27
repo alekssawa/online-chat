@@ -5,11 +5,11 @@ import AudioIcon from "../../../assets/icons/audioIcon.svg?react";
 import VideoIcon from "../../../assets/icons/videoIcon.svg?react";
 import MenuIcon from "../../../assets/icons/menuIcon.svg?react";
 import SearchIcon from "../../../assets/icons/searchIcon.svg?react";
-import type { FullRoom } from "../../type";
+import type { SelectedChat, User } from "../../type";
 import { Socket } from "socket.io-client";
 
 interface RoomHeaderProps {
-  selectedRoom: FullRoom | null;
+  selectedChat: SelectedChat | null;
   onlineUsers: { userId: string; online: boolean }[];
   socket: typeof Socket | null; // ← Исправлен тип
 }
@@ -27,7 +27,8 @@ interface SocketSignalData {
   signal: WebRTCSignal;
 }
 
-function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
+function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
+  console.log("RoomHeader selectedChat1:", selectedChat);
   // Refs для WebRTC
   const localAudioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -41,6 +42,9 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
   const currentRoomRef = useRef<string | null>(null);
+
+  const userStr = localStorage.getItem("user");
+  const user: User | null = userStr ? JSON.parse(userStr) : null;
 
   // Update status message
   const updateCallStatus = (message: string) => {
@@ -279,12 +283,12 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
   // Join room for calls
   const joinCallRoom = async (): Promise<void> => {
-    if (!selectedRoom || !socket) {
+    if (!selectedChat || !socket) {
       alert("Пожалуйста, выберите комнату и убедитесь в подключении");
       return;
     }
 
-    const roomIdValue = selectedRoom.id;
+    const roomIdValue = selectedChat.chat.id;
 
     try {
       updateCallStatus("🎤 Запрос доступа к микрофону...");
@@ -362,7 +366,7 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
 
   // Start audio call
   const startAudioCall = async (): Promise<void> => {
-    if (!selectedRoom || !socket) {
+    if (!selectedChat || !socket) {
       alert("Пожалуйста, выберите комнату для звонка");
       return;
     }
@@ -386,6 +390,20 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
     };
   }, []);
 
+  console.log("ChatHeader selectedChat:", selectedChat);
+  console.log("ChatHeader user:", user);
+
+  if (selectedChat?.type === "private")
+    {
+      if (selectedChat.chat.user1.id === user?.id) {
+        console.log(selectedChat.chat.user2.lastOnline);
+      } else {
+        console.log(selectedChat.chat.user1.lastOnline);
+      }
+    } else {
+      console.log("ChatHeader group:", selectedChat?.type)
+    }
+
   return (
     <div className={styles.roomHeader}>
       {/* Левая часть - информация о чате */}
@@ -393,31 +411,47 @@ function RoomHeader({ selectedRoom, onlineUsers, socket }: RoomHeaderProps) {
         <div className={styles.avatar}>
           <img
             src={
-              selectedRoom?.avatar
-                ? selectedRoom.avatar.url
-                : DefaultGroupAvatar
+              selectedChat?.type === "private"
+                ? selectedChat.chat.user1.id === user?.id
+                  ? selectedChat.chat.user2.avatar?.url || DefaultGroupAvatar
+                  : selectedChat.chat.user1.avatar?.url || DefaultGroupAvatar
+                : selectedChat?.chat.avatar?.url || DefaultGroupAvatar
             }
             alt="Chat avatar"
             className={styles.avatarImage}
           />
         </div>
         <div className={styles.chatDetails}>
-          <h2 className={styles.chatName}>{selectedRoom?.name}</h2>
+          <h2 className={styles.chatName}>
+            {selectedChat?.type === "private"
+              ? selectedChat.chat.user1.id === user?.id
+                ? selectedChat.chat.user2.name
+                : selectedChat.chat.user1.name
+              : selectedChat?.chat.name}
+          </h2>
           <div className={styles.onlineStatus}>
-            <span className={styles.statusDot}></span>
-            <span className={styles.statusText}>
-              {onlineUsers.filter((u) => u.online).length > 5
-                ? `${
-                    onlineUsers.filter((u) => u.online).length
-                  } участников онлайн`
-                : onlineUsers.filter((u) => u.online).length === 1
-                  ? `${
-                      onlineUsers.filter((u) => u.online).length
-                    } участник онлайн`
-                  : `${
-                      onlineUsers.filter((u) => u.online).length
-                    } участника онлайн`}
-            </span>
+            {selectedChat?.type === "private" ? 
+              selectedChat.chat.user1.id === user?.id ?
+                selectedChat.chat.user2.lastOnline == null ? <span className={styles.statusText}>был(а) давно</span> : selectedChat.chat.user2.lastOnline 
+                : selectedChat.chat.user1.lastOnline == null ? <span className={styles.statusText}>был(а) давно</span> : selectedChat.chat.user1.lastOnline 
+              : (
+              <>
+                <span className={styles.statusDot}></span>
+                <span className={styles.statusText}>
+                  {onlineUsers.filter((u) => u.online).length > 5
+                    ? `${
+                        onlineUsers.filter((u) => u.online).length
+                      } участников онлайн`
+                    : onlineUsers.filter((u) => u.online).length === 1
+                      ? `${
+                          onlineUsers.filter((u) => u.online).length
+                        } участник онлайн`
+                      : `${
+                          onlineUsers.filter((u) => u.online).length
+                        } участника онлайн`}
+                </span>
+              </>
+            )}
           </div>
           {isCallActive && (
             <div className={styles.callStatus}>

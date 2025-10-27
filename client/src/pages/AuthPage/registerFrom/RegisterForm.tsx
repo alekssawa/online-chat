@@ -63,6 +63,21 @@ function RegisterForm({ setIsAuthForm }: RegisterFormProps) {
             avatar {  
               url
             }
+            nickname
+            about
+            birthDate
+            lastOnline
+            friends {
+                id
+                createdAt
+            }
+            privacy {
+                id
+                showLastOnline
+                showAbout
+                showEmail
+                allowCalls
+            }
           }
         }
       }

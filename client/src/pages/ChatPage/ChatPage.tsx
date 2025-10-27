@@ -8,11 +8,8 @@ import MessageView from "../../components/messageView/MessageView";
 import type { SelectedChat, User, OnlineUser } from "../../components/type";
 import UserInfoPanel from "../../components/userInfoPanel/UserInfoPanel";
 
-
-
 function ChatRoom() {
-
-  const [selectedChat, setSelectedChat] = useState<SelectedChat  | null>(null);
+  const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
