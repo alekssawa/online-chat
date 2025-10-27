@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "prettier": "prettier --write \"**/*.{ts,tsx,css,js,jsx}\"",
-    "tree-cli": "npx tree-cli -l 10 --ignore node_modules"
+    "tree-cli": "npx tree-cli -l 10 --ignore node_modules",
+    "myOpenCommit": "myoco"
   },
   "dependencies": {
     "@apollo/client": "^4.0.7",
