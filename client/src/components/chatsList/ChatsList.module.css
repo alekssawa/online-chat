@@ -1,29 +1,31 @@
 .container {
-  width: 200px;
-  min-width: 200px;
+  width: 20vw;
+  min-width: 300px;
   height: 100vh;
   display: flex;
-  flex-direction: column; /* вертикальная раскладка */
+  flex-direction: column;
+  /* вертикальная раскладка */
   color: white;
   background-color: #182533;
 }
 
 .groupInfo {
   display: flex;
-  flex-direction: column; /* имя сверху, статус снизу */
+  flex-direction: column;
+  /* имя сверху, статус снизу */
   align-items: start;
 }
 
 .container_rooms {
-  flex: 1; /* занимает всё доступное место */
-  overflow-y: auto; /* скроллится только список */
+  flex: 1;
+  /* занимает всё доступное место */
+  overflow-y: auto;
+  /* скроллится только список */
   padding: 20px;
   text-align: center;
 }
 
-.container_rooms h2 {
-  margin-bottom: 10px;
-}
+
 
 .container ul li {
   display: flex;
@@ -59,18 +61,21 @@
   width: 40px;
   height: 40px;
   margin-right: 10px;
-  border-radius: 50%; /* делает форму круглой */
+  border-radius: 50%;
+  /* делает форму круглой */
 
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden; /* чтобы контент не выходил за круг */
+  overflow: hidden;
+  /* чтобы контент не выходил за круг */
 }
 
 .group_avatar img {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* ✅ сохраняет пропорции, не растягивает */
+  object-fit: cover;
+  /* ✅ сохраняет пропорции, не растягивает */
 }
 
 .groupName {
@@ -79,8 +84,84 @@
 
 .groupMessagePreview {
   font-size: 12px;
-  max-width: 100px; /* максимальная ширина блока */
-  white-space: nowrap; /* не переносить на следующую строку */
-  overflow: hidden; /* обрезать лишнее */
-  text-overflow: ellipsis; /* показать "..." */
+  max-width: 100px;
+  /* максимальная ширина блока */
+  white-space: nowrap;
+  /* не переносить на следующую строку */
+  overflow: hidden;
+  /* обрезать лишнее */
+  text-overflow: ellipsis;
+  /* показать "..." */
+}
+
+.header {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menuIcon {
+  display: flex;
+  width: auto;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  /* color: white; */
+}
+
+.menuIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.menuIcon:hover {
+  cursor: pointer;
+  background-color: #2a3b52;
+  border-radius: 8px;
+}
+
+.searchContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  color: #666;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 12px 40px 12px 40px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.searchInput:focus {
+  border-color: #007bff;
+}
+
+.clearButton {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.clearButton:hover {
+  filter: brightness(0.8);
 }

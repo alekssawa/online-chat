@@ -1,8 +1,8 @@
 .container {
   display: flex;
   flex-direction: column;
-  width: 200px;
-  min-width: 200px;
+  width: 15vw;
+  min-width: 250px;
   height: 100vh;
   overflow-y: auto;
   text-align: center;
@@ -91,4 +91,10 @@
   width: 20px;
   height: 20px;
   fill: white;
+}
+
+@media (max-width: 768px) {
+  .container {
+    display: none;
+  }
 }

@@ -6,7 +6,9 @@ import { useQuery, useLazyQuery } from "@apollo/client/react";
 import styles from "./ChatsList.module.css";
 
 import DefaultGroupAvatar from "../../assets/icons/DefaultGroupAvatar.svg";
-import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
+import MenuIcon from "../../assets/icons/MenuIcon2.svg?react";
+// import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
+import SlideOutMenu from "./slideOutMenu/SlideOutMenu";
 
 import type { GroupChat, PrivateChat, SelectedChat, Message } from "../type";
 
@@ -43,7 +45,7 @@ const ChatListItem = React.memo(
   }) => {
     return (
       <li onClick={() => onSelect(item)}>
-        <button className={styles.roomButton} >
+        <button className={styles.roomButton}>
           <div className={styles.group_element}>
             <img
               className={styles.group_avatar}
@@ -213,10 +215,12 @@ function ChatsList({
   setError,
   SetUpdateFunction,
 }: ChatsListProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
-  const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
+  // const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
   const retryInterval = useRef<number | null>(null);
   const client = useApolloClient();
+  const [searchValue, setSearchValue] = useState("");
 
   const user = useMemo(() => {
     const userStr = localStorage.getItem("user");
@@ -400,10 +404,10 @@ function ChatsList({
     // console.log("Chat items:", items);
   }, [data, user]);
 
-  const refreshChats = () => {
-    setRefreshCounter((prev) => prev + 1);
-    refetch();
-  };
+  // const refreshChats = () => {
+  //   setRefreshCounter((prev) => prev + 1);
+  //   refetch();
+  // };
 
   const handleSelectChat = async (item: ChatItem) => {
     try {
@@ -426,12 +430,76 @@ function ChatsList({
     }
   };
 
+  const handleMenuToggle = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleMenuClose = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       {!loading && (
         <div className={styles.container}>
           <div className={styles.container_rooms}>
-            <h2 className={styles.text}>search:</h2>
+            <div className={styles.header}>
+              <div className={styles.menuIcon} onClick={handleMenuToggle}>
+                <MenuIcon />
+              </div>
+              <SlideOutMenu
+                isOpen={isMenuOpen}
+                onClose={handleMenuClose}
+              ></SlideOutMenu>
+              <div className={styles.searchContainer}>
+                <div className={styles.searchIcon}>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M21 21L16.514 16.506L21 21ZM19 10.5C19 15.194 15.194 19 10.5 19C5.806 19 2 15.194 2 10.5C2 5.806 5.806 2 10.5 2C15.194 2 19 5.806 19 10.5Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className={styles.searchInput}
+                  value={searchValue}
+                  onChange={(e) => setSearchValue(e.target.value)}
+                />
+                {searchValue && (
+                  <button
+                    className={styles.clearButton}
+                    onClick={() => setSearchValue("")}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18 6L6 18M6 6L18 18"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
             <ul>
               {chatItems.map((item) => (
                 <ChatListItem
@@ -443,7 +511,7 @@ function ChatsList({
             </ul>
           </div>
 
-          {!loading && <ToolsbarAddRooms onRoomCreated={refreshChats} />}
+          {/* {!loading && <ToolsbarAddRooms onRoomCreated={refreshChats} />} */}
         </div>
       )}
     </>
