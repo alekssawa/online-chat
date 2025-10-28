@@ -13,6 +13,7 @@ interface MessageViewProps {
   selectedChat: SelectedChat | null;
   onlineUsers: OnlineUser[];
   setOnlineUsers: React.Dispatch<React.SetStateAction<OnlineUser[]>>;
+  updateChatLastMessage: (chatId: string, newMessage: { text: string; senderName?: string }) => void;
 }
 
 interface MessageGroup {
@@ -24,6 +25,7 @@ function MessageView({
   selectedChat,
   onlineUsers,
   setOnlineUsers,
+  updateChatLastMessage
 }: MessageViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
@@ -217,6 +219,7 @@ function MessageView({
         selectedChat={selectedChat}
         socket={socketRef.current}
         isSocketConnected={isSocketConnected}
+        updateChatLastMessage={updateChatLastMessage}
       />
     </div>
   );

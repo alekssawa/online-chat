@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import styles from "./ChatPage.module.css";
 
 import ChatsList from "../../components/chatsList/ChatsList";
@@ -14,6 +14,14 @@ function ChatRoom() {
   const [loading, setLoading] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const [, /*error*/ setError] = useState<string | null>(null);
+
+  const [updateChatLastMessage, setUpdateChatLastMessage] = useState<
+    (chatId: string, newMessage: { text: string; senderName?: string }) => void
+  >(() => () => {});
+
+  const handleUpdateFunction = useCallback((updateFn: (chatId: string, newMessage: { text: string; senderName?: string }) => void) => {
+    setUpdateChatLastMessage(() => updateFn);
+  }, []);
 
   const [isUserPageOpen, setIsUserPageOpen] = useState(false);
 
@@ -35,6 +43,7 @@ function ChatRoom() {
           loading={loading}
           setLoading={setLoading}
           setError={setError}
+          SetUpdateFunction={handleUpdateFunction}
         />
         {selectedChat && (
           <>
@@ -42,11 +51,13 @@ function ChatRoom() {
               selectedChat={selectedChat}
               onlineUsers={onlineUsers}
               setOnlineUsers={setOnlineUsers}
+              updateChatLastMessage={updateChatLastMessage}
             />
           </>
         )}
         {isUserPageOpen ? (
           <UserInfoPanel
+
             selectedUser={selectedUser}
             setIsUserPageOpen={setIsUserPageOpen}
             onlineUsers={onlineUsers}

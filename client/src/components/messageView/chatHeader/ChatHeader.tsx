@@ -445,14 +445,6 @@ function declOfNum(n: number, titles: [string, string, string]) {
     };
   }, []);
 
-  // console.log("ChatHeader selectedChat:", selectedChat);
-  // console.log("ChatHeader user:", user);
-//   console.log(getUserStatus(
-//   selectedChat?.type === "private" ? selectedChat.chat.user2?.id : undefined,
-//   "1761503924", 
-//   onlineUsers
-// ))
-
   if (selectedChat?.type === "private")
     {
       if (selectedChat.chat.user1.id === user?.id) {
@@ -503,19 +495,12 @@ function declOfNum(n: number, titles: [string, string, string]) {
               )
               : (
               <>
-                <span className={styles.statusDot}></span>
                 <span className={styles.statusText}>
-                  {onlineUsers.filter((u) => u.online).length > 5
-                    ? `${
-                        onlineUsers.filter((u) => u.online).length
-                      } участников онлайн`
-                    : onlineUsers.filter((u) => u.online).length === 1
-                      ? `${
-                          onlineUsers.filter((u) => u.online).length
-                        } участник онлайн`
-                      : `${
-                          onlineUsers.filter((u) => u.online).length
-                        } участника онлайн`}
+                  {selectedChat?.chat?.users && selectedChat.chat.users.length > 5
+                    ? `${selectedChat?.chat.users?.length} участников, ${onlineUsers.filter((u) => u.online).length} в сети`
+                    : selectedChat?.chat.users?.length === 1
+                      ? `${selectedChat?.chat.users?.length} участник, ${onlineUsers.filter((u) => u.online).length} в сети`
+                      : `${selectedChat?.chat.users?.length} участника, ${onlineUsers.filter((u) => u.online).length} в сети`}
                 </span>
               </>
             )}
