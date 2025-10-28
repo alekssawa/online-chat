@@ -381,7 +381,6 @@ function ChatsList({
         senderName: lastMsg?.sender?.name,
         avatarUrl: g.avatar?.url,
       });
-      console.log("Group chat lastMsg:", lastMsg.text);
     });
 
     // private chats
@@ -397,7 +396,6 @@ function ChatsList({
         senderName: lastMsg?.sender?.name,
         avatarUrl: otherUser.avatar?.url,
       });
-      console.log("privateChat lastMsg:", lastMsg.text);
     });
 
     setChatItems(items);

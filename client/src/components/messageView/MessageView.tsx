@@ -99,9 +99,7 @@ function MessageView({
 
     // 🔹 Подписка на новые сообщения в зависимости от типа чата
     const handleNewMessage = (message: Message) => {
-      console.log("Received new message:", message);
       setMessages((prev) => [...prev, message]);
-      console.log(messages);
     };
 
     if (selectedChat.type === "group") {

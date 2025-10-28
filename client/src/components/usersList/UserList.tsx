@@ -66,7 +66,6 @@ function UserList({
     return [];
   })();
 
-  console.log("Users in UserList:", users);
 
   // 🔄 Сортировка пользователей
   const sortedUsers = [...users].sort((a, b) => {
