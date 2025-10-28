@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import styles from "./ChatHeader.module.css";
-import DefaultGroupAvatar from "../../../assets/icons/DefaultGroupAvatar.svg";
+
 import AudioIcon from "../../../assets/icons/audioIcon.svg?react";
 import VideoIcon from "../../../assets/icons/videoIcon.svg?react";
 import MenuIcon from "../../../assets/icons/menuIcon.svg?react";
@@ -28,7 +28,6 @@ interface SocketSignalData {
 }
 
 function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
-  console.log("RoomHeader selectedChat1:", selectedChat);
   // Refs для WebRTC
   const localAudioRef = useRef<HTMLAudioElement>(null);
   const remoteAudioRef = useRef<HTMLAudioElement>(null);
@@ -445,34 +444,10 @@ function declOfNum(n: number, titles: [string, string, string]) {
     };
   }, []);
 
-  if (selectedChat?.type === "private")
-    {
-      if (selectedChat.chat.user1.id === user?.id) {
-        console.log(selectedChat.chat.user2.lastOnline);
-      } else {
-        console.log(selectedChat.chat.user1.lastOnline);
-      }
-    } else {
-      console.log("ChatHeader group:", selectedChat?.type)
-    }
-
   return (
     <div className={styles.roomHeader}>
       {/* Левая часть - информация о чате */}
       <div className={styles.chatInfo}>
-        <div className={styles.avatar}>
-          <img
-            src={
-              selectedChat?.type === "private"
-                ? selectedChat.chat.user1.id === user?.id
-                  ? selectedChat.chat.user2.avatar?.url || DefaultGroupAvatar
-                  : selectedChat.chat.user1.avatar?.url || DefaultGroupAvatar
-                : selectedChat?.chat.avatar?.url || DefaultGroupAvatar
-            }
-            alt="Chat avatar"
-            className={styles.avatarImage}
-          />
-        </div>
         <div className={styles.chatDetails}>
           <h2 className={styles.chatName}>
             {selectedChat?.type === "private"

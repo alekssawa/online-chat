@@ -34,17 +34,25 @@ export function registerSocketHandlers(io: Server) {
     // ==========================
     // 📞 ЛОГИКА WEBRTC ЗВОНКОВ
     // ==========================
-    socket.on("join-call", (callId: string) => {
-      if (!callId) return;
+    socket.on("join-room", (roomId: string) => {
+      if (!roomId) return;
 
-      // Leave previous call rooms
+      // Leave previous rooms
       socket.rooms.forEach((room) => {
         if (room !== socket.id && room.startsWith("call-")) {
           socket.leave(room);
+          // Remove from callRooms
+          const roomSet = callRooms.get(room);
+          if (roomSet) {
+            roomSet.delete(socket.id);
+            if (roomSet.size === 0) {
+              callRooms.delete(room);
+            }
+          }
         }
       });
 
-      const callRoomId = `call-${callId}`;
+      const callRoomId = `call-${roomId}`;
       socket.join(callRoomId);
 
       if (!callRooms.has(callRoomId)) {
@@ -57,15 +65,34 @@ export function registerSocketHandlers(io: Server) {
       // Add current user to room
       room?.add(socket.id);
 
-      // Send existing users to new user
-      socket.emit("users-in-call", otherUsers);
+      // Send existing users to new user (исправленное событие)
+      socket.emit("users-in-room", otherUsers);
 
-      // Notify other users about new user
-      otherUsers.forEach((userSocketId) => {
-        socket.to(userSocketId).emit("user-joined-call", socket.id);
+      // Notify other users about new user (исправленное событие)
+      socket.to(callRoomId).emit("user-joined", socket.id);
+
+      console.log(`🎧 User ${socket.id} joined room ${callRoomId}`);
+      console.log(`👥 Room ${callRoomId} users:`, Array.from(room || []));
+    });
+
+    // Обработчик отключения пользователя
+    socket.on("disconnect", () => {
+      console.log(`❌ Socket disconnected: ${socket.id}, userId=${userId}`);
+      onlineUsers.delete(userId);
+      
+      // Удаляем пользователя из всех комнат
+      callRooms.forEach((users, roomId) => {
+        if (users.has(socket.id)) {
+          users.delete(socket.id);
+          // Уведомляем остальных пользователей
+          socket.to(roomId).emit("user-left", socket.id);
+          if (users.size === 0) {
+            callRooms.delete(roomId);
+          }
+        }
       });
-
-      console.log(`🎧 Call room ${callRoomId} users:`, Array.from(room || []));
+      
+      socket.broadcast.emit("userStatusChanged", { userId, online: false });
     });
 
     socket.on("webrtc-signal", (data: { to: string; signal: any }) => {
@@ -73,6 +100,7 @@ export function registerSocketHandlers(io: Server) {
         from: socket.id,
         signal: data.signal,
       });
+      console.log(`🔔 WebRTC signal from ${socket.id} to ${data.to}`);
     });
 
     // ==========================
