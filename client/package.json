@@ -7,7 +7,7 @@
     "dev": "vite",
     "devHOST": "vite --host",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "depcheck": "depcheck",
     "preview": "vite preview",
     "prettier": "prettier --write \"**/*.{ts,tsx,css,js,jsx}\"",
     "tree-cli": "npx tree-cli -l 10 --ignore node_modules",
