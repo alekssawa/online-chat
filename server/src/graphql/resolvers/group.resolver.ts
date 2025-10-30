@@ -28,7 +28,7 @@ export const groupResolvers = {
     createGroupChat: withAuth(
       async (
         _: any,
-        { name, creatorId }: { name: string; creatorId: string }
+        { name, creatorId }: { name: string; creatorId: string },
       ) => {
         if (!name || !creatorId) {
           throw new GraphQLError("name и creatorId обязательны", {
@@ -51,13 +51,13 @@ export const groupResolvers = {
         });
 
         return { ...group, createdAt: group.createdAt.toISOString() };
-      }
+      },
     ),
 
     addUserToGroup: withAuth(
       async (
         _: any,
-        { groupId, userId }: { groupId: string; userId: string }
+        { groupId, userId }: { groupId: string; userId: string },
       ) => {
         if (!groupId || !userId) {
           throw new GraphQLError("groupId и userId обязательны", {
@@ -116,13 +116,13 @@ export const groupResolvers = {
             extensions: { code: "INTERNAL_SERVER_ERROR" },
           });
         }
-      }
+      },
     ),
 
     removeUserFromGroup: withAuth(
       async (
         _: any,
-        { groupId, userId }: { groupId: string; userId: string }
+        { groupId, userId }: { groupId: string; userId: string },
       ) => {
         if (!groupId || !userId) {
           throw new GraphQLError("groupId и userId обязательны", {
@@ -151,13 +151,13 @@ export const groupResolvers = {
             extensions: { code: "INTERNAL_SERVER_ERROR" },
           });
         }
-      }
+      },
     ),
 
     uploadGroupAvatar: withAuth(
       async (
         _: any,
-        { groupId, file }: { groupId: string; file: Promise<FileUpload> }
+        { groupId, file }: { groupId: string; file: Promise<FileUpload> },
       ) => {
         if (!groupId || !file) {
           throw new GraphQLError("groupId и file обязательны", {
@@ -208,7 +208,7 @@ export const groupResolvers = {
             createdAt: group.createdAt.toISOString(),
           },
         };
-      }
+      },
     ),
   },
 

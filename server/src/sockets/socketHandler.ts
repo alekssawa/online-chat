@@ -24,7 +24,7 @@ export function registerSocketHandlers(io: Server) {
       ([id, online]) => ({
         userId: id,
         online,
-      })
+      }),
     );
     socket.emit("onlineUsersList", currentOnline);
 
@@ -79,7 +79,7 @@ export function registerSocketHandlers(io: Server) {
     socket.on("disconnect", () => {
       console.log(`❌ Socket disconnected: ${socket.id}, userId=${userId}`);
       onlineUsers.delete(userId);
-      
+
       // Удаляем пользователя из всех комнат
       callRooms.forEach((users, roomId) => {
         if (users.has(socket.id)) {
@@ -91,7 +91,7 @@ export function registerSocketHandlers(io: Server) {
           }
         }
       });
-      
+
       socket.broadcast.emit("userStatusChanged", { userId, online: false });
     });
 
@@ -161,7 +161,7 @@ export function registerSocketHandlers(io: Server) {
             message: "Не удалось отправить сообщение в группу",
           });
         }
-      }
+      },
     );
 
     // ==========================
@@ -222,7 +222,7 @@ export function registerSocketHandlers(io: Server) {
             message: "Не удалось отправить сообщение в приватный чат",
           });
         }
-      }
+      },
     );
 
     // ==========================

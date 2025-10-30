@@ -84,7 +84,7 @@ export const privateChatResolvers = {
     createPrivateChat: withAuth(
       async (
         _: any,
-        { user1Id, user2Id }: { user1Id: string; user2Id: string }
+        { user1Id, user2Id }: { user1Id: string; user2Id: string },
       ) => {
         if (!user1Id || !user2Id) {
           throw new GraphQLError("user1Id и user2Id обязательны", {
@@ -111,7 +111,7 @@ export const privateChatResolvers = {
         if (existingChat) {
           throw new GraphQLError(
             "Чат между этими пользователями уже существует",
-            { extensions: { code: "BAD_USER_INPUT" } }
+            { extensions: { code: "BAD_USER_INPUT" } },
           );
         }
 
@@ -125,7 +125,7 @@ export const privateChatResolvers = {
           user2Id: chat.user2Id,
           createdAt: chat.createdAt.toISOString(),
         };
-      }
+      },
     ),
 
     sendPrivateMessage: withAuth(
@@ -135,7 +135,7 @@ export const privateChatResolvers = {
           chatId,
           senderId,
           text,
-        }: { chatId: string; senderId: string; text: string }
+        }: { chatId: string; senderId: string; text: string },
       ): Promise<Message> => {
         if (!chatId || !senderId || !text) {
           throw new GraphQLError("chatId, senderId и text обязательны", {
@@ -177,7 +177,7 @@ export const privateChatResolvers = {
           privateChatId: message.privateChatId,
           groupId: null,
         };
-      }
+      },
     ),
   },
 };
