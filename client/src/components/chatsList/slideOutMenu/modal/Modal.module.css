@@ -57,3 +57,7 @@
 .modalBody {
   padding: 20px;
 }
+
+.modalBody ul{
+  color: white;
+}

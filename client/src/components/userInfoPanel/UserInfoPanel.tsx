@@ -27,6 +27,7 @@ function UserInfoPanel({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
+  console.log(selectedChat)
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -130,9 +131,30 @@ function UserInfoPanel({
           <p>
             {selectedChat?.type === "private"
               ? selectedChat.chat.user1.id === user?.id
+                ? selectedChat.chat.user2.nickname
+                : selectedChat.chat.user1.nickname
+              : selectedUser?.nickname}
+          </p>
+          <p>
+            {selectedChat?.type === "private"
+              ? selectedChat.chat.user1.id === user?.id
+                ? selectedChat.chat.user2.about
+                : selectedChat.chat.user1.about
+              : selectedUser?.about}
+          </p>
+          <p>
+            {selectedChat?.type === "private"
+              ? selectedChat.chat.user1.id === user?.id
                 ? selectedChat.chat.user2.email
                 : selectedChat.chat.user1.email
               : selectedUser?.email}
+          </p>
+          <p>
+            {selectedChat?.type === "private"
+              ? selectedChat.chat.user1.id === user?.id
+                ? selectedChat.chat.user2.birthDate
+                : selectedChat.chat.user1.birthDate
+              : selectedUser?.birthDate}
           </p>
         </div>
         <div className={styles.actions}>

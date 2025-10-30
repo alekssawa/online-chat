@@ -55,9 +55,6 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
         <div className={styles.modalHeader}>
           <h2>Friends</h2>
-          <button className={styles.closeButton} onClick={onClose}>
-            ×
-          </button>
         </div>
         <div className={styles.modalBody}>
           <ul>
