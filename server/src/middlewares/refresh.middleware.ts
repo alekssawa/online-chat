@@ -11,7 +11,7 @@ import prisma from "../lib/prismaClient.js";
 
 export interface RefreshRequest extends Request {
   userId?: string; // userId после проверки токена
-  cookies?: Record<string, string>; 
+  cookies?: Record<string, string>;
 }
 
 export const refreshTokenCheck = async (token?: string): Promise<string> => {

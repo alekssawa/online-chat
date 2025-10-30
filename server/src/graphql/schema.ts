@@ -11,7 +11,7 @@ export const typeDefs = `#graphql
     lastOnline: String
     avatar: UserAvatar
     friends: [Friend!]!
-    privacy: PrivacySettings
+    privacy: PrivacySettings!
     privateChats: [PrivateChat!]!
     groupChats: [GroupChat!]!
     messages: [Message!]!
@@ -27,6 +27,7 @@ export const typeDefs = `#graphql
     showLastOnline: PrivacyLevel!
     showAbout: PrivacyLevel!
     showEmail: PrivacyLevel!
+    showBirthDate: PrivacyLevel!  # ✅ ДОБАВЬТЕ ЭТО ПОЛЕ
     allowCalls: PrivacyLevel!
   }
 

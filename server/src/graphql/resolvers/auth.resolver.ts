@@ -30,7 +30,24 @@ export const authResolvers = {
 
       // Создаём пользователя
       const user = await prisma.users.create({
-        data: { email, password: hashedPassword, name: name ?? "unknown" },
+        data: {
+          email,
+          password: hashedPassword,
+          name: name ?? "unknown",
+          privacy: {
+            create: {
+              // ✅ Явно указываем все поля с значениями по умолчанию
+              showLastOnline: "ALL",
+              showAbout: "ALL",
+              showEmail: "FRIENDS",
+              showBirthDate: "FRIENDS",
+              allowCalls: "FRIENDS",
+            }, // ✅ создаем настройки приватности с значениями по умолчанию
+          },
+        },
+        include: {
+          privacy: true, // ✅ включаем настройки в ответ
+        },
       });
 
       // Генерируем токены

@@ -109,19 +109,21 @@ export const userResolvers = {
         const updated = await prisma.privacy_settings.upsert({
           where: { userId },
           update: data,
-          create: { 
-            userId, 
+          create: {
+            userId,
             ...data,
-            showAbout: "ALL", 
-            allowCalls: "FRIENDS", 
+            showAbout: "ALL",
+            allowCalls: "FRIENDS",
             showLastOnline: data.showLastOnline || "ALL",
-            showEmail: data.showEmail || "FRIENDS", 
+            showEmail: data.showEmail || "FRIENDS",
             showBirthDate: data.showBirthDate || "FRIENDS",
           },
           include: { user: true },
         });
 
         return {
+          showAbout: updated.showAbout,
+          allowCalls: updated.allowCalls,
           showEmail: updated.showEmail,
           showLastOnline: updated.showLastOnline,
           showBirthDate: updated.showBirthDate,
@@ -300,6 +302,8 @@ export const userResolvers = {
       });
       if (!settings) return null;
       return {
+        showAbout: settings.showAbout,
+        allowCalls: settings.allowCalls,
         showEmail: settings.showEmail,
         showLastOnline: settings.showLastOnline,
         showBirthDate: settings.showBirthDate,
