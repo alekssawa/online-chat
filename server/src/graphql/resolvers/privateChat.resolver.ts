@@ -2,82 +2,158 @@ import prisma from "../../lib/prismaClient.js";
 import type { Message, PrivateChat } from "../types.js";
 import { GraphQLError } from "graphql";
 import { withAuth } from "../../lib/authDecorator.js";
+import filterUserByPrivacy from "../../lib/filterUserByPrivacy.js";
 
 export const privateChatResolvers = {
   Query: {
-    privateChats: withAuth(async (_: any, __: any) => {
+    privateChats: withAuth(async (_: any, __: any, context: any) => {
+      const currentUserId = context.userId;
+
+      // Предварительно загружаем всех друзей текущего пользователя
+      const friends = await prisma.friends.findMany({
+        where: { userId: currentUserId },
+        select: { friendId: true },
+      });
+      const friendIds = new Set(friends.map((f) => f.friendId));
+
       const chats = await prisma.private_chats.findMany({
+        where: {
+          OR: [{ user1Id: currentUserId }, { user2Id: currentUserId }],
+        },
         include: {
-          user1: true,
-          user2: true,
+          user1: { include: { privacy: true } },
+          user2: { include: { privacy: true } },
           messages: {
-            include: { sender: true },
+            include: {
+              sender: { include: { privacy: true } },
+            },
             orderBy: { sentAt: "asc" },
           },
         },
       });
 
-      return chats.map((chat) => ({
-        id: chat.id,
-        user1Id: chat.user1Id,
-        user2Id: chat.user2Id,
-        user1: chat.user1,
-        user2: chat.user2,
-        createdAt: chat.createdAt.toISOString(),
-        messages: chat.messages.map((m) => ({
-          id: m.id,
-          text: m.text,
-          senderId: m.senderId,
-          sender: m.sender,
-          sentAt: m.sentAt.toISOString(),
-          updatedAt: m.updatedAt.toISOString(),
-        })),
-      }));
-    }),
+      return chats.map((chat) => {
+        const otherUser =
+          chat.user1Id === currentUserId ? chat.user2 : chat.user1;
+        const isOtherUserFriend = friendIds.has(otherUser.id);
 
-    privateChat: withAuth(async (_: any, { chatId }: { chatId: string }) => {
-      if (!chatId) {
-        throw new GraphQLError("chatId обязателен", {
-          extensions: { code: "BAD_USER_INPUT" },
-        });
-      }
+        const filteredOtherUser = filterUserByPrivacy(
+          otherUser,
+          isOtherUserFriend,
+        );
 
-      const chat = await prisma.private_chats.findUnique({
-        where: { id: chatId },
-        include: {
-          user1: true,
-          user2: true,
-          messages: {
-            include: { sender: true },
-            orderBy: { sentAt: "asc" },
-          },
-        },
+        return {
+          id: chat.id,
+          user1Id: chat.user1Id,
+          user2Id: chat.user2Id,
+          user1:
+            chat.user1Id === currentUserId ? chat.user1 : filteredOtherUser,
+          user2:
+            chat.user2Id === currentUserId ? chat.user2 : filteredOtherUser,
+          createdAt: chat.createdAt.toISOString(),
+          messages: chat.messages.map((m) => ({
+            id: m.id,
+            text: m.text,
+            senderId: m.senderId,
+            sender: filterUserByPrivacy(m.sender, friendIds.has(m.senderId)),
+            sentAt: m.sentAt.toISOString(),
+            updatedAt: m.updatedAt.toISOString(),
+          })),
+        };
       });
-
-      if (!chat) {
-        throw new GraphQLError("Чат не найден", {
-          extensions: { code: "NOT_FOUND" },
-        });
-      }
-
-      const otherUser = chat.user1Id === chatId ? chat.user2 : chat.user1;
-
-      return {
-        id: chat.id,
-        user1: chat.user1,
-        user2: chat.user2,
-        otherUser, // объект другого пользователя
-        createdAt: chat.createdAt.toISOString(),
-        messages: chat.messages.map((m) => ({
-          id: m.id,
-          text: m.text,
-          senderId: m.senderId,
-          sender: m.sender,
-          sentAt: m.sentAt.toISOString(),
-          updatedAt: m.updatedAt.toISOString(),
-        })),
-      };
     }),
+
+    privateChat: withAuth(
+      async (_: any, { chatId }: { chatId: string }, context: any) => {
+        if (!chatId) {
+          throw new GraphQLError("chatId обязателен", {
+            extensions: { code: "BAD_USER_INPUT" },
+          });
+        }
+
+        const currentUserId = context.userId;
+
+        // Предварительно загружаем всех друзей текущего пользователя
+        const friends = await prisma.friends.findMany({
+          where: { userId: currentUserId },
+          select: { friendId: true },
+        });
+        const friendIds = new Set(friends.map((f) => f.friendId));
+
+        const chat = await prisma.private_chats.findUnique({
+          where: { id: chatId },
+          include: {
+            user1: {
+              include: {
+                privacy: true,
+              },
+            },
+            user2: {
+              include: {
+                privacy: true,
+              },
+            },
+            messages: {
+              include: {
+                sender: {
+                  include: {
+                    privacy: true,
+                  },
+                },
+              },
+              orderBy: { sentAt: "asc" },
+            },
+          },
+        });
+
+        if (!chat) {
+          throw new GraphQLError("Чат не найден", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        // Проверяем, что текущий пользователь участник чата
+        if (chat.user1Id !== currentUserId && chat.user2Id !== currentUserId) {
+          throw new GraphQLError("Доступ запрещен", {
+            extensions: { code: "FORBIDDEN" },
+          });
+        }
+
+        const otherUser =
+          chat.user1Id === currentUserId ? chat.user2 : chat.user1;
+        const currentUser =
+          chat.user1Id === currentUserId ? chat.user1 : chat.user2;
+        const isOtherUserFriend = friendIds.has(otherUser.id);
+
+        const filteredOtherUser = filterUserByPrivacy(
+          otherUser,
+          isOtherUserFriend,
+        );
+        const filteredCurrentUser = filterUserByPrivacy(currentUser, true); // Себя всегда показываем полностью
+
+        return {
+          id: chat.id,
+          user1:
+            chat.user1Id === currentUserId
+              ? filteredCurrentUser
+              : filteredOtherUser,
+          user2:
+            chat.user2Id === currentUserId
+              ? filteredCurrentUser
+              : filteredOtherUser,
+          otherUser: filteredOtherUser,
+          createdAt: chat.createdAt.toISOString(),
+          messages: chat.messages.map((m) => ({
+            id: m.id,
+            text: m.text,
+            senderId: m.senderId,
+            sender: filterUserByPrivacy(m.sender, friendIds.has(m.senderId)),
+            sentAt: m.sentAt.toISOString(),
+            updatedAt: m.updatedAt.toISOString(),
+          })),
+        };
+      },
+    ),
   },
 
   Mutation: {

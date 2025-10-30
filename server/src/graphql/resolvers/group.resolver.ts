@@ -5,23 +5,154 @@ import { withAuth } from "../../lib/authDecorator.js";
 import { GraphQLUpload } from "graphql-upload-minimal";
 import type { FileUpload } from "graphql-upload-minimal";
 
+import filterUserByPrivacy from "../../lib/filterUserByPrivacy.js";
+
 export const groupResolvers = {
   Upload: GraphQLUpload,
 
   Query: {
-    groupChats: withAuth(async () => {
-      const groups = await prisma.groups.findMany();
-      return groups.map((g) => ({
-        ...g,
-        createdAt: g.createdAt.toISOString(),
+    groupChats: withAuth(async (_: any, __: any, context: any) => {
+      const currentUserId = context.userId;
+
+      const friends = await prisma.friends.findMany({
+        where: { userId: currentUserId },
+        select: { friendId: true },
+      });
+      const friendIds = new Set(friends.map((f) => f.friendId));
+
+      // Находим группы, где пользователь является участником
+      const userGroups = await prisma.group_users.findMany({
+        where: { userId: currentUserId },
+        include: {
+          group: {
+            include: {
+              users: {
+                include: {
+                  user: {
+                    include: {
+                      privacy: true,
+                      avatar: true,
+                    },
+                  },
+                },
+              },
+              messages: {
+                include: {
+                  sender: {
+                    include: {
+                      privacy: true,
+                      avatar: true,
+                    },
+                  },
+                },
+                orderBy: { sentAt: "asc" },
+              },
+              avatar: true,
+            },
+          },
+        },
+      });
+
+      return userGroups.map((userGroup) => ({
+        ...userGroup.group,
+        createdAt: userGroup.group.createdAt.toISOString(),
+        users: userGroup.group.users.map((groupUser) => ({
+          ...groupUser,
+          joinedAt: groupUser.joinedAt.toISOString(),
+          user: filterUserByPrivacy(
+            groupUser.user,
+            friendIds.has(groupUser.userId),
+          ),
+        })),
+        messages: userGroup.group.messages.map((message) => ({
+          ...message,
+          sentAt: message.sentAt.toISOString(),
+          updatedAt: message.updatedAt.toISOString(),
+          sender: filterUserByPrivacy(
+            message.sender,
+            friendIds.has(message.senderId),
+          ),
+        })),
       }));
     }),
 
-    groupChat: withAuth(async (_: any, { id }: { id: string }) => {
-      const group = await prisma.groups.findUnique({ where: { id } });
-      if (!group) return null;
-      return { ...group, createdAt: group.createdAt.toISOString() };
-    }),
+    groupChat: withAuth(
+      async (_: any, { id }: { id: string }, context: any) => {
+        const currentUserId = context.userId;
+
+        // Сначала проверяем, что пользователь участник группы
+        const userMembership = await prisma.group_users.findFirst({
+          where: {
+            userId: currentUserId,
+            groupId: id,
+          },
+        });
+
+        if (!userMembership) {
+          throw new GraphQLError("Доступ запрещен или группа не найдена", {
+            extensions: { code: "FORBIDDEN" },
+          });
+        }
+
+        const friends = await prisma.friends.findMany({
+          where: { userId: currentUserId },
+          select: { friendId: true },
+        });
+        const friendIds = new Set(friends.map((f) => f.friendId));
+
+        const group = await prisma.groups.findUnique({
+          where: { id },
+          include: {
+            users: {
+              include: {
+                user: {
+                  include: {
+                    privacy: true,
+                    avatar: true,
+                  },
+                },
+              },
+            },
+            messages: {
+              include: {
+                sender: {
+                  include: {
+                    privacy: true,
+                    avatar: true,
+                  },
+                },
+              },
+              orderBy: { sentAt: "asc" },
+            },
+            avatar: true,
+          },
+        });
+
+        if (!group) return null;
+
+        return {
+          ...group,
+          createdAt: group.createdAt.toISOString(),
+          users: group.users.map((groupUser) => ({
+            ...groupUser,
+            joinedAt: groupUser.joinedAt.toISOString(),
+            user: filterUserByPrivacy(
+              groupUser.user,
+              friendIds.has(groupUser.userId),
+            ),
+          })),
+          messages: group.messages.map((message) => ({
+            ...message,
+            sentAt: message.sentAt.toISOString(),
+            updatedAt: message.updatedAt.toISOString(),
+            sender: filterUserByPrivacy(
+              message.sender,
+              friendIds.has(message.senderId),
+            ),
+          })),
+        };
+      },
+    ),
   },
 
   Mutation: {
