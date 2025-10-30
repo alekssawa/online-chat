@@ -137,12 +137,7 @@ const GET_GROUPCHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        friends {
-          id
-          createdAt
-        }
         privacy {
-          id
           showLastOnline
           showAbout
           showEmail
@@ -179,12 +174,7 @@ const GET_PRIVATECHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        friends {
-          id
-          createdAt
-        }
         privacy {
-          id
           showLastOnline
           showAbout
           showEmail
@@ -202,12 +192,7 @@ const GET_PRIVATECHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        friends {
-          id
-          createdAt
-        }
         privacy {
-          id
           showLastOnline
           showAbout
           showEmail
@@ -235,7 +220,6 @@ function ChatsList({
   setError,
   SetUpdateFunction,
 }: ChatsListProps) {
-  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   // const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
@@ -436,21 +420,19 @@ function ChatsList({
         const result = await loadGroupChatDetails({
           variables: { groupId: item.id },
         });
-        if (result.data?.groupChat)
-          {
-            setSelectedChat({ chat: result.data.groupChat, type: "group" });
-            setIsUserPageOpen(false);
-          }
+        if (result.data?.groupChat) {
+          setSelectedChat({ chat: result.data.groupChat, type: "group" });
+          setIsUserPageOpen(false);
+        }
       } else {
         const result = await loadPrivateChatDetails({
           variables: { chatId: item.id },
         });
-        if (result.data?.privateChat)
-        {
+        if (result.data?.privateChat) {
           setSelectedChat({ chat: result.data.privateChat, type: "private" });
           setIsUserPageOpen(false);
         }
-        }
+      }
     } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError("Unknown error occurred");

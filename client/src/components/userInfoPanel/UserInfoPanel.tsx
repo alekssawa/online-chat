@@ -24,7 +24,6 @@ function UserInfoPanel({
   setIsUserPageOpen,
   onlineUsers,
 }: UserInfoPanelProps) {
-
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
@@ -36,8 +35,9 @@ function UserInfoPanel({
             <button
               className={`${styles.backButton} ${styles.chatText}`}
               onClick={() => setIsUserPageOpen(false)}
-            ><ArrowLeft />
-            <span>User info</span>
+            >
+              <ArrowLeft />
+              <span>User info</span>
             </button>
           </>
         ) : (
@@ -89,8 +89,7 @@ function UserInfoPanel({
                   ? selectedChat.chat.user1.id === user?.id
                     ? selectedChat.chat.user2.name
                     : selectedChat.chat.user1.name
-                  : selectedChat?.chat.name
-              }
+                  : selectedChat?.chat.name}
             </h2>
             <div className={styles.onlineStatus}>
               {selectedChat?.type === "private" ? (

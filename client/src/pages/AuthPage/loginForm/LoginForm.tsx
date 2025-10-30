@@ -61,11 +61,22 @@ function AuthForm({ setIsAuthForm }: AuthFormProps) {
             birthDate
             lastOnline
             friends {
-                id
-                createdAt
+              id
+              createdAt
+              friend {
+                  id
+                  email
+                  name
+                  nickname
+                  about
+                  birthDate
+                  lastOnline
+                  avatar {
+                      url
+                  }
+              }
             }
             privacy {
-                id
                 showLastOnline
                 showAbout
                 showEmail

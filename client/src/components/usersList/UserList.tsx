@@ -33,7 +33,6 @@ function UserList({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-
   // 🧩 Определяем список пользователей в зависимости от типа чата
   const users: DisplayUser[] = (() => {
     if (!selectedChat) return [];

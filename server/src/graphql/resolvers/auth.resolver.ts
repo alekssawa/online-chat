@@ -46,7 +46,18 @@ export const authResolvers = {
           },
         },
         include: {
-          privacy: true, // ✅ включаем настройки в ответ
+          privacy: true,
+          avatar: true, // ✅ добавить
+          friends: {
+            include: {
+              friend: {
+                include: {
+                  avatar: true,
+                  privacy: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -70,7 +81,24 @@ export const authResolvers = {
       { email, password }: { email: string; password: string },
       context: { res: Response },
     ) => {
-      const user = await prisma.users.findUnique({ where: { email } });
+      const user = await prisma.users.findUnique({
+        where: { email },
+        include: {
+          // ✅ добавить include
+          privacy: true,
+          avatar: true,
+          friends: {
+            include: {
+              friend: {
+                include: {
+                  avatar: true,
+                  privacy: true,
+                },
+              },
+            },
+          },
+        },
+      });
       if (!user) throw new Error("User not found");
 
       const valid = await argon2.verify(user.password, password);
@@ -130,7 +158,24 @@ export const authResolvers = {
       // Возвращаем новые токены и пользователя
       return {
         accessToken,
-        user: await prisma.users.findUnique({ where: { id: userId } }),
+        user: await prisma.users.findUnique({
+          where: { id: userId },
+          include: {
+            // ✅ добавить include
+            privacy: true,
+            avatar: true,
+            friends: {
+              include: {
+                friend: {
+                  include: {
+                    avatar: true,
+                    privacy: true,
+                  },
+                },
+              },
+            },
+          },
+        }),
       };
     },
 

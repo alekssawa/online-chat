@@ -27,15 +27,26 @@ const REFRESH_TOKEN_MUTATION = gql`
         birthDate
         lastOnline
         friends {
+          id
+          createdAt
+          friend {
             id
-            createdAt
+            email
+            name
+            nickname
+            about
+            birthDate
+            lastOnline
+            avatar {
+              url
+            }
+          }
         }
         privacy {
-            id
-            showLastOnline
-            showAbout
-            showEmail
-            allowCalls
+          showLastOnline
+          showAbout
+          showEmail
+          allowCalls
         }
       }
     }

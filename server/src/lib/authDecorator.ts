@@ -28,6 +28,13 @@ export const withAuth = <TArgs = any, TResult = any>(
     info: GraphQLResolveInfo,
   ) => {
     await requireAuth(context.req, context.res); // проверяем токен
-    return resolver(parent, args, context, info); // теперь передаём 4-й аргумент
+
+    // ✅ Добавляем userId в контекст GraphQL
+    const enhancedContext = {
+      ...context,
+      userId: context.req.user?.userId, // извлекаем userId из req.user
+    };
+
+    return resolver(parent, args, enhancedContext, info);
   };
 };

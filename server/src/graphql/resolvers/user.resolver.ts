@@ -291,9 +291,56 @@ export const userResolvers = {
     friends: async (parent: User) => {
       const friends = await prisma.friends.findMany({
         where: { userId: parent.id },
-        include: { friend: true },
+        include: {
+          friend: {
+            include: {
+              avatar: true,
+              privacy: true,
+            },
+          },
+        },
       });
-      return friends.map((f) => f.friend);
+
+      return friends.map((f) => ({
+        id: f.id,
+        createdAt: f.createdAt.toISOString(), // ✅ добавляем createdAt
+        friend: {
+          id: f.friend.id,
+          email: f.friend.email,
+          name: f.friend.name,
+          nickname: f.friend.nickname,
+          about: f.friend.about,
+          birthDate: f.friend.birthDate
+            ? f.friend.birthDate.toISOString()
+            : null,
+          lastOnline: f.friend.lastOnline
+            ? f.friend.lastOnline.toISOString()
+            : null,
+          avatar: f.friend.avatar
+            ? {
+                id: f.friend.avatar.id,
+                filename: f.friend.avatar.filename,
+                mimeType: f.friend.avatar.mime_type,
+                uploadedAt: f.friend.avatar.uploaded_at.toISOString(),
+                url: `${process.env.API_URL}/avatar/${f.friend.avatar.user_id}`,
+                user: {
+                  id: f.friend.id,
+                  email: f.friend.email,
+                  name: f.friend.name,
+                },
+              }
+            : null,
+          privacy: f.friend.privacy
+            ? {
+                showLastOnline: f.friend.privacy.showLastOnline,
+                showAbout: f.friend.privacy.showAbout,
+                showEmail: f.friend.privacy.showEmail,
+                showBirthDate: f.friend.privacy.showBirthDate,
+                allowCalls: f.friend.privacy.allowCalls,
+              }
+            : null,
+        },
+      }));
     },
 
     privacy: async (parent: User) => {

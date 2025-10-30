@@ -166,7 +166,6 @@
   white-space: nowrap;
 }
 
-
 @media (max-width: 950px) {
   .container {
     display: none;

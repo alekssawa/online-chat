@@ -11,7 +11,14 @@ export interface User {
   about?: string | null;
   birthDate?: string | null;
   lastOnline?: string | null;
+  friends?: Friend[];
   privacy?: PrivacySettings | null;
+}
+
+export interface Friend {
+  id: string;
+  friend: User;
+  createdAt: string;
 }
 
 export interface PrivacySettings {
@@ -24,7 +31,6 @@ export interface PrivacySettings {
 }
 
 export type PrivacyLevel = "ALL" | "FRIENDS" | "NONE";
-
 
 export type SelectedChat =
   | { chat: GroupChat; type: "group" }
