@@ -9,6 +9,10 @@
 }
 
 .container ul {
+  border-top: 1px solid #2a3b52;
+  border-left: 1px solid #2a3b52;
+  border-right: 1px solid #2a3b52;
+
   margin-bottom: 10px;
   flex: 1;
   /* padding: 8px; */

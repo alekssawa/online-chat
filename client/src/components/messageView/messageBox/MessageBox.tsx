@@ -6,8 +6,6 @@ import rehypeRaw from "rehype-raw";
 
 import type { User } from "../../type";
 
-
-
 interface MessageBoxProps {
   id: string;
   text: string;

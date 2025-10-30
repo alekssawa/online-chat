@@ -4,7 +4,9 @@
   justify-content: space-between;
   padding: 12px 20px;
   background-color: #182533;
-  border-bottom: 1px solid #2a3b52;
+  /* border-bottom: 1px solid #2a3b52; */
+  border-left: 1px solid #2a3b52;
+  border-right: 1px solid #2a3b52;
   height: 70px;
   box-sizing: border-box;
 }
@@ -84,7 +86,6 @@
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 1;

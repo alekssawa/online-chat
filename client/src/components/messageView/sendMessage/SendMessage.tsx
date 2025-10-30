@@ -9,7 +9,10 @@ interface SendMessageProps {
   selectedChat: SelectedChat | null;
   socket: typeof Socket | null;
   isSocketConnected: boolean;
-  updateChatLastMessage: (chatId: string, newMessage: { text: string; senderName?: string }) => void;
+  updateChatLastMessage: (
+    chatId: string,
+    newMessage: { text: string; senderName?: string },
+  ) => void;
 }
 
 interface ContextMenuPosition {
@@ -21,7 +24,7 @@ function SendMessage({
   selectedChat,
   socket,
   isSocketConnected,
-  updateChatLastMessage
+  updateChatLastMessage,
 }: SendMessageProps) {
   const editorRef = useRef<HTMLDivElement>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
@@ -309,7 +312,10 @@ function SendMessage({
         senderId: user.id,
         text: markdown,
       });
-      updateChatLastMessage(selectedChat.chat.id, { text: markdown, senderName: user.name });
+      updateChatLastMessage(selectedChat.chat.id, {
+        text: markdown,
+        senderName: user.name,
+      });
     } else {
       // Сообщение в приватный чат
       socket.emit("sendPrivateChatMessage", {
@@ -317,7 +323,10 @@ function SendMessage({
         senderId: user.id,
         text: markdown,
       });
-      updateChatLastMessage(selectedChat.chat.id, { text: markdown, senderName: user.name }); 
+      updateChatLastMessage(selectedChat.chat.id, {
+        text: markdown,
+        senderName: user.name,
+      });
     }
 
     // Очистка редактора

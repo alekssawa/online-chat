@@ -14,14 +14,15 @@ import type { GroupChat, PrivateChat, SelectedChat, Message } from "../type";
 
 interface ChatsListProps {
   setSelectedChat: (chat: SelectedChat) => void;
+  setIsUserPageOpen: (isUserPageOpen: boolean) => void;
   loading: boolean;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   SetUpdateFunction?: (
     updateFn: (
       chatId: string,
-      newMessage: { text: string; senderName?: string }
-    ) => void
+      newMessage: { text: string; senderName?: string },
+    ) => void,
   ) => void;
 }
 
@@ -64,7 +65,7 @@ const ChatListItem = React.memo(
         </button>
       </li>
     );
-  }
+  },
 );
 
 // GraphQL запросы остаются без изменений
@@ -127,9 +128,25 @@ const GET_GROUPCHAT_DETAILS = gql`
       }
       users {
         id
+        email
         name
         avatar {
           url
+        }
+        nickname
+        about
+        birthDate
+        lastOnline
+        friends {
+          id
+          createdAt
+        }
+        privacy {
+          id
+          showLastOnline
+          showAbout
+          showEmail
+          allowCalls
         }
       }
       messages {
@@ -153,6 +170,7 @@ const GET_PRIVATECHAT_DETAILS = gql`
       createdAt
       user1 {
         id
+        email
         name
         avatar {
           url
@@ -175,6 +193,7 @@ const GET_PRIVATECHAT_DETAILS = gql`
       }
       user2 {
         id
+        email
         name
         avatar {
           url
@@ -210,11 +229,13 @@ const GET_PRIVATECHAT_DETAILS = gql`
 
 function ChatsList({
   setSelectedChat,
+  setIsUserPageOpen,
   loading,
   setLoading,
   setError,
   SetUpdateFunction,
 }: ChatsListProps) {
+  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [chatItems, setChatItems] = useState<ChatItem[]>([]);
   // const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
@@ -290,8 +311,8 @@ function ChatsList({
                 lastMessage: newMessage.text,
                 senderName: newMessage.senderName || item.senderName,
               }
-            : item
-        )
+            : item,
+        ),
       );
 
       // 2. Обновляем кэш Apollo без рефетча
@@ -331,7 +352,7 @@ function ChatsList({
               };
             }
             return privateChat;
-          }
+          },
         );
 
         // Записываем обновленные данные в кэш
@@ -348,7 +369,7 @@ function ChatsList({
         });
       }
     },
-    [client, data, user?.id]
+    [client, data, user?.id],
   );
 
   useEffect(() => {
@@ -365,7 +386,7 @@ function ChatsList({
     // Функция для сортировки сообщений по дате (от старых к новым)
     const sortMessagesByDate = (messages: Message[]) => {
       return [...messages].sort(
-        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
       );
     };
 
@@ -414,14 +435,20 @@ function ChatsList({
           variables: { groupId: item.id },
         });
         if (result.data?.groupChat)
-          setSelectedChat({ chat: result.data.groupChat, type: "group" });
+          {
+            setSelectedChat({ chat: result.data.groupChat, type: "group" });
+            setIsUserPageOpen(false);
+          }
       } else {
         const result = await loadPrivateChatDetails({
           variables: { chatId: item.id },
         });
         if (result.data?.privateChat)
+        {
           setSelectedChat({ chat: result.data.privateChat, type: "private" });
-      }
+          setIsUserPageOpen(false);
+        }
+        }
     } catch (err) {
       if (err instanceof Error) setError(err.message);
       else setError("Unknown error occurred");

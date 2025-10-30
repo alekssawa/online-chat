@@ -19,13 +19,22 @@ function ChatRoom() {
     (chatId: string, newMessage: { text: string; senderName?: string }) => void
   >(() => () => {});
 
-  const handleUpdateFunction = useCallback((updateFn: (chatId: string, newMessage: { text: string; senderName?: string }) => void) => {
-    setUpdateChatLastMessage(() => updateFn);
-  }, []);
+  const handleUpdateFunction = useCallback(
+    (
+      updateFn: (
+        chatId: string,
+        newMessage: { text: string; senderName?: string },
+      ) => void,
+    ) => {
+      setUpdateChatLastMessage(() => updateFn);
+    },
+    [],
+  );
 
   const [isUserPageOpen, setIsUserPageOpen] = useState(false);
 
   // console.log("Selected Room:", selectedRoom);
+  console.log("selectedUser:", selectedUser);
 
   return (
     <div className={styles.container}>
@@ -40,6 +49,7 @@ function ChatRoom() {
       <>
         <ChatsList
           setSelectedChat={setSelectedChat}
+          setIsUserPageOpen={setIsUserPageOpen}
           loading={loading}
           setLoading={setLoading}
           setError={setError}
@@ -55,9 +65,9 @@ function ChatRoom() {
             />
           </>
         )}
-        {isUserPageOpen ? (
+        {isUserPageOpen || selectedChat?.type == "private" ? (
           <UserInfoPanel
-
+            selectedChat={selectedChat}
             selectedUser={selectedUser}
             setIsUserPageOpen={setIsUserPageOpen}
             onlineUsers={onlineUsers}

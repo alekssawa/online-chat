@@ -5,6 +5,7 @@ import { gql } from "@apollo/client";
 import { useNavigate } from "react-router-dom";
 
 import DefaultUserAvatar from "../../../assets/icons/DefaultUserAvatar.svg?react";
+import SettingsIcon from "../../../assets/icons/settingsIcon.svg?react";
 
 interface SlideOutMenuProps {
   isOpen: boolean;
@@ -74,9 +75,14 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
                 <li className={styles.menuItem}>Profile</li>
                 <li className={styles.menuItem}>New Group</li>
                 <li className={styles.menuItem}>Friends</li>
-                <li className={styles.menuItem}>Settings</li>
+                <li className={styles.menuItem}>
+                  <SettingsIcon />
+                  Settings
+                </li>
                 <li className={styles.menuItem}>Night mode</li>
-                <li className={styles.menuItem} onClick={handleExit}>Exit</li>
+                <li className={styles.menuItem} onClick={handleExit}>
+                  Exit
+                </li>
               </ul>
             </div>
           )}

@@ -7,9 +7,6 @@
   flex-direction: row; /* редактор и кнопка в ряд */
   align-items: center;
   gap: 8px;
-  border-top: black solid 0.5px;
-  border-left: black solid 0.5px;
-  border-right: black solid 0.5px;
 }
 
 .container button {
@@ -24,6 +21,9 @@
 
 .wrapper {
   position: relative; /* для позиционирования placeholder */
+  border-top: #2a3b52 solid 1px;
+  border-left: #2a3b52 solid 1px;
+  border-right: #2a3b52 solid 1px;
 }
 
 .toolbar {

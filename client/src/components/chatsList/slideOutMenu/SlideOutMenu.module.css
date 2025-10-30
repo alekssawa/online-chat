@@ -26,7 +26,6 @@
   transform: translateX(-100%); /* Скрыто за левым краем */
 }
 
-
 .menuOpen {
   transform: translateX(0); /* Показываем */
 }
@@ -81,10 +80,10 @@
   }
 } */
 
-.userInfo{
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
+.userInfo {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 .avatar {

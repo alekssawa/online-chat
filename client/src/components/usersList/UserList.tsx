@@ -1,12 +1,13 @@
 import UserBox from "./userBox/UserBox";
 import styles from "./UserList.module.css";
 
-import SettingsIcon from "../../assets/icons/settingsIcon.svg?react";
 import userIcon from "../../assets/icons/users.svg";
 import ToolsbarAddRooms from "./toolsbarSettings/ToolsbarSettings";
 import DefaultUserAvatar from "../../assets/icons/DefaultUserAvatar.svg?react";
 
 import type { GroupChat, PrivateChat, SelectedChat, User } from "../type";
+
+import { getUserStatus } from "./../../utills/getUserStatus";
 
 interface UserListProps {
   selectedChat: SelectedChat | null;
@@ -32,7 +33,7 @@ function UserList({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  // console.log(selectedChat);
+  console.log(selectedChat);
 
   // 🧩 Определяем список пользователей в зависимости от типа чата
   const users: DisplayUser[] = (() => {
@@ -66,7 +67,6 @@ function UserList({
     return [];
   })();
 
-
   // 🔄 Сортировка пользователей
   const sortedUsers = [...users].sort((a, b) => {
     if (a.id === user?.id) return -1;
@@ -87,17 +87,77 @@ function UserList({
         <div className={styles.container}>
           {/* Профиль текущего пользователя */}
           <div className={styles.container_profile}>
-            <div className={styles.settings}>
-              <button className={styles.settings_button}>
-                <SettingsIcon />
-              </button>
-            </div>
-            <div className={styles.profile_avatar}>
-              {user?.avatar ? (
-                <img src={user.avatar.url} alt="User avatar" />
-              ) : (
-                <DefaultUserAvatar />
-              )}
+            <h2 className={styles.chatText}>Group info</h2>
+            <div className={styles.chatDetails}>
+              <div className={styles.chat_avatar}>
+                {selectedChat?.type === "private" ? (
+                  selectedChat.chat.user1.id === user?.id ? (
+                    selectedChat.chat.user2.avatar?.url ? (
+                      <img
+                        src={selectedChat.chat.user2.avatar.url}
+                        alt="User avatar"
+                      />
+                    ) : (
+                      <DefaultUserAvatar />
+                    )
+                  ) : selectedChat.chat.user1.avatar?.url ? (
+                    <img
+                      src={selectedChat.chat.user1.avatar.url}
+                      alt="User avatar"
+                    />
+                  ) : (
+                    <DefaultUserAvatar />
+                  )
+                ) : selectedChat?.chat.avatar?.url ? (
+                  <img
+                    src={selectedChat?.chat.avatar?.url}
+                    alt="Group avatar"
+                  />
+                ) : (
+                  <DefaultUserAvatar />
+                )}
+              </div>
+              <div className={styles.chatInfo}>
+                <h2 className={styles.chatName}>
+                  {selectedChat?.type === "private"
+                    ? selectedChat.chat.user1.id === user?.id
+                      ? selectedChat.chat.user2.name
+                      : selectedChat.chat.user1.name
+                    : selectedChat?.chat.name}
+                </h2>
+                <div className={styles.onlineStatus}>
+                  {selectedChat?.type === "private" ? (
+                    selectedChat?.chat.user1.id === user?.id ? (
+                      <span className={styles.statusText}>
+                        {getUserStatus(
+                          selectedChat.chat.user2.id,
+                          selectedChat.chat.user2.lastOnline,
+                          onlineUsers,
+                        )}
+                      </span>
+                    ) : (
+                      <span className={styles.statusText}>
+                        {getUserStatus(
+                          selectedChat.chat.user1.id,
+                          selectedChat.chat.user1.lastOnline,
+                          onlineUsers,
+                        )}
+                      </span>
+                    )
+                  ) : (
+                    <>
+                      <span className={styles.statusText}>
+                        {selectedChat?.chat?.users &&
+                        selectedChat.chat.users.length > 5
+                          ? `${selectedChat?.chat.users?.length} участников, ${onlineUsers.filter((u) => u.online).length} в сети`
+                          : selectedChat?.chat.users?.length === 1
+                            ? `${selectedChat?.chat.users?.length} участник, ${onlineUsers.filter((u) => u.online).length} в сети`
+                            : `${selectedChat?.chat.users?.length} участника, ${onlineUsers.filter((u) => u.online).length} в сети`}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -128,6 +188,7 @@ function UserList({
                                 ? chat.user2
                                 : null;
                         }
+                        console.log("Full User:", fullUser);
 
                         setSelectedUser?.(fullUser);
                         setIsUserPageOpen?.(true);
