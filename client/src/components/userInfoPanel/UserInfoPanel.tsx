@@ -24,9 +24,6 @@ function UserInfoPanel({
   setIsUserPageOpen,
   onlineUsers,
 }: UserInfoPanelProps) {
-  console.log("Selected User:", selectedUser);
-  console.log("Selected Chat:", selectedChat);
-  console.log("Online Users:", onlineUsers);
 
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;

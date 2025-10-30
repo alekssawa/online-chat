@@ -8,7 +8,7 @@ import AddIcon from "../../../assets/icons/addIcon.svg?react";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-import type { Room } from "../../type";
+// import type { Room } from "../../type";
 
 interface ToolsbarAddRoomsProps {
   onRoomCreated?: () => void;
@@ -100,7 +100,7 @@ function ToolsbarAddRooms({ onRoomCreated }: ToolsbarAddRoomsProps) {
         },
       });
 
-      const data = result.data as { createRoom: Room } | undefined;
+      // const data = result.data as { createRoom: Room } | undefined;
 
       if (data?.createRoom) {
         console.log("Комната создана:", data.createRoom);

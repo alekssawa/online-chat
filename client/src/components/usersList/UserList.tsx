@@ -1,7 +1,7 @@
 import UserBox from "./userBox/UserBox";
 import styles from "./UserList.module.css";
 
-import userIcon from "../../assets/icons/users.svg";
+import userIcon from "../../assets/icons/usersIcon.svg";
 import ToolsbarAddRooms from "./toolsbarSettings/ToolsbarSettings";
 import DefaultUserAvatar from "../../assets/icons/DefaultUserAvatar.svg?react";
 
@@ -33,7 +33,6 @@ function UserList({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  console.log(selectedChat);
 
   // 🧩 Определяем список пользователей в зависимости от типа чата
   const users: DisplayUser[] = (() => {

@@ -248,6 +248,8 @@ function ChatsList({
     return userStr ? JSON.parse(userStr) : null;
   }, []);
 
+  console.log("user:", user);
+
   const {
     data,
     loading: queryLoading,

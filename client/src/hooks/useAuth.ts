@@ -22,6 +22,21 @@ const REFRESH_TOKEN_MUTATION = gql`
         avatar {
           url
         }
+        nickname
+        about
+        birthDate
+        lastOnline
+        friends {
+            id
+            createdAt
+        }
+        privacy {
+            id
+            showLastOnline
+            showAbout
+            showEmail
+            allowCalls
+        }
       }
     }
   }

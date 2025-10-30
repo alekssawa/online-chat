@@ -34,7 +34,7 @@ function ChatRoom() {
   const [isUserPageOpen, setIsUserPageOpen] = useState(false);
 
   // console.log("Selected Room:", selectedRoom);
-  console.log("selectedUser:", selectedUser);
+  // console.log("selectedUser:", selectedUser);
 
   return (
     <div className={styles.container}>

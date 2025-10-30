@@ -58,6 +58,14 @@
   color: #ffffff;
 }
 
+.menuItem svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  vertical-align: middle;
+  color: #ffffff;
+}
+
 .menuItem:hover {
   background: #f0f0f0;
 }
@@ -91,6 +99,7 @@
   height: 50px;
   margin-right: 10px;
   border-radius: 50%;
+  margin-left: 10px;
   /* делает форму круглой */
 
   display: flex;
