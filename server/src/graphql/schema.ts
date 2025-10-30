@@ -24,7 +24,6 @@ export const typeDefs = `#graphql
   }
 
   type PrivacySettings {
-    id: ID!
     showLastOnline: PrivacyLevel!
     showAbout: PrivacyLevel!
     showEmail: PrivacyLevel!

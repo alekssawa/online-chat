@@ -84,7 +84,6 @@ export interface Friend {
 
 // ✅ Настройки приватности
 export interface PrivacySettings {
-  id: string;
   showLastOnline: PrivacyLevel;
   showAbout: PrivacyLevel;
   showEmail: PrivacyLevel;
