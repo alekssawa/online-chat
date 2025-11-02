@@ -12,28 +12,101 @@
 }
 
 .modalContent {
-  background: #1e293b;
+  background: #17212b;
   border-radius: 8px;
   padding: 0;
-  max-width: 500px;
+  max-width: 350px;
   width: 90%;
   max-height: 80vh;
   overflow: auto;
-  border: 1px solid #2a3b52;
+  border: 1px solid #232e3c;
 }
 
 .modalHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  /* display: flex; */
+  /* justify-content: flex-start; */
   padding: 16px 20px;
-  border-bottom: 1px solid #2a3b52;
+  border-bottom: 8px solid #232e3c;
 }
 
-.modalHeader h2 {
+.title {
+  display: flex;
+  width: 100%;
   margin: 0;
   color: white;
-  font-size: 18px;
+  font-size: 20px;
+  white-space: nowrap;
+  margin-bottom: 26px;
+}
+
+.user_info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user_avatar {
+  width: 90px;
+  height: 90px;
+  margin-right: 10px;
+
+  color: rgb(0, 0, 0);
+  fill: currentColor;
+  border-radius: 50%;
+  /* делает форму круглой */
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* чтобы контент не выходил за круг */
+  user-select: none;
+}
+
+.user_details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.user_name {
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  margin: 0;
+  /* Убираем стандартные отступы h2 */
+}
+
+.user_email {
+  font-size: 16px;
+  font-weight: 400;
+  color: white;
+  margin: 0;
+  /* Убираем стандартные отступы h2 */
+}
+
+.user_nickname {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgb(131, 131, 131);
+  margin: 0;
+  /* Убираем стандартные отступы h2 */
+}
+
+.nickname {
+  display: inline-block; /* ширина по содержимому */
+  color: #708499;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: inset 0 -1px 0 0 transparent;
+  transition: box-shadow 0.2s;
+  white-space: nowrap;   /* чтобы текст не переносился */
+  align-self: flex-start; /* 🌟 ключевой момент для flex-column родителя */
+}
+
+.nickname:hover {
+  box-shadow: inset 0 -1px 0 0 #708499;
 }
 
 .closeButton {
@@ -58,6 +131,46 @@
   padding: 20px;
 }
 
-.modalBody ul{
+.modalBody ul {
   color: white;
 }
+
+.modalTabs {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+  /* margin-bottom: 16px; */
+
+  /* Центрируем список по контейнеру */
+  /* align-items: center; */
+}
+
+.tabButton {
+  display: flex;
+  /* чтобы иконка и текст в одной строке */
+  align-items: center;
+  /* вертикально по центру */
+  justify-content: flex-start;
+  /* текст с иконкой слева */
+  padding: 6px 12px;
+  width: 100%;
+  border: none;
+  color: white;
+  /* background: #1f2a40;       */
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.tabButton:hover {
+  background: #232e3c;
+  border-radius: 8px
+}
+
+.activeTab {
+  background: #6ab3d5;
+  color: white;
+}
+
+.tabContent {}

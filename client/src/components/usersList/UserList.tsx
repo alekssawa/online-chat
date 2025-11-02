@@ -188,7 +188,7 @@ function UserList({
                                 ? chat.user2
                                 : null;
                         }
-                        console.log("Full User:", fullUser);
+                        // console.log("Full User:", fullUser);
 
                         setSelectedUser?.(fullUser);
                         setIsUserPageOpen?.(true);

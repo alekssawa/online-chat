@@ -223,8 +223,13 @@ function AuthForm({ setIsAuthForm }: AuthFormProps) {
       <ToastContainer
         position="bottom-center"
         pauseOnHover={false}
+        pauseOnFocusLoss={false}
+        hideProgressBar
+        closeOnClick={false}
+        draggable={false}
         limit={2}
         autoClose={1500}
+        theme="dark"
       />
     </div>
   );
