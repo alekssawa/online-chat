@@ -95,14 +95,17 @@
 }
 
 .nickname {
-  display: inline-block; /* ширина по содержимому */
+  display: inline-block;
+  /* ширина по содержимому */
   color: #708499;
   cursor: pointer;
   text-decoration: none;
   box-shadow: inset 0 -1px 0 0 transparent;
   transition: box-shadow 0.2s;
-  white-space: nowrap;   /* чтобы текст не переносился */
-  align-self: flex-start; /* 🌟 ключевой момент для flex-column родителя */
+  white-space: nowrap;
+  /* чтобы текст не переносился */
+  align-self: flex-start;
+  /* 🌟 ключевой момент для flex-column родителя */
 }
 
 .nickname:hover {
@@ -173,4 +176,24 @@
   color: white;
 }
 
-.tabContent {}
+.backButton {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 20px;
+  white-space: nowrap;
+}
+
+.backButton svg {
+  color: #737e87;
+  width: 24px;
+  height: auto;
+}
+
+.backButton:hover svg {
+  color: #dcdcdc;
+  
+}

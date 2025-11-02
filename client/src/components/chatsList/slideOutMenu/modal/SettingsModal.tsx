@@ -12,6 +12,8 @@ import FolderIcon from "../../../../assets/icons/folderIcon.svg?react";
 import SpeackerIcon from "../../../../assets/icons/speackerIcon.svg?react";
 import LanguageIcon from "../../../../assets/icons/languageIcon.svg?react";
 
+import ArrowLeft from "../../../../assets/icons/ArrowLeft.svg?react";
+
 import { ToastContainer, toast } from "react-toastify";
 
 // Импортируем отдельные компоненты категорий
@@ -151,8 +153,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <button
                 className={styles.backButton}
                 onClick={() => setActiveTab(null)}
-              >
-                ← Back
+              ><ArrowLeft /> {activeTab}
               </button>
               {ActiveTabComponent && (
                 <ActiveTabComponent onBack={() => setActiveTab(null)} />
