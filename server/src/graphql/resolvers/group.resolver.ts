@@ -20,30 +20,17 @@ export const groupResolvers = {
       });
       const friendIds = new Set(friends.map((f) => f.friendId));
 
-      // Находим группы, где пользователь является участником
       const userGroups = await prisma.group_users.findMany({
         where: { userId: currentUserId },
         include: {
           group: {
             include: {
               users: {
-                include: {
-                  user: {
-                    include: {
-                      privacy: true,
-                      avatar: true,
-                    },
-                  },
-                },
+                include: { user: { include: { privacy: true, avatar: true } } },
               },
               messages: {
                 include: {
-                  sender: {
-                    include: {
-                      privacy: true,
-                      avatar: true,
-                    },
-                  },
+                  sender: { include: { privacy: true, avatar: true } },
                 },
                 orderBy: { sentAt: "asc" },
               },
@@ -53,39 +40,95 @@ export const groupResolvers = {
         },
       });
 
-      return userGroups.map((userGroup) => ({
-        ...userGroup.group,
-        createdAt: userGroup.group.createdAt.toISOString(),
-        users: userGroup.group.users.map((groupUser) => ({
-          ...groupUser,
-          joinedAt: groupUser.joinedAt.toISOString(),
-          user: filterUserByPrivacy(
-            groupUser.user,
-            friendIds.has(groupUser.userId),
-          ),
-        })),
-        messages: userGroup.group.messages.map((message) => ({
-          ...message,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          sender: filterUserByPrivacy(
-            message.sender,
-            friendIds.has(message.senderId),
-          ),
-        })),
-      }));
+      return (userGroups ?? []).map((ug) => {
+        const group = ug.group;
+
+        // Обеспечиваем, что messages всегда будет массивом (даже пустым)
+        const messages = (group.messages ?? []).map((msg) => {
+          const senderSafe = filterUserByPrivacy(
+            msg.sender,
+            friendIds.has(msg.senderId)
+          ) ?? {
+            id: msg.senderId,
+            name: "unknown",
+            nickname: null,
+            avatar: null,
+            about: null,
+            email: null,
+            birthDate: null,
+            lastOnline: null,
+          };
+
+          return {
+            id: msg.id ?? `msg-${Math.random()}`,
+            text: msg.text ?? "",
+            sentAt: msg.sentAt?.toISOString() ?? new Date().toISOString(),
+            updatedAt: msg.updatedAt?.toISOString() ?? new Date().toISOString(),
+            sender: {
+              id: senderSafe.id,
+              name: senderSafe.name,
+              nickname: senderSafe.nickname,
+              avatar: senderSafe.avatar
+                ? { url: `http://localhost:3000/avatar/${senderSafe.id}` }
+                : null,
+              about: senderSafe.about,
+              email: senderSafe.email,
+              birthDate: senderSafe.birthDate,
+              lastOnline: senderSafe.lastOnline,
+              __typename: "GroupChatUser",
+            },
+            __typename: "Message",
+          };
+        });
+
+        return {
+          id: group.id,
+          name: group.name,
+          createdAt: group.createdAt.toISOString(),
+          avatar: group.avatar
+            ? { url: `http://localhost:3000/avatar/group/${group.id}` }
+            : null,
+          users: (group.users ?? []).map((gu) => {
+            const u = filterUserByPrivacy(
+              gu.user,
+              friendIds.has(gu.userId)
+            ) ?? {
+              id: gu.userId,
+              name: "unknown",
+              nickname: null,
+              avatar: null,
+              about: null,
+              email: null,
+              birthDate: null,
+              lastOnline: null,
+            };
+
+            return {
+              id: u.id,
+              name: u.name,
+              nickname: u.nickname,
+              avatar: u.avatar
+                ? { url: `http://localhost:3000/avatar/${u.id}` }
+                : null,
+              about: u.about,
+              email: u.email,
+              birthDate: u.birthDate,
+              lastOnline: u.lastOnline,
+              __typename: "GroupChatUser",
+            };
+          }),
+          messages: messages, // Гарантированно массив
+          __typename: "GroupChat", // Добавьте это
+        };
+      });
     }),
 
     groupChat: withAuth(
       async (_: any, { id }: { id: string }, context: any) => {
         const currentUserId = context.userId;
 
-        // Сначала проверяем, что пользователь участник группы
         const userMembership = await prisma.group_users.findFirst({
-          where: {
-            userId: currentUserId,
-            groupId: id,
-          },
+          where: { userId: currentUserId, groupId: id },
         });
 
         if (!userMembership) {
@@ -128,30 +171,85 @@ export const groupResolvers = {
           },
         });
 
-        if (!group) return null;
+        if (!group) {
+          throw new GraphQLError("Группа не найдена", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
 
-        return {
-          ...group,
-          createdAt: group.createdAt.toISOString(),
-          users: group.users.map((groupUser) => ({
-            ...groupUser,
-            joinedAt: groupUser.joinedAt.toISOString(),
-            user: filterUserByPrivacy(
-              groupUser.user,
-              friendIds.has(groupUser.userId),
-            ),
-          })),
-          messages: group.messages.map((message) => ({
-            ...message,
+        // Гарантируем, что messages всегда массив
+        const messages = (group.messages ?? []).map((message) => {
+          const s = filterUserByPrivacy(
+            message.sender,
+            friendIds.has(message.senderId)
+          ) ?? {
+            id: message.senderId,
+            name: "unknown",
+            nickname: null,
+            avatar: null,
+            about: null,
+            email: null,
+            birthDate: null,
+            lastOnline: null,
+          };
+          return {
+            id: message.id,
+            text: message.text ?? "",
             sentAt: message.sentAt.toISOString(),
-            updatedAt: message.updatedAt.toISOString(),
-            sender: filterUserByPrivacy(
-              message.sender,
-              friendIds.has(message.senderId),
-            ),
-          })),
+            updatedAt:
+              message.updatedAt?.toISOString() ?? new Date().toISOString(),
+            sender: {
+              ...s,
+              avatar: s.avatar
+                ? { url: `http://localhost:3000/avatar/${s.id}` }
+                : null,
+              __typename: "GroupChatUser",
+            },
+            __typename: "Message",
+          };
+        });
+
+        const sanitizedGroup = {
+          id: group.id,
+          name: group.name,
+          createdAt: group.createdAt.toISOString(),
+          avatar: group.avatar
+            ? { url: `http://localhost:3000/avatar/group/${group.id}` }
+            : null,
+          users: (group.users ?? []).map((groupUser) => {
+            const u = filterUserByPrivacy(
+              groupUser.user,
+              friendIds.has(groupUser.userId)
+            ) ?? {
+              id: groupUser.userId,
+              name: "unknown",
+              nickname: null,
+              avatar: null,
+              about: null,
+              email: null,
+              birthDate: null,
+              lastOnline: null,
+            };
+            return {
+              id: u.id,
+              name: u.name,
+              nickname: u.nickname ?? null,
+              avatar: u.avatar
+                ? { url: `http://localhost:3000/avatar/${u.id}` }
+                : null,
+              about: u.about ?? null,
+              email: u.email ?? null,
+              birthDate: u.birthDate ?? null,
+              lastOnline: u.lastOnline ?? null,
+              __typename: "GroupChatUser",
+            };
+          }),
+          messages: messages, // Гарантированно массив
+          __typename: "GroupChat", // Добавьте это
         };
-      },
+
+        return sanitizedGroup;
+      }
     ),
   },
 
@@ -159,7 +257,7 @@ export const groupResolvers = {
     createGroupChat: withAuth(
       async (
         _: any,
-        { name, creatorId }: { name: string; creatorId: string },
+        { name, creatorId }: { name: string; creatorId: string }
       ) => {
         if (!name || !creatorId) {
           throw new GraphQLError("name и creatorId обязательны", {
@@ -182,13 +280,13 @@ export const groupResolvers = {
         });
 
         return { ...group, createdAt: group.createdAt.toISOString() };
-      },
+      }
     ),
 
     addUserToGroup: withAuth(
       async (
         _: any,
-        { groupId, userId }: { groupId: string; userId: string },
+        { groupId, userId }: { groupId: string; userId: string }
       ) => {
         if (!groupId || !userId) {
           throw new GraphQLError("groupId и userId обязательны", {
@@ -247,13 +345,13 @@ export const groupResolvers = {
             extensions: { code: "INTERNAL_SERVER_ERROR" },
           });
         }
-      },
+      }
     ),
 
     removeUserFromGroup: withAuth(
       async (
         _: any,
-        { groupId, userId }: { groupId: string; userId: string },
+        { groupId, userId }: { groupId: string; userId: string }
       ) => {
         if (!groupId || !userId) {
           throw new GraphQLError("groupId и userId обязательны", {
@@ -282,13 +380,13 @@ export const groupResolvers = {
             extensions: { code: "INTERNAL_SERVER_ERROR" },
           });
         }
-      },
+      }
     ),
 
     uploadGroupAvatar: withAuth(
       async (
         _: any,
-        { groupId, file }: { groupId: string; file: Promise<FileUpload> },
+        { groupId, file }: { groupId: string; file: Promise<FileUpload> }
       ) => {
         if (!groupId || !file) {
           throw new GraphQLError("groupId и file обязательны", {
@@ -339,41 +437,41 @@ export const groupResolvers = {
             createdAt: group.createdAt.toISOString(),
           },
         };
-      },
+      }
     ),
   },
 
-  GroupChat: {
-    messages: withAuth(async (parent: any) => {
-      const msgs = await prisma.messages.findMany({
-        where: { groupId: parent.id },
-        include: { sender: true },
-      });
-      return msgs.map((m) => ({
-        ...m,
-        sentAt: m.sentAt.toISOString(),
-        updatedAt: m.updatedAt.toISOString(),
-      }));
-    }),
+  // GroupChat: {
+  //   messages: withAuth(async (parent: any) => {
+  //     const msgs = await prisma.messages.findMany({
+  //       where: { groupId: parent.id },
+  //       include: { sender: true },
+  //     });
+  //     return msgs.map((m) => ({
+  //       ...m,
+  //       sentAt: m.sentAt.toISOString(),
+  //       updatedAt: m.updatedAt.toISOString(),
+  //     }));
+  //   }),
 
-    users: withAuth(async (parent: any) => {
-      const users = await prisma.group_users.findMany({
-        where: { groupId: parent.id },
-        include: { user: true },
-      });
-      return users.map((u) => u.user);
-    }),
+  //   users: withAuth(async (parent: any) => {
+  //     const users = await prisma.group_users.findMany({
+  //       where: { groupId: parent.id },
+  //       include: { user: true },
+  //     });
+  //     return users.map((u) => u.user);
+  //   }),
 
-    avatar: withAuth(async (parent: any) => {
-      const avatar = await prisma.group_avatars.findUnique({
-        where: { group_id: parent.id },
-      });
-      if (!avatar) return null;
-      return {
-        ...avatar,
-        uploadedAt: avatar.uploaded_at.toISOString(),
-        url: `${process.env.API_URL}/avatar/group/${parent.id}`,
-      };
-    }),
-  },
+  //   avatar: withAuth(async (parent: any) => {
+  //     const avatar = await prisma.group_avatars.findUnique({
+  //       where: { group_id: parent.id },
+  //     });
+  //     if (!avatar) return null;
+  //     return {
+  //       ...avatar,
+  //       uploadedAt: avatar.uploaded_at.toISOString(),
+  //       url: `${process.env.API_URL}/avatar/group/${parent.id}`,
+  //     };
+  //   }),
+  // },
 };

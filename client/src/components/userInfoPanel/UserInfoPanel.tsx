@@ -9,6 +9,8 @@ import DefaultUserAvatar from "../../assets/icons/DefaultUserAvatar.svg?react";
 
 import type { SelectedChat, User } from "../type";
 
+import { ToastContainer, toast } from "react-toastify";
+
 import { getUserStatus } from "./../../utills/getUserStatus";
 
 interface UserInfoPanelProps {
@@ -27,7 +29,7 @@ function UserInfoPanel({
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  console.log(selectedChat)
+  // console.log(selectedChat);
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -87,10 +89,10 @@ function UserInfoPanel({
               {selectedUser && selectedChat?.type === "group"
                 ? selectedUser?.name
                 : selectedChat?.type === "private"
-                  ? selectedChat.chat.user1.id === user?.id
-                    ? selectedChat.chat.user2.name
-                    : selectedChat.chat.user1.name
-                  : selectedChat?.chat.name}
+                ? selectedChat.chat.user1.id === user?.id
+                  ? selectedChat.chat.user2.name
+                  : selectedChat.chat.user1.name
+                : selectedChat?.chat.name}
             </h2>
             <div className={styles.onlineStatus}>
               {selectedChat?.type === "private" ? (
@@ -99,7 +101,7 @@ function UserInfoPanel({
                     {getUserStatus(
                       selectedChat.chat.user2.id,
                       selectedChat.chat.user2.lastOnline,
-                      onlineUsers,
+                      onlineUsers
                     )}
                   </span>
                 ) : (
@@ -107,7 +109,7 @@ function UserInfoPanel({
                     {getUserStatus(
                       selectedChat.chat.user1.id,
                       selectedChat.chat.user1.lastOnline,
-                      onlineUsers,
+                      onlineUsers
                     )}
                   </span>
                 )
@@ -117,7 +119,7 @@ function UserInfoPanel({
                     {getUserStatus(
                       selectedUser?.id,
                       selectedUser?.lastOnline,
-                      onlineUsers,
+                      onlineUsers
                     )}
                   </span>
                 </>
@@ -128,13 +130,38 @@ function UserInfoPanel({
       </div>
       <div className={styles.container_profile}>
         <div className={styles.userDetails}>
-          <p>
-            {selectedChat?.type === "private"
-              ? selectedChat.chat.user1.id === user?.id
-                ? selectedChat.chat.user2.nickname
-                : selectedChat.chat.user1.nickname
-              : selectedUser?.nickname}
-          </p>
+          {(() => {
+            const nickname =
+              selectedChat?.type === "private"
+                ? selectedChat.chat.user1.id === user?.id
+                  ? selectedChat.chat.user2.nickname
+                  : selectedChat.chat.user1.nickname
+                : selectedUser?.nickname;
+
+            if (!nickname) return null;
+
+            const handleClick = () => {
+              const nickWithAt = "@" + nickname;
+              navigator.clipboard.writeText(nickWithAt);
+
+              toast("username copied to clipboard", {
+                closeButton: false,
+                toastId: "unique-id",
+                style: {
+                  width: "auto",
+                  maxWidth: "300px",
+                  padding: "0 20px",
+                },
+              });
+            };
+
+            return (
+              <p className={styles.nickname} onClick={handleClick}>
+                {"@" + nickname}
+              </p>
+            );
+          })()}
+
           <p>
             {selectedChat?.type === "private"
               ? selectedChat.chat.user1.id === user?.id
@@ -150,11 +177,25 @@ function UserInfoPanel({
               : selectedUser?.email}
           </p>
           <p>
-            {selectedChat?.type === "private"
-              ? selectedChat.chat.user1.id === user?.id
-                ? selectedChat.chat.user2.birthDate
-                : selectedChat.chat.user1.birthDate
-              : selectedUser?.birthDate}
+            {(() => {
+              const birthDate =
+                selectedChat?.type === "private"
+                  ? selectedChat.chat.user1.id === user?.id
+                    ? selectedChat.chat.user2.birthDate
+                    : selectedChat.chat.user1.birthDate
+                  : selectedUser?.birthDate;
+
+              if (!birthDate) return null;
+
+              const date = new Date(Number(birthDate));
+              if (isNaN(date.getTime())) return null;
+
+              const day = String(date.getDate()).padStart(2, "0");
+              const month = String(date.getMonth() + 1).padStart(2, "0"); // месяцы с 0
+              const year = date.getFullYear();
+
+              return `${day}.${month}.${year}`;
+            })()}
           </p>
         </div>
         <div className={styles.actions}>
@@ -172,6 +213,17 @@ function UserInfoPanel({
           </button>
         </div>
       </div>
+      <ToastContainer
+        position="bottom-right"
+        pauseOnHover={false}
+        pauseOnFocusLoss={false}
+        hideProgressBar
+        closeOnClick={false}
+        draggable={false}
+        limit={2}
+        autoClose={1500}
+        theme="dark"
+      />
     </div>
   );
 }

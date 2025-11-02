@@ -59,9 +59,20 @@ export const typeDefs = `#graphql
     id: ID!
     name: String!
     createdAt: String!
-    users: [User!]!
+    users: [GroupChatUser!]!  # <- вместо User
     messages: [Message!]!
     avatar: GroupAvatar
+  }
+
+  type GroupChatUser {
+    id: ID!
+    name: String!
+    nickname: String
+    avatar: UserAvatar
+    about: String
+    email: String
+    birthDate: String
+    lastOnline: String
   }
 
   type Message {

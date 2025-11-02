@@ -20,9 +20,9 @@ export const resolvers = {
   User: {
     ...userResolvers.User,
   },
-  GroupChat: {
-    ...groupResolvers.GroupChat,
-  },
+  // GroupChat: {
+  //   ...groupResolvers.GroupChat,
+  // },
   Message: {
     ...messageResolvers.Message,
   },

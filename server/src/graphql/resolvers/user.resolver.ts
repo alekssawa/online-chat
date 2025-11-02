@@ -3,6 +3,8 @@ import type { User, Message, UserAvatar } from "../types.js";
 import { withAuth } from "../../lib/authDecorator.js";
 import { GraphQLError } from "graphql";
 
+import filterUserByPrivacy from "../../lib/filterUserByPrivacy.js";
+
 export const userResolvers = {
   Query: {
     users: withAuth(async (_: any): Promise<User[]> => {
@@ -241,15 +243,132 @@ export const userResolvers = {
       };
     },
 
-    groupChats: async (parent: User) => {
+    groupChats: async (parent: User, _: any, context: any) => {
+      const currentUserId = context.userId;
+      
+      // Загружаем друзей для фильтрации приватности
+      const friends = await prisma.friends.findMany({
+        where: { userId: currentUserId },
+        select: { friendId: true },
+      });
+      const friendIds = new Set(friends.map((f) => f.friendId));
+
       const groupUsers = await prisma.group_users.findMany({
         where: { userId: parent.id },
-        include: { group: true },
+        include: {
+          group: {
+            include: {
+              users: {
+                include: {
+                  user: {
+                    include: {
+                      privacy: true,
+                      avatar: true
+                    }
+                  }
+                }
+              },
+              messages: {
+                include: {
+                  sender: {
+                    include: {
+                      privacy: true,
+                      avatar: true
+                    }
+                  }
+                },
+                orderBy: { sentAt: "asc" }
+              },
+              avatar: true
+            }
+          }
+        }
       });
-      return groupUsers.map((gu) => ({
-        ...gu.group,
-        createdAt: gu.group.createdAt.toISOString(),
-      }));
+
+      return groupUsers.map((gu) => {
+        const group = gu.group;
+        
+        // Обрабатываем пользователей с учетом приватности
+        const users = (group.users ?? []).map((groupUser) => {
+          const user = filterUserByPrivacy(
+            groupUser.user,
+            friendIds.has(groupUser.userId)
+          ) ?? {
+            id: groupUser.userId,
+            name: "unknown",
+            nickname: null,
+            avatar: null,
+            about: null,
+            email: null,
+            birthDate: null,
+            lastOnline: null,
+          };
+
+          return {
+            id: user.id,
+            name: user.name,
+            nickname: user.nickname,
+            avatar: user.avatar
+              ? { url: `http://localhost:3000/avatar/${user.id}` }
+              : null,
+            about: user.about,
+            email: user.email,
+            birthDate: user.birthDate,
+            lastOnline: user.lastOnline,
+            __typename: "GroupChatUser",
+          };
+        });
+
+        // Обрабатываем сообщения с учетом приватности
+        const messages = (group.messages ?? []).map((msg) => {
+          const sender = filterUserByPrivacy(
+            msg.sender,
+            friendIds.has(msg.senderId)
+          ) ?? {
+            id: msg.senderId,
+            name: "unknown",
+            nickname: null,
+            avatar: null,
+            about: null,
+            email: null,
+            birthDate: null,
+            lastOnline: null,
+          };
+
+          return {
+            id: msg.id,
+            text: msg.text ?? "",
+            sentAt: msg.sentAt.toISOString(),
+            updatedAt: msg.updatedAt?.toISOString() ?? new Date().toISOString(),
+            sender: {
+              id: sender.id,
+              name: sender.name,
+              nickname: sender.nickname,
+              avatar: sender.avatar
+                ? { url: `http://localhost:3000/avatar/${sender.id}` }
+                : null,
+              about: sender.about,
+              email: sender.email,
+              birthDate: sender.birthDate,
+              lastOnline: sender.lastOnline,
+              __typename: "GroupChatUser",
+            },
+            __typename: "Message",
+          };
+        });
+
+        return {
+          id: group.id,
+          name: group.name,
+          createdAt: group.createdAt.toISOString(),
+          avatar: group.avatar
+            ? { url: `http://localhost:3000/avatar/group/${group.id}` }
+            : null,
+          users: users,
+          messages: messages, // Теперь messages всегда будет массивом
+          __typename: "GroupChat",
+        };
+      });
     },
 
     privateChats: async (parent: User) => {

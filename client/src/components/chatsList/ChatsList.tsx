@@ -137,12 +137,6 @@ const GET_GROUPCHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        privacy {
-          showLastOnline
-          showAbout
-          showEmail
-          allowCalls
-        }
       }
       messages {
         id
@@ -150,7 +144,6 @@ const GET_GROUPCHAT_DETAILS = gql`
         sentAt
         sender {
           id
-          email
           name
         }
       }
@@ -174,12 +167,6 @@ const GET_PRIVATECHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        privacy {
-          showLastOnline
-          showAbout
-          showEmail
-          allowCalls
-        }
       }
       user2 {
         id
@@ -192,12 +179,6 @@ const GET_PRIVATECHAT_DETAILS = gql`
         about
         birthDate
         lastOnline
-        privacy {
-          showLastOnline
-          showAbout
-          showEmail
-          allowCalls
-        }
       }
       messages {
         id
@@ -232,7 +213,7 @@ function ChatsList({
     return userStr ? JSON.parse(userStr) : null;
   }, []);
 
-  console.log("user:", user);
+  // console.log("user:", user);
 
   const {
     data,
@@ -422,6 +403,7 @@ function ChatsList({
         });
         if (result.data?.groupChat) {
           setSelectedChat({ chat: result.data.groupChat, type: "group" });
+          // console.log(result.data.groupChat)
           setIsUserPageOpen(false);
         }
       } else {
