@@ -1,134 +1,119 @@
-# 💬 Online Chat App
+# 💡 ChatApp
 
-Проект **онлайн-чата** с использованием **GraphQL, Prisma, Express и React**.  
-Поддерживает регистрацию, авторизацию через JWT + Refresh Token, создание комнат и обмен сообщениями в реальном времени.
-
----
-
-## ✨ Функционал
-
-- 🔑 Регистрация и авторизация пользователей  
-- 👤 Профиль пользователя (email + имя)  
-- 💬 Создание и подключение к комнатам  
-- 📨 Отправка и редактирование сообщений  
-- 🔄 Refresh Token механизм для продления сессии  
-<!-- - ⏱️ Автоматическое обновление `updatedAt` при изменении сообщений   -->
+ChatApp is a modern real-time communication platform designed to facilitate seamless messaging between users. Leveraging cutting-edge technologies, it offers features such as user authentication, real-time chat capabilities, and privacy settings.
 
 ---
 
-## 🛠️ Стек технологий
-
-**Backend**:
-- [Node.js](https://nodejs.org/) + [Express](https://expressjs.com/)  
-- [GraphQL](https://graphql.org/) + [Apollo Server](https://www.apollographql.com/docs/apollo-server/)  
-- [Prisma ORM](https://www.prisma.io/)  
-- [PostgreSQL](https://www.postgresql.org/)  
-
-**Frontend**:
-- [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)  
-- [TypeScript](https://www.typescriptlang.org/)  
-- [Apollo Client](https://www.apollographql.com/docs/react/)  
+## ✨ Features
+- 🔑 **User Authentication and Authorization**: Secure login and registration with token-based session management.
+- 💬 **Real-Time Communication**: Instant messaging and group chats using WebSockets.
+- ⚙️ **Admin Dashboard for Management**: Tools for monitoring users and managing server configurations.
+- 📝 **Message History**: Persistent storage of chat history using Prisma ORM.
+- 🔍 **Search Functionality**: Easy search within messages and user directories.
+- 💻 **Responsive Design**: Cross-platform compatibility on desktops, tablets, and mobile devices.
 
 ---
 
-## 🚀 Запуск проекта
+## 🛠️ Tech Stack
 
-### 1. Клонирование
-```bash
-git clone https://github.com/your-username/online-chat.git
-cd online-chat
-```
+**Backend:**
+- Node.js + Express  
+- GraphQL + Apollo Server  
+- Prisma ORM  
+- PostgreSQL  
 
+**Frontend:**
+- React + Vite  
+- TypeScript  
+- Apollo Client  
 
-### 2. Backend
-```bash
-Копировать код
-cd server
-npm install
-npx prisma migrate dev
-npm run dev
-```
+---
 
-Сервер поднимется на http://localhost:3000/graphql
+## 🚀 Getting Started
 
-### 3. Frontend
-```bash
-Копировать код
-cd client
-npm install
-npm run dev
-```
+To set up and run the project locally, follow these steps:
 
-Клиент поднимется на http://localhost:5173
+1. **Clone the repository**
 
-📂 Структура проекта
-```bash
-online-chat/
-│── server/              # Backend (Express + GraphQL + Prisma)
-│   └── src                  
-│       ├── graphql/              # GraphQL слой
-│       │   ├── resolvers/        # Резолверы (auth, message, room, user)
-│       │   ├── resolvers.ts      # Индекс резолверов
-│       │   ├── schema.ts         # GraphQL-схема
-│       │   └── types.ts          # Типы
-│       ├── lib/                  # Утилиты
-│       │   ├── authDecorator.ts
-│       │   ├── prismaClient.ts
-│       │   └── tokenService.ts
-│       ├── middlewares/          # Middleware
-│       │   ├── auth.middleware.ts
-│       │   └── refresh.middleware.ts
-│       ├── sockets/              # WebSocket
-│       │   └── socketHandler.ts
-│       └── server.ts             # Точка входа (Express + GraphQL + WebSocket)
-│
-└── client/              # Frontend (React + TS)
-    └── src/                      # Исходники React + TypeScript
-        ├── assets/               # Медиа-файлы
-        │   └── react.svg
-        ├── components/           # Компоненты
-        │   ├── messageView/      # UI для сообщений
-        │   │   ├── messageBox/   # Один блок сообщения
-        │   │   │   ├── MessageBox.tsx
-        │   │   │   └── MessageBox.module.css
-        │   │   ├── sendMessage/  # Форма отправки сообщений
-        │   │   │   ├── SendMessage.tsx
-        │   │   │   └── SendMessage.module.css
-        │   │   ├── MessageView.tsx
-        │   │   └── MessageView.module.css
-        │   ├── roomsList/        # Список комнат
-        │   │   ├── RoomsList.tsx
-        │   │   └── RoomsList.module.css
-        │   └── usersList/        # Список пользователей
-        │       ├── UserList.tsx
-        │       └── UserList.module.css
-        │
-        ├── hooks/                # Кастомные хуки
-        │   └── useAuth.ts        # Аутентификация + refresh token
-        ├── pages/                # Страницы
-        │   ├── ChatRoom/         # Чат-страница
-        │   │   ├── ChatRoom.tsx
-        │   │   └── ChatRoom.module.css
-        │   └── General/          # Главная + авторизация
-        │       ├── authForm/     # Форма логина/регистрации
-        │       │   ├── AuthForm.tsx
-        │       │   └── AuthForm.module.css
-        │       └── General.tsx
-        │
-        ├── styles/               # Глобальные стили
-        │   ├── reset.css
-        │   └── common.css
-        ├── App.tsx               # Главный компонент
-        ├── main.tsx              # Входная точка приложения
-        └── vite-env.d.ts         # TypeScript типы для Vite
- 
- 
+   ```bash
+   git clone https://github.com/alekssawa/chatapp.git
+   cd chatapp
+   ```
 
-```
+2. **Install dependencies for both frontend and backend**
 
-🔐 Аутентификация
-```bash
-Access Token хранится в localStorage
-Refresh Token — в HTTP-only cookie
-При истечении accessToken автоматически выполняется refreshToken
-```
+   - Navigate to the client directory and install dependencies:
+     ```bash
+     cd client
+     npm install
+     ```
+   - Navigate back to the root directory, then into the server directory, and install dependencies:
+     ```bash
+     cd ../server
+     npm install
+     ```
+
+3. **Configure environment variables**
+
+   - For the backend, create a `.env` file in the `server` directory with configurations such as database connection strings and secret keys, for example:
+   ```
+  DATABASE_URL=""
+
+  API_URL="http://localhost:3000"
+
+  JWT_SECRET=""
+  JWT_REFRESH_SECRET=""
+
+  ACCESS_TOKEN_EXPIRY="1d"
+  REFRESH_TOKEN_EXPIRY="7d"
+   ```
+
+4. **Start the development servers**
+
+   - Start the frontend server:
+     ```bash
+     cd client
+     npm run dev
+     ```
+   - In another terminal, start the backend server:
+     ```bash
+     cd ../server
+     npm run dev
+     ```
+
+5. **Access the application**
+
+   Open your web browser and navigate to `http://localhost:3000` (default port for Vite) to access the ChatApp interface.
+
+---
+
+## 📂 Project Overview
+
+### Client
+- **eslint.config.js**: Configuration file for ESLint.
+- **public/**: Static assets directory, including a README.md file.
+- **src/**: Source code directory containing components, context, hooks, pages, styles, and utilities.
+  - **apollo/client.ts**: Apollo client setup.
+  - **components/**: Reusable React components such as chat lists, message boxes, and user panels.
+  - **context/AuthContext.ts** and **context/AuthProvider.tsx**: Authentication context for managing user sessions.
+  - **hooks/useAuth.ts** and **hooks/useAuthClient.ts**: Custom hooks for authentication.
+  - **pages/**: Main pages like AuthPage and ChatPage.
+  - **styles/**: CSS/SCSS files.
+  - **types/**: TypeScript type definitions.
+  - **utills/**: Utility functions.
+- **tsconfig.app.json**, **tsconfig.json**, **tsconfig.node.json**: TypeScript configuration files.
+- **vite.config.ts**: Vite configuration file.
+
+### Server
+- **package-lock.json** and **package.json**: Dependency management files.
+- **prisma/**: Prisma ORM configuration directory.
+- **src/generated/prisma/**: Generated Prisma client files.
+- **src/graphql/resolvers/**: GraphQL resolvers for different entities.
+- **src/lib/**: Utility libraries like authentication decorators and token services.
+- **src/middlewares/**: Middleware functions for request handling.
+- **src/prisma/migrations/**: Database migration scripts.
+- **src/routes/**: API routes.
+- **src/sockets/**: Socket handler for real-time communication.
+- **tsconfig.json**: TypeScript configuration file.
+
+---
