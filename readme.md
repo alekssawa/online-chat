@@ -57,16 +57,13 @@ To set up and run the project locally, follow these steps:
 
    - For the backend, create a `.env` file in the `server` directory with configurations such as database connection strings and secret keys, for example:
    ```
-  DATABASE_URL=""
-
-  API_URL="http://localhost:3000"
-
-  JWT_SECRET=""
-  JWT_REFRESH_SECRET=""
-
-  ACCESS_TOKEN_EXPIRY="1d"
-  REFRESH_TOKEN_EXPIRY="7d"
-   ```
+    DATABASE_URL=
+    API_URL="http://localhost:3000"
+    JWT_SECRET=
+    JWT_REFRESH_SECRET=
+    ACCESS_TOKEN_EXPIRY="1d"
+    REFRESH_TOKEN_EXPIRY="7d"
+    ```
 
 4. **Start the development servers**
 
