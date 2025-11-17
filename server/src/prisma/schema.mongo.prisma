@@ -1,0 +1,204 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// =========================
+// USERS
+// =========================
+
+model users {
+  id          String           @id @map("_id") @default(auto()) @db.ObjectId
+  email       String           @unique
+  name        String           @default("unknown")
+  nickname    String?          @unique
+  password    String
+  about       String?
+  birthDate   DateTime?
+  lastOnline  DateTime?
+
+  tokens      RefreshToken[]
+  avatar      user_avatars?
+
+  friends     friends[]        @relation("UserFriends")
+  friendOf    friends[]        @relation("FriendOf")
+
+  privateChats1 private_chats[] @relation("User1Chats")
+  privateChats2 private_chats[] @relation("User2Chats")
+
+  groupMembers group_users[]
+
+  messages      messages[]      @relation("SentMessages")
+
+  privacy       privacy_settings?
+}
+
+// =========================
+// REFRESH TOKENS
+// =========================
+
+model RefreshToken {
+  id        String   @id @map("_id") @default(auto()) @db.ObjectId
+  token     String   @unique
+
+  userId    String   @db.ObjectId
+  user      users    @relation(fields: [userId], references: [id])
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// =========================
+// FRIENDS
+// =========================
+
+model friends {
+  id         String  @id @map("_id") @default(auto()) @db.ObjectId
+
+  userId     String  @db.ObjectId
+  friendId   String  @db.ObjectId
+
+  createdAt  DateTime @default(now())
+
+  user     users @relation("UserFriends", fields: [userId], references: [id])
+  friend   users @relation("FriendOf", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
+}
+
+// =========================
+// PRIVACY SETTINGS
+// =========================
+
+model privacy_settings {
+  id                   String   @id @map("_id") @default(auto()) @db.ObjectId
+
+  userId               String   @unique @db.ObjectId
+  user                 users    @relation(fields: [userId], references: [id])
+
+  showLastOnline       PrivacyLevel @default(ALL)
+  showAbout            PrivacyLevel @default(ALL)
+  showEmail            PrivacyLevel @default(FRIENDS)
+  showBirthDate        PrivacyLevel @default(FRIENDS)
+  allowCalls           PrivacyLevel @default(FRIENDS)
+}
+
+enum PrivacyLevel {
+  ALL
+  FRIENDS
+  NONE
+}
+
+// =========================
+// PRIVATE CHATS
+// =========================
+
+model private_chats {
+  id         String    @id @map("_id") @default(auto()) @db.ObjectId
+
+  user1Id    String    @db.ObjectId
+  user2Id    String    @db.ObjectId
+
+  createdAt  DateTime  @default(now())
+
+  user1 users @relation("User1Chats", fields: [user1Id], references: [id])
+  user2 users @relation("User2Chats", fields: [user2Id], references: [id])
+
+  messages messages[] @relation("PrivateChatMessages")
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+}
+
+// =========================
+// GROUPS
+// =========================
+
+model groups {
+  id        String         @id @map("_id") @default(auto()) @db.ObjectId
+  name      String
+  createdAt DateTime       @default(now())
+
+  users     group_users[]
+  messages  messages[]     @relation("GroupMessages")
+  avatar    group_avatars?
+}
+
+// =========================
+// MESSAGES
+// =========================
+
+model messages {
+  id         String     @id @map("_id") @default(auto()) @db.ObjectId
+  text       String
+  sentAt     DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  senderId   String      @db.ObjectId
+  sender     users       @relation("SentMessages", fields: [senderId], references: [id])
+
+  privateChatId String?  @db.ObjectId
+  privateChat   private_chats? @relation("PrivateChatMessages", fields: [privateChatId], references: [id])
+
+  groupId     String?    @db.ObjectId
+  group       groups?    @relation("GroupMessages", fields: [groupId], references: [id])
+
+  @@index([senderId])
+  @@index([privateChatId])
+  @@index([groupId])
+}
+
+// =========================
+// GROUP USERS
+// =========================
+
+model group_users {
+  id       String   @id @map("_id") @default(auto()) @db.ObjectId
+
+  groupId  String   @db.ObjectId
+  userId   String   @db.ObjectId
+
+  group    groups  @relation(fields: [groupId], references: [id])
+  user     users   @relation(fields: [userId], references: [id])
+
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+// =========================
+// AVATARS
+// =========================
+
+model user_avatars {
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  user_id     String   @unique @db.ObjectId
+  filename    String
+  mime_type   String
+  data        Bytes
+  uploaded_at DateTime @default(now())
+
+  user users @relation(fields: [user_id], references: [id])
+}
+
+model group_avatars {
+  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  group_id    String   @unique @db.ObjectId
+  filename    String
+  mime_type   String
+  data        Bytes
+  uploaded_at DateTime @default(now())
+
+  group groups @relation(fields: [group_id], references: [id])
+}

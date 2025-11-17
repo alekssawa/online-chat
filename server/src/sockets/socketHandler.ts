@@ -24,7 +24,7 @@ export function registerSocketHandlers(io: Server) {
       ([id, online]) => ({
         userId: id,
         online,
-      }),
+      })
     );
     socket.emit("onlineUsersList", currentOnline);
 
@@ -118,51 +118,44 @@ export function registerSocketHandlers(io: Server) {
       console.log(`🚪 User ${userId} left group ${groupId}`);
     });
 
-    socket.on(
-      "sendGroupChatMessage",
-      async (data: { groupId: string; senderId: string; text: string }) => {
-        if (!data.groupId || !data.senderId || !data.text) return;
-        try {
-          const savedMessage = await prisma.messages.create({
-            data: {
-              id: uuidv4(),
-              text: data.text,
-              senderId: data.senderId,
-              groupId: data.groupId, // привязка к группе
-            },
-            include: { sender: true },
-          });
+    socket.on("sendGroupChatMessage", async (data) => {
+      if (!data.groupId || !data.senderId || !data.text) return;
 
-          const sender = {
-            ...savedMessage.sender,
-            birthDate: savedMessage.sender.birthDate
-              ? savedMessage.sender.birthDate.toISOString()
-              : null,
-            lastOnline: savedMessage.sender.lastOnline
-              ? savedMessage.sender.lastOnline.toISOString()
-              : null,
-          };
+      try {
+        const savedMessage = await prisma.messages.create({
+          data: {
+            text: data.text,
+            senderId: data.senderId,
+            groupId: data.groupId,
+          },
+          include: { sender: true },
+        });
 
-          const message: Message = {
-            id: savedMessage.id,
-            text: savedMessage.text,
-            senderId: savedMessage.senderId,
-            groupId: savedMessage.groupId,
-            privateChatId: null,
-            sentAt: savedMessage.sentAt.toISOString(),
-            updatedAt: savedMessage.updatedAt.toISOString(),
-            sender,
-          };
+        const sender = {
+          ...savedMessage.sender,
+          birthDate: savedMessage.sender.birthDate?.toISOString() ?? null,
+          lastOnline: savedMessage.sender.lastOnline?.toISOString() ?? null,
+        };
 
-          io.to(`group-${data.groupId}`).emit("newGroupMessage", message);
-        } catch (err) {
-          console.error(err);
-          socket.emit("errorMessage", {
-            message: "Не удалось отправить сообщение в группу",
-          });
-        }
-      },
-    );
+        const message: Message = {
+          id: savedMessage.id,
+          text: savedMessage.text,
+          senderId: savedMessage.senderId,
+          groupId: savedMessage.groupId,
+          privateChatId: null,
+          sentAt: savedMessage.sentAt.toISOString(),
+          updatedAt: savedMessage.updatedAt.toISOString(),
+          sender,
+        };
+
+        io.to(`group-${data.groupId}`).emit("newGroupMessage", message);
+      } catch (err) {
+        console.error(err);
+        socket.emit("errorMessage", {
+          message: "Не удалось отправить сообщение в группу",
+        });
+      }
+    });
 
     // ==========================
     // ПРИВАТНЫЕ ЧАТЫ
@@ -183,10 +176,10 @@ export function registerSocketHandlers(io: Server) {
       "sendPrivateChatMessage",
       async (data: { chatId: string; senderId: string; text: string }) => {
         if (!data.chatId || !data.senderId || !data.text) return;
+
         try {
           const savedMessage = await prisma.messages.create({
             data: {
-              id: uuidv4(),
               text: data.text,
               senderId: data.senderId,
               privateChatId: data.chatId, // привязка к приватному чату
@@ -222,7 +215,7 @@ export function registerSocketHandlers(io: Server) {
             message: "Не удалось отправить сообщение в приватный чат",
           });
         }
-      },
+      }
     );
 
     // ==========================

@@ -1,0 +1,147 @@
+// datasource db {
+//   provider = "postgresql"
+//   url      = env("DATABASE_URL")
+// }
+
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// model RefreshToken {
+//   id        String   @id @default(cuid())
+//   token     String   @unique
+//   userId    String
+//   user      users     @relation(fields: [userId], references: [id])
+//   expiresAt DateTime
+//   createdAt DateTime @default(now())
+// }
+
+// model users {
+//   id          String         @id @default(uuid())
+//   email       String         @unique
+//   name        String         @default("unknown")
+//   nickname    String?        @unique
+//   password    String
+//   about       String?
+//   birthDate   DateTime?
+//   lastOnline  DateTime?
+//   tokens      RefreshToken[]
+//   avatar      user_avatars?
+
+//   // Дружба
+//   friends     friends[]       @relation("UserFriends")
+//   friendOf    friends[]       @relation("FriendOf")
+
+//   // Приватные чаты и группы
+//   privateChats1 private_chats[] @relation("User1Chats")
+//   privateChats2 private_chats[] @relation("User2Chats")
+//   groupMembers  group_users[]
+
+//   // Сообщения
+//   messages      messages[]     @relation("SentMessages")
+
+//   // Настройки приватности
+//   privacy       privacy_settings?
+// }
+
+// model friends {
+//   id         String   @id @default(uuid())
+//   userId     String
+//   friendId   String
+//   createdAt  DateTime @default(now())
+
+//   user       users    @relation("UserFriends", fields: [userId], references: [id])
+//   friend     users    @relation("FriendOf", fields: [friendId], references: [id])
+
+//   @@unique([userId, friendId])
+// }
+
+// model privacy_settings {
+//   userId               String   @unique
+//   user                 users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+//   showLastOnline       PrivacyLevel @default(ALL)
+//   showAbout            PrivacyLevel @default(ALL)
+//   showEmail            PrivacyLevel @default(FRIENDS)
+//   showBirthDate        PrivacyLevel @default(FRIENDS)
+//   allowCalls           PrivacyLevel @default(FRIENDS)
+// }
+
+// enum PrivacyLevel {
+//   ALL
+//   FRIENDS
+//   NONE
+// }
+
+// model private_chats {
+//   id         String      @id @default(uuid())
+//   user1Id    String
+//   user2Id    String
+//   createdAt  DateTime    @default(now())
+
+//   user1 users @relation("User1Chats", fields: [user1Id], references: [id])
+//   user2 users @relation("User2Chats", fields: [user2Id], references: [id])
+
+//   messages messages[] @relation("PrivateChatMessages")
+
+//   @@unique([user1Id, user2Id])
+// }
+
+// model groups {
+//   id        String        @id @default(uuid())
+//   name      String
+//   createdAt DateTime      @default(now())
+//   users     group_users[]
+//   messages  messages[]    @relation("GroupMessages")
+//   avatar    group_avatars?
+// }
+
+// model messages {
+//   id         String      @id @default(uuid())
+//   text       String
+//   sentAt     DateTime    @default(now())
+//   updatedAt  DateTime    @updatedAt
+
+//   senderId   String
+//   sender     users       @relation("SentMessages", fields: [senderId], references: [id])
+
+//   // Привязка к приватному чату или группе
+//   privateChatId String? 
+//   privateChat   private_chats? @relation("PrivateChatMessages", fields: [privateChatId], references: [id])
+
+//   groupId     String?
+//   group       groups?          @relation("GroupMessages", fields: [groupId], references: [id])
+// }
+
+// model group_users {
+//   id       String     @id @default(uuid())
+//   group    groups     @relation(fields: [groupId], references: [id])
+//   groupId  String
+//   user     users      @relation(fields: [userId], references: [id])
+//   userId   String
+//   joinedAt DateTime   @default(now())
+
+//   @@unique([groupId, userId])
+// }
+
+// model user_avatars {
+//   id          String      @id @default(uuid())
+//   user_id     String   @unique
+//   filename    String
+//   mime_type   String
+//   data        Bytes
+//   uploaded_at DateTime @default(now())
+
+//   user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+// }
+
+// model group_avatars {
+//   id          String   @id @default(uuid())
+//   group_id    String   @unique
+//   filename    String
+//   mime_type   String
+//   data        Bytes
+//   uploaded_at DateTime @default(now())
+
+//   group groups @relation(fields: [group_id], references: [id], onDelete: Cascade)
+// }
