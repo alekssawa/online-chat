@@ -24,8 +24,29 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
+  // Получаем ID собеседника для приватных чатов
+  const getTargetUserId = (): string | null => {
+    if (!selectedChat || selectedChat.type !== "private" || !user) return null;
+    
+    if (selectedChat.chat.user1.id === user.id) {
+      return selectedChat.chat.user2.id;
+    } else {
+      return selectedChat.chat.user1.id;
+    }
+  };
+
   // Используем WebRTC менеджер
-  const { startAudioCall, localAudioRef, remoteAudioRef } = useWebRTC({
+  const { 
+    startAudioCall, 
+    initiateCall,
+    acceptCall, 
+    rejectCall, 
+    endCall,
+    incomingCall,
+    isCallInitiator,
+    localAudioRef, 
+    remoteAudioRef 
+  } = useWebRTC({
     socket,
     roomId: selectedChat?.chat.id || null,
     currentUserId: user?.id || '',
@@ -37,6 +58,42 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
   // Start video call (заглушка)
   const startVideoCall = (): void => {
     alert("Видеозвонки пока не реализованы");
+  };
+
+  // Обработчик начала аудиозвонка
+  const handleAudioCall = async (): Promise<void> => {
+    if (!selectedChat || !socket) {
+      alert("Пожалуйста, выберите чат для звонка");
+      return;
+    }
+
+    if (isConnected) {
+      // Если уже в звонке - завершаем
+      endCall();
+    } else {
+      // Начинаем новый звонок
+      if (selectedChat.type === "private") {
+        const targetUserId = getTargetUserId();
+        if (targetUserId) {
+          await initiateCall(targetUserId, 'audio');
+        } else {
+          alert("Не удалось определить собеседника");
+        }
+      } else {
+        // Для групповых чатов используем старую логику
+        await startAudioCall();
+      }
+    }
+  };
+
+  // Принять входящий звонок
+  const handleAcceptCall = async (): Promise<void> => {
+    await acceptCall();
+  };
+
+  // Отклонить входящий звонок
+  const handleRejectCall = (): void => {
+    rejectCall("Отклонено пользователем");
   };
 
   function getUserStatus(
@@ -137,10 +194,21 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
               </>
             )}
           </div>
+          
+          {/* Статус звонка */}
           {isCallActive && (
             <div className={styles.callStatus}>
               <span className={styles.callStatusText}>
                 🔴 В звонке • {callStatus}
+              </span>
+            </div>
+          )}
+          
+          {/* Статус ожидания ответа */}
+          {isCallInitiator && !isCallActive && (
+            <div className={styles.callStatus}>
+              <span className={styles.callStatusText}>
+                🕐 Ожидание ответа... • {callStatus}
               </span>
             </div>
           )}
@@ -152,10 +220,10 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
         <button
           className={`${styles.actionButton} ${
             isCallActive ? styles.activeCall : ""
-          }`}
+          } ${isCallInitiator ? styles.pendingCall : ""}`}
           title={isConnected ? "Завершить звонок" : "Аудиозвонок"}
-          onClick={startAudioCall}
-          disabled={!socket} // Отключаем если нет socket
+          onClick={handleAudioCall}
+          disabled={!socket || !!incomingCall}
         >
           <AudioIcon />
         </button>
@@ -164,19 +232,61 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
           className={styles.actionButton}
           title="Видеозвонок"
           onClick={startVideoCall}
-          disabled={!socket}
+          disabled={!socket || !!incomingCall}
         >
           <VideoIcon />
         </button>
 
-        <button className={styles.actionButton} title="Поиск в чате">
+        <button 
+          className={styles.actionButton} 
+          title="Поиск в чате"
+          disabled={!!incomingCall}
+        >
           <SearchIcon />
         </button>
 
-        <button className={styles.actionButton} title="Меню">
+        <button 
+          className={styles.actionButton} 
+          title="Меню"
+          disabled={!!incomingCall}
+        >
           <MenuIcon />
         </button>
       </div>
+
+      {/* Модальное окно входящего звонка */}
+      {incomingCall && (
+        <div className={styles.incomingCallModal}>
+          <div className={styles.incomingCallContent}>
+            <div className={styles.incomingCallHeader}>
+              <h3>Входящий звонок</h3>
+              <div className={styles.callerInfo}>
+                <span className={styles.callerName}>
+                  {incomingCall.callerName}
+                </span>
+                <span className={styles.callType}>
+                  {incomingCall.type === 'audio' ? 'Аудиозвонок' : 'Видеозвонок'}
+                </span>
+              </div>
+            </div>
+            
+            <div className={styles.incomingCallActions}>
+              <button
+                className={`${styles.callButton} ${styles.acceptButton}`}
+                onClick={handleAcceptCall}
+              >
+                📞 Принять
+              </button>
+              <button
+                className={`${styles.callButton} ${styles.rejectButton}`}
+                onClick={handleRejectCall}
+              >
+                ❌ Отклонить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Скрытые аудио элементы для звонков */}
       <audio ref={localAudioRef} autoPlay muted style={{ display: "none" }} />
@@ -185,4 +295,4 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
   );
 }
 
-export default RoomHeader;
+export default RoomHeader; 

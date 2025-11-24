@@ -8,6 +8,18 @@ import type { User, Message } from "../../src/graphql/types.js";
 const onlineUsers = new Map<string, boolean>();
 // Хранилище звонковых комнат
 const callRooms = new Map<string, Set<string>>();
+// Хранилище активных входящих звонков
+const incomingCalls = new Map<
+  string,
+  {
+    callId: string;
+    from: string;
+    to: string;
+    roomId: string;
+    type: "audio" | "video";
+    timestamp: number;
+  }
+>();
 
 export function registerSocketHandlers(io: Server) {
   io.on("connection", (socket) => {
@@ -15,6 +27,9 @@ export function registerSocketHandlers(io: Server) {
     if (!userId) return;
 
     console.log(`✅ Socket connected: ${socket.id}, userId=${userId}`);
+
+    // Присоединяем сокет к комнате пользователя
+    socket.join(`user-${userId}`);
 
     // Помечаем пользователя онлайн
     onlineUsers.set(userId, true);
@@ -32,7 +47,191 @@ export function registerSocketHandlers(io: Server) {
     socket.broadcast.emit("userStatusChanged", { userId, online: true });
 
     // ==========================
-    // 📞 ЛОГИКА WEBRTC ЗВОНКОВ
+    // 📞 ЛОГИКА ВХОДЯЩИХ ЗВОНКОВ
+    // ==========================
+
+    // Инициация звонка
+    socket.on(
+      "initiate-call",
+      async (data: { to: string; roomId: string; type: "audio" | "video" }) => {
+        const { to, roomId, type } = data;
+
+        console.log(`📞 User ${userId} calling ${to} in room ${roomId}`);
+
+        // Проверяем, онлайн ли пользователь
+        const targetOnline = onlineUsers.get(to);
+        if (!targetOnline) {
+          socket.emit("call-failed", {
+            reason: "Пользователь не в сети",
+          });
+          return;
+        }
+
+        // Проверяем, не занят ли пользователь другим звонком
+        const existingCall = Array.from(incomingCalls.values()).find(
+          (call) => call.to === to && Date.now() - call.timestamp < 30000
+        );
+
+        if (existingCall) {
+          socket.emit("call-failed", {
+            reason: "Пользователь занят другим звонком",
+          });
+          return;
+        }
+
+        // Создаем уникальный ID для звонка
+        const callId = uuidv4();
+
+        // Сохраняем информацию о звонке
+        incomingCalls.set(callId, {
+          callId,
+          from: userId,
+          to,
+          roomId,
+          type,
+          timestamp: Date.now(),
+        });
+
+        // Отправляем уведомление о входящем звонке В КОМНАТУ ПОЛЬЗОВАТЕЛЯ
+        io.to(`user-${to}`).emit("incoming-call", {
+          callId,
+          from: userId,
+          fromSocketId: socket.id,
+          roomId,
+          type,
+          callerName: await getUsername(userId),
+        });
+
+        console.log(
+          `📞 User ${userId} incoming-call (callId: ${callId}), (socket: ${socket.id}) (to: ${to}) in room ${roomId}`
+        );
+
+        // Таймаут для автоматического отклонения
+        setTimeout(() => {
+          if (incomingCalls.has(callId)) {
+            incomingCalls.delete(callId);
+            socket.emit("call-timeout", { callId });
+            io.to(`user-${to}`).emit("call-ended", {
+              callId,
+              reason: "Время вышло",
+            });
+          }
+        }, 30000); // 30 секунд
+
+        socket.emit("call-initiated", { callId });
+      }
+    );
+
+    // Принятие звонка
+    socket.on("accept-call", async (data: { callId: string }) => {
+      const { callId } = data;
+      const call = incomingCalls.get(callId);
+
+      if (!call || call.to !== userId) {
+        socket.emit("call-error", { reason: "Звонок не найден" });
+        return;
+      }
+
+      console.log(`✅ User ${userId} accepted call ${callId}`);
+
+      // Уведомляем звонящего о принятии звонка (в комнату пользователя)
+      io.to(`user-${call.from}`).emit("call-accepted", {
+        callId,
+        acceptorSocketId: socket.id,
+      });
+
+      // Удаляем звонок из ожидания
+      incomingCalls.delete(callId);
+
+      // Автоматически присоединяем обоих пользователей к комнате
+      socket.emit("join-call-room", { roomId: call.roomId });
+      io.to(`user-${call.from}`).emit("join-call-room", {
+        roomId: call.roomId,
+      });
+    });
+
+    // Отклонение звонка
+    socket.on("reject-call", (data: { callId: string; reason?: string }) => {
+      const { callId, reason = "Звонок отклонен" } = data;
+      const call = incomingCalls.get(callId);
+
+      if (!call || call.to !== userId) {
+        socket.emit("call-error", { reason: "Звонок не найден" });
+        return;
+      }
+
+      console.log(`❌ User ${userId} rejected call ${callId}`);
+
+      // Уведомляем звонящего об отклонении (в комнату пользователя)
+      io.to(`user-${call.from}`).emit("call-rejected", {
+        callId,
+        reason,
+      });
+
+      // Удаляем звонок
+      incomingCalls.delete(callId);
+    });
+
+    // Отмена звонка (когда инициатор отменяет до ответа)
+    socket.on("cancel-call", (data: { callId: string }) => {
+      const { callId } = data;
+      const call = incomingCalls.get(callId);
+
+      if (!call || call.from !== userId) {
+        socket.emit("call-error", { reason: "Звонок не найден" });
+        return;
+      }
+
+      console.log(`🚫 User ${userId} cancelled call ${callId}`);
+
+      // Уведомляем получателя об отмене (в комнату пользователя)
+      io.to(`user-${call.to}`).emit("call-cancelled", { callId });
+
+      // Удаляем звонок
+      incomingCalls.delete(callId);
+    });
+
+    // Завершение активного звонка
+    socket.on("end-call", (data: { callId?: string; roomId?: string }) => {
+      const { callId, roomId } = data;
+
+      console.log(`📞 Call ended by ${userId} in room ${roomId}`);
+
+      const sendCallEnded = (
+        call: typeof incomingCalls extends Map<any, infer U> ? U : never
+      ) => {
+        // Отправляем обоим участникам, если они онлайн
+        io.to(`user-${call.from}`).emit("call-ended", {
+          callId: call.callId,
+          reason: "Собеседник завершил звонок",
+          endedBy: userId,
+        });
+
+        io.to(`user-${call.to}`).emit("call-ended", {
+          callId: call.callId,
+          reason: "Собеседник завершил звонок",
+          endedBy: userId,
+        });
+      };
+
+      if (callId) {
+        const call = incomingCalls.get(callId);
+        if (call) {
+          sendCallEnded(call);
+          incomingCalls.delete(callId);
+        }
+      } else if (roomId) {
+        for (const [id, call] of incomingCalls.entries()) {
+          if (call.roomId === roomId) {
+            sendCallEnded(call);
+            incomingCalls.delete(id);
+          }
+        }
+      }
+    });
+
+    // ==========================
+    // 📞 ЛОГИКА WEBRTC ЗВОНКОВ (существующая)
     // ==========================
     socket.on("join-room", (roomId: string) => {
       if (!roomId) return;
@@ -53,6 +252,12 @@ export function registerSocketHandlers(io: Server) {
       });
 
       const callRoomId = `call-${roomId}`;
+      if (socket.rooms.has(callRoomId)) {
+        console.log(
+          `⚠️ User ${socket.id} tried to rejoin ${callRoomId}, ignoring`
+        );
+        return;
+      }
       socket.join(callRoomId);
 
       if (!callRooms.has(callRoomId)) {
@@ -65,10 +270,10 @@ export function registerSocketHandlers(io: Server) {
       // Add current user to room
       room?.add(socket.id);
 
-      // Send existing users to new user (исправленное событие)
+      // Send existing users to new user
       socket.emit("users-in-room", otherUsers);
 
-      // Notify other users about new user (исправленное событие)
+      // Notify other users about new user
       socket.to(callRoomId).emit("user-joined", socket.id);
 
       console.log(`🎧 User ${socket.id} joined room ${callRoomId}`);
@@ -91,6 +296,25 @@ export function registerSocketHandlers(io: Server) {
           }
         }
       });
+
+      // Очищаем незавершенные звонки пользователя
+      for (const [callId, call] of incomingCalls.entries()) {
+        if (call.from === userId || call.to === userId) {
+          incomingCalls.delete(callId);
+          // Уведомляем другую сторону (в комнату пользователя)
+          if (call.from === userId) {
+            io.to(`user-${call.to}`).emit("call-ended", {
+              callId,
+              reason: "Собеседник отключился",
+            });
+          } else {
+            io.to(`user-${call.from}`).emit("call-ended", {
+              callId,
+              reason: "Собеседник отключился",
+            });
+          }
+        }
+      }
 
       socket.broadcast.emit("userStatusChanged", { userId, online: false });
     });
@@ -182,7 +406,7 @@ export function registerSocketHandlers(io: Server) {
             data: {
               text: data.text,
               senderId: data.senderId,
-              privateChatId: data.chatId, // привязка к приватному чату
+              privateChatId: data.chatId,
             },
             include: { sender: true },
           });
@@ -217,33 +441,19 @@ export function registerSocketHandlers(io: Server) {
         }
       }
     );
-
-    // ==========================
-    // DISCONNECT
-    // ==========================
-    socket.on("disconnect", async () => {
-      console.log(`❌ Socket disconnected: ${socket.id}, userId=${userId}`);
-
-      onlineUsers.set(userId, false);
-      io.emit("userStatusChanged", { userId, online: false });
-
-      try {
-        await prisma.users.update({
-          where: { id: userId },
-          data: { lastOnline: new Date() },
-        });
-      } catch (err) {
-        console.error(`⚠️ Failed to update lastOnline for ${userId}:`, err);
-      }
-
-      // Обработка выхода из звонков
-      callRooms.forEach((users, roomId) => {
-        if (users.has(socket.id)) {
-          users.delete(socket.id);
-          socket.to(roomId).emit("user-left-call", socket.id);
-          if (users.size === 0) callRooms.delete(roomId);
-        }
-      });
-    });
   });
+}
+
+// Вспомогательная функция для получения имени пользователя
+async function getUsername(userId: string): Promise<string> {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { name: true },
+    });
+    return user?.name || "Пользователь";
+  } catch (error) {
+    console.error("Error getting username:", error);
+    return "Пользователь";
+  }
 }
