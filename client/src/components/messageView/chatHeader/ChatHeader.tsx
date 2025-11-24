@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import styles from "./ChatHeader.module.css";
 
 import AudioIcon from "../../../assets/icons/audioIcon.svg?react";
@@ -7,375 +7,32 @@ import MenuIcon from "../../../assets/icons/menuIcon.svg?react";
 import SearchIcon from "../../../assets/icons/searchIcon.svg?react";
 import type { SelectedChat, User } from "../../type";
 import { Socket } from "socket.io-client";
+import { useWebRTC } from "../../../hooks/useWebRTC";
 
 interface RoomHeaderProps {
   selectedChat: SelectedChat | null;
   onlineUsers: { userId: string; online: boolean }[];
-  socket: typeof Socket | null; // ← Исправлен тип
+  socket: typeof Socket | null;
 }
-
-// WebRTC interfaces
-interface WebRTCSignal {
-  type: "offer" | "answer" | "ice-candidate";
-  offer?: RTCSessionDescriptionInit;
-  answer?: RTCSessionDescriptionInit;
-  candidate?: RTCIceCandidate;
-}
-
-interface SocketSignalData {
-  from: string;
-  signal: WebRTCSignal;
-}
-
+ 
 function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
-  // Refs для WebRTC
-  const localAudioRef = useRef<HTMLAudioElement>(null);
-  const remoteAudioRef = useRef<HTMLAudioElement>(null);
-
   // State для звонков
   const [callStatus, setCallStatus] = useState<string>("Готов к звонку");
   const [isCallActive, setIsCallActive] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState<boolean>(false);
 
-  // WebRTC variables
-  const localStreamRef = useRef<MediaStream | null>(null);
-  const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
-  const currentRoomRef = useRef<string | null>(null);
-
   const userStr = localStorage.getItem("user");
   const user: User | null = userStr ? JSON.parse(userStr) : null;
 
-  // Update status message
-  const updateCallStatus = (message: string) => {
-    setCallStatus(message);
-    console.log("Call Status:", message);
-  };
-
-  // Create peer connection for a specific user
-  const createPeerConnection = (userId: string): RTCPeerConnection => {
-    updateCallStatus(`Создание соединения с пользователем ${userId.slice(-6)}`);
-
-    const pc = new RTCPeerConnection({
-      iceServers: [
-        { urls: "stun:stun.l.google.com:19302" },
-        { urls: "stun:stun1.l.google.com:19302" },
-      ],
-    });
-
-    // Add local tracks
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => {
-        pc.addTrack(track, localStreamRef.current!);
-      });
-    }
-
-    // Handle remote stream
-    pc.ontrack = (event: RTCTrackEvent) => {
-      updateCallStatus(
-        `✅ Получен аудиопоток от пользователя ${userId.slice(-6)}`,
-      );
-      const remoteStream = event.streams[0];
-      if (remoteStream && remoteAudioRef.current) {
-        remoteAudioRef.current.srcObject = remoteStream;
-        setIsCallActive(true);
-      }
-    };
-
-    // ICE candidates
-    pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
-      if (event.candidate && socket) {
-        socket.emit("webrtc-signal", {
-          // ← Используем переданный socket
-          to: userId,
-          signal: {
-            type: "ice-candidate",
-            candidate: event.candidate,
-          } as WebRTCSignal,
-        });
-      }
-    };
-
-    // Connection state changes
-    pc.onconnectionstatechange = () => {
-      updateCallStatus(
-        `Соединение с ${userId.slice(-6)}: ${pc.connectionState}`,
-      );
-
-      if (pc.connectionState === "connected") {
-        setIsCallActive(true);
-      } else if (
-        pc.connectionState === "disconnected" ||
-        pc.connectionState === "failed"
-      ) {
-        setIsCallActive(false);
-      }
-    };
-
-    return pc;
-  };
-
-  // Create and send offer
-  const createOffer = async (userId: string): Promise<void> => {
-    if (peerConnectionsRef.current.has(userId)) {
-      return; // Already connected
-    }
-
-    const pc = createPeerConnection(userId);
-    peerConnectionsRef.current.set(userId, pc);
-
-    try {
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
-
-      socket?.emit("webrtc-signal", {
-        // ← Используем переданный socket
-        to: userId,
-        signal: {
-          type: "offer",
-          offer: offer,
-        } as WebRTCSignal,
-      });
-
-      updateCallStatus(
-        `📤 Отправлено предложение пользователю ${userId.slice(-6)}`,
-      );
-    } catch (error) {
-      console.error("Error creating offer:", error);
-      updateCallStatus(
-        `❌ Ошибка создания предложения: ${(error as Error).message}`,
-      );
-    }
-  };
-
-  // Handle incoming signal
-  const handleSignal = async (data: SocketSignalData): Promise<void> => {
-    const { from, signal } = data;
-
-    if (signal.type === "offer") {
-      await handleOffer(from, signal.offer!);
-    } else if (signal.type === "answer") {
-      await handleAnswer(from, signal.answer!);
-    } else if (signal.type === "ice-candidate") {
-      await handleIceCandidate(from, signal.candidate!);
-    }
-  };
-
-  // Handle incoming offer
-  const handleOffer = async (
-    from: string,
-    offer: RTCSessionDescriptionInit,
-  ): Promise<void> => {
-    updateCallStatus(
-      `📨 Получено предложение от пользователя ${from.slice(-6)}`,
-    );
-
-    let pc = peerConnectionsRef.current.get(from);
-    if (!pc) {
-      pc = createPeerConnection(from);
-      peerConnectionsRef.current.set(from, pc);
-    }
-
-    try {
-      await pc.setRemoteDescription(offer);
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-
-      socket?.emit("webrtc-signal", {
-        // ← Используем переданный socket
-        to: from,
-        signal: {
-          type: "answer",
-          answer: answer,
-        } as WebRTCSignal,
-      });
-
-      updateCallStatus(`📤 Отправлен ответ пользователю ${from.slice(-6)}`);
-    } catch (error) {
-      console.error("Error handling offer:", error);
-      updateCallStatus(
-        `❌ Ошибка обработки предложения: ${(error as Error).message}`,
-      );
-    }
-  };
-
-  // Handle incoming answer
-  const handleAnswer = async (
-    from: string,
-    answer: RTCSessionDescriptionInit,
-  ): Promise<void> => {
-    updateCallStatus(`📨 Получен ответ от пользователя ${from.slice(-6)}`);
-
-    const pc = peerConnectionsRef.current.get(from);
-    if (pc) {
-      try {
-        await pc.setRemoteDescription(answer);
-        updateCallStatus(
-          `✅ Соединение установлено с пользователем ${from.slice(-6)}`,
-        );
-      } catch (error) {
-        console.error("Error handling answer:", error);
-        updateCallStatus(
-          `❌ Ошибка обработки ответа: ${(error as Error).message}`,
-        );
-      }
-    }
-  };
-
-  // Handle ICE candidate
-  const handleIceCandidate = async (
-    from: string,
-    candidate: RTCIceCandidate,
-  ): Promise<void> => {
-    const pc = peerConnectionsRef.current.get(from);
-    if (pc) {
-      try {
-        await pc.addIceCandidate(candidate);
-        updateCallStatus(
-          `🧊 Обмен ICE-кандидатами с пользователем ${from.slice(-6)}`,
-        );
-      } catch (error) {
-        console.error("Error adding ICE candidate:", error);
-      }
-    }
-  };
-
-  // Setup socket listeners for WebRTC
-  useEffect(() => {
-    if (!socket) return;
-
-    // Обработчики для WebRTC
-    socket.on("users-in-room", (users: string[]) => {
-      updateCallStatus(`👥 ${users.length} пользователей в комнате`);
-
-      // Create offers for existing users
-      users.forEach((userId) => {
-        setTimeout(() => createOffer(userId), 1000);
-      });
-    });
-
-    socket.on("user-joined", (userId: string) => {
-      updateCallStatus(
-        `🆕 Пользователь ${userId.slice(-6)} присоединился к комнате`,
-      );
-      createOffer(userId);
-    });
-
-    socket.on("user-left", (userId: string) => {
-      updateCallStatus(`👋 Пользователь ${userId.slice(-6)} покинул комнату`);
-      const pc = peerConnectionsRef.current.get(userId);
-      if (pc) {
-        pc.close();
-        peerConnectionsRef.current.delete(userId);
-      }
-    });
-
-    socket.on("webrtc-signal", handleSignal);
-
-    return () => {
-      // Cleanup listeners
-      socket.off("users-in-room");
-      socket.off("user-joined");
-      socket.off("user-left");
-      socket.off("webrtc-signal");
-    };
-  }, [socket]);
-
-  // Join room for calls
-  const joinCallRoom = async (): Promise<void> => {
-    if (!selectedChat || !socket) {
-      alert("Пожалуйста, выберите комнату и убедитесь в подключении");
-      return;
-    }
-
-    const roomIdValue = selectedChat.chat.id;
-
-    try {
-      updateCallStatus("🎤 Запрос доступа к микрофону...");
-
-      // Get microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        video: false,
-      });
-
-      localStreamRef.current = stream;
-      if (localAudioRef.current) {
-        localAudioRef.current.srcObject = stream;
-      }
-      updateCallStatus("✅ Доступ к микрофону получен");
-
-      // Используем существующий socket
-      currentRoomRef.current = roomIdValue;
-
-      // Присоединяемся к комнате звонков
-      socket.emit("join-room", roomIdValue);
-      setIsConnected(true);
-      updateCallStatus("🔌 Подключено к комнате звонков");
-    } catch (error) {
-      console.error("Error joining room:", error);
-
-      if ((error as Error).name === "NotAllowedError") {
-        updateCallStatus("❌ Доступ к микрофону запрещен");
-        alert(
-          "Для аудиозвонков необходим доступ к микрофону. Пожалуйста, разрешите доступ в настройках браузера.",
-        );
-      } else {
-        updateCallStatus(`❌ Ошибка: ${(error as Error).message}`);
-      }
-
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-        localStreamRef.current = null;
-      }
-    }
-  };
-
-  // Leave call room
-  const leaveCallRoom = (): void => {
-    updateCallStatus("Выход из комнаты...");
-
-    // Close all peer connections
-    peerConnectionsRef.current.forEach((pc) => pc.close());
-    peerConnectionsRef.current.clear();
-
-    // Stop local stream
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
-    }
-
-    // Reset UI
-    if (localAudioRef.current) {
-      localAudioRef.current.srcObject = null;
-    }
-    if (remoteAudioRef.current) {
-      remoteAudioRef.current.srcObject = null;
-    }
-
-    setIsConnected(false);
-    setIsCallActive(false);
-    currentRoomRef.current = null;
-
-    updateCallStatus("Готов к звонку");
-  };
-
-  // Start audio call
-  const startAudioCall = async (): Promise<void> => {
-    if (!selectedChat || !socket) {
-      alert("Пожалуйста, выберите комнату для звонка");
-      return;
-    }
-
-    if (isConnected) {
-      leaveCallRoom();
-    } else {
-      await joinCallRoom();
-    }
-  };
+  // Используем WebRTC менеджер
+  const { startAudioCall, localAudioRef, remoteAudioRef } = useWebRTC({
+    socket,
+    roomId: selectedChat?.chat.id || null,
+    currentUserId: user?.id || '',
+    onCallStatusChange: setCallStatus,
+    onCallActiveChange: setIsCallActive,
+    onConnectedChange: setIsConnected,
+  });
 
   // Start video call (заглушка)
   const startVideoCall = (): void => {
@@ -435,13 +92,6 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
       n % 100 > 4 && n % 100 < 20 ? 2 : cases[n % 10 < 5 ? n % 10 : 5]
     ];
   }
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      leaveCallRoom();
-    };
-  }, []);
 
   return (
     <div className={styles.roomHeader}>
