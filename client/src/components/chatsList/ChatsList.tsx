@@ -209,8 +209,7 @@ function ChatsList({
   const [searchValue, setSearchValue] = useState("");
 
   const user = useMemo(() => {
-    const userStr = localStorage.getItem("user");
-    return userStr ? JSON.parse(userStr) : null;
+    return JSON.parse(localStorage.getItem('user') || 'null')
   }, []);
 
   // console.log("user:", user);

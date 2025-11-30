@@ -22,8 +22,7 @@ function ChatRoom() {
 	const socketRef = useRef<TSocket | null>(null)
 	const [isSocketConnected, setIsSocketConnected] = useState(false)
 
-	const userStr = localStorage.getItem('user')
-	const user: User | null = userStr ? JSON.parse(userStr) : null
+	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
 
 	if (!socketRef.current && user) {
 		const socket = socketIOClient('http://localhost:3000', {

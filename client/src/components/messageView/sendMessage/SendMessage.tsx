@@ -94,8 +94,7 @@ function SendMessage({
   });
 
   // Получаем пользователя из localStorage
-  const userStr = localStorage.getItem("user");
-  const user: User | null = userStr ? JSON.parse(userStr) : null;
+  const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
 
   // Функция для сохранения и восстановления выделения
   const saveSelection = (): Range | null => {
