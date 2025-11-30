@@ -33,16 +33,9 @@ function MessageView({
 	updateChatLastMessage,
 }: MessageViewProps) {
 	const [messages, setMessages] = useState<Message[]>([])
-
-	// const socketRef = useRef<ReturnType<typeof socketIOClient> | null>(null)
 	const messagesEndRef = useRef<HTMLDivElement>(null)
-
-	const userStr = localStorage.getItem('user')
-	const user: User | null = userStr ? JSON.parse(userStr) : null
-
+	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
 	const chatId = selectedChat?.chat.id ?? null
-
-	// console.log("MessageView selectedChat:", selectedChat);
 
 	// Прокрутка вниз при новых сообщениях
 	useEffect(() => {
@@ -74,14 +67,12 @@ function MessageView({
 		setMessages(initialMessages)
 	}, [selectedChat])
 
-	// Подключение Socket.IO
 	useEffect(() => {
 		if (!chatId || !user || !selectedChat?.type) return
 
 		const socket = socketRef.current
 		if (!socket) return
 
-		// 🔹 Подписка на новые сообщения в зависимости от типа чата
 		const handleNewMessage = (message: Message) => {
 			setMessages(prev => [...prev, message])
 		}
@@ -120,12 +111,10 @@ function MessageView({
 	}
 
 	const groupMessagesByDate = (messages: Message[]) => {
-		// 1️⃣ Сначала сортируем сообщения по дате отправки
 		const sortedMessages = [...messages].sort(
 			(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
 		)
 
-		// 2️⃣ Группируем по дате
 		const groups: { [key: string]: MessageGroup } = {}
 
 		sortedMessages.forEach(message => {
@@ -159,7 +148,6 @@ function MessageView({
 
 			<ul>
 				{Object.entries(groupMessagesByDate(messages))
-					// 3️⃣ Сортируем группы по дате (чтобы старые были сверху, новые — внизу)
 					.sort(
 						([dateA], [dateB]) =>
 							new Date(dateA).getTime() - new Date(dateB).getTime()
