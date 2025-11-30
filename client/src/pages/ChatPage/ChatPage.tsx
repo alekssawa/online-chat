@@ -1,89 +1,117 @@
-import { useCallback, useState } from "react";
-import styles from "./ChatPage.module.css";
+import { useCallback, useRef, useState } from 'react'
+import socketIOClient from 'socket.io-client'
+import styles from './ChatPage.module.css'
 
-import ChatsList from "../../components/chatsList/ChatsList";
-import UserList from "../../components/usersList/UserList";
-import MessageView from "../../components/messageView/MessageView";
+import ChatsList from '../../components/chatsList/ChatsList'
+import MessageView from '../../components/messageView/MessageView'
+import UserList from '../../components/usersList/UserList'
 
-import type { SelectedChat, User, OnlineUser } from "../../components/type";
-import UserInfoPanel from "../../components/userInfoPanel/UserInfoPanel";
+import type { OnlineUser, SelectedChat, User } from '../../components/type'
+import UserInfoPanel from '../../components/userInfoPanel/UserInfoPanel'
+
+export type TSocket = ReturnType<typeof socketIOClient>
 
 function ChatRoom() {
-  const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
-  const [, /*error*/ setError] = useState<string | null>(null);
+	const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null)
+	const [selectedUser, setSelectedUser] = useState<User | null>(null)
+	const [loading, setLoading] = useState(true)
+	const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
+	const [, /*error*/ setError] = useState<string | null>(null)
+	const [isUserPageOpen, setIsUserPageOpen] = useState(false)
 
-  const [updateChatLastMessage, setUpdateChatLastMessage] = useState<
-    (chatId: string, newMessage: { text: string; senderName?: string }) => void
-  >(() => () => {});
+	const socketRef = useRef<TSocket | null>(null)
+	const [isSocketConnected, setIsSocketConnected] = useState(false)
 
-  const handleUpdateFunction = useCallback(
-    (
-      updateFn: (
-        chatId: string,
-        newMessage: { text: string; senderName?: string },
-      ) => void,
-    ) => {
-      setUpdateChatLastMessage(() => updateFn);
-    },
-    [],
-  );
+	const userStr = localStorage.getItem('user')
+	const user: User | null = userStr ? JSON.parse(userStr) : null
 
-  const [isUserPageOpen, setIsUserPageOpen] = useState(false);
+	if (!socketRef.current && user) {
+		const socket = socketIOClient('http://localhost:3000', {
+			auth: { token: localStorage.getItem('accessToken'), userId: user.id },
+		})
+		socketRef.current = socket
 
-  // console.log("Selected Room:", selectedRoom);
-  // console.log("selectedUser:", selectedUser);
+		socket.on('connect', () => setIsSocketConnected(true))
+		socket.on('disconnect', () => setIsSocketConnected(false))
 
-  return (
-    <div className={styles.container}>
-      {loading && (
-        <div className={styles.loading}>
-          <div className={styles.loader}></div>
-          <div className={styles.loadingText}>Connecting to server...</div>
-          {/* {error && <div className={styles.error}>Error: {error}</div>} */}
-        </div>
-      )}
+		socket.on('onlineUsersList', (users: OnlineUser[]) => setOnlineUsers(users))
 
-      <>
-        <ChatsList
-          setSelectedChat={setSelectedChat}
-          setIsUserPageOpen={setIsUserPageOpen}
-          loading={loading}
-          setLoading={setLoading}
-          setError={setError}
-          SetUpdateFunction={handleUpdateFunction}
-        />
-        {selectedChat && (
-          <>
-            <MessageView
-              selectedChat={selectedChat}
-              onlineUsers={onlineUsers}
-              setOnlineUsers={setOnlineUsers}
-              updateChatLastMessage={updateChatLastMessage}
-            />
-          </>
-        )}
-        {isUserPageOpen || selectedChat?.type == "private" ? (
-          <UserInfoPanel
-            selectedChat={selectedChat}
-            selectedUser={selectedUser}
-            setIsUserPageOpen={setIsUserPageOpen}
-            onlineUsers={onlineUsers}
-          />
-        ) : (
-          <UserList
-            selectedChat={selectedChat}
-            loading={loading}
-            onlineUsers={onlineUsers}
-            setSelectedUser={setSelectedUser}
-            setIsUserPageOpen={setIsUserPageOpen}
-          />
-        )}
-      </>
-    </div>
-  );
+		socket.on('userStatusChanged', (status: OnlineUser) =>
+			setOnlineUsers(prev => {
+				const filtered = prev.filter(u => u.userId !== status.userId)
+				return [...filtered, status]
+			})
+		)
+	}
+
+	const [updateChatLastMessage, setUpdateChatLastMessage] = useState<
+		(chatId: string, newMessage: { text: string; senderName?: string }) => void
+	>(() => () => {})
+
+	const handleUpdateFunction = useCallback(
+		(
+			updateFn: (
+				chatId: string,
+				newMessage: { text: string; senderName?: string }
+			) => void
+		) => {
+			setUpdateChatLastMessage(() => updateFn)
+		},
+		[]
+	)
+
+	// console.log("Selected Room:", selectedRoom);
+	// console.log("selectedUser:", selectedUser);
+
+	return (
+		<div className={styles.container}>
+			{loading && (
+				<div className={styles.loading}>
+					<div className={styles.loader}></div>
+					<div className={styles.loadingText}>Connecting to server...</div>
+					{/* {error && <div className={styles.error}>Error: {error}</div>} */}
+				</div>
+			)}
+
+			<>
+				<ChatsList
+					setSelectedChat={setSelectedChat}
+					setIsUserPageOpen={setIsUserPageOpen}
+					loading={loading}
+					setLoading={setLoading}
+					setError={setError}
+					SetUpdateFunction={handleUpdateFunction}
+				/>
+				{selectedChat && (
+					<>
+						<MessageView
+							socketRef={socketRef}
+							isSocketConnected={isSocketConnected}
+							selectedChat={selectedChat}
+							onlineUsers={onlineUsers}
+							updateChatLastMessage={updateChatLastMessage}
+						/>
+					</>
+				)}
+				{isUserPageOpen || selectedChat?.type == 'private' ? (
+					<UserInfoPanel
+						selectedChat={selectedChat}
+						selectedUser={selectedUser}
+						setIsUserPageOpen={setIsUserPageOpen}
+						onlineUsers={onlineUsers}
+					/>
+				) : (
+					<UserList
+						selectedChat={selectedChat}
+						loading={loading}
+						onlineUsers={onlineUsers}
+						setSelectedUser={setSelectedUser}
+						setIsUserPageOpen={setIsUserPageOpen}
+					/>
+				)}
+			</>
+		</div>
+	)
 }
 
-export default ChatRoom;
+export default ChatRoom

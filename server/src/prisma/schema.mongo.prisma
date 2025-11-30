@@ -12,29 +12,29 @@ generator client {
 // =========================
 
 model users {
-  id          String           @id @map("_id") @default(auto()) @db.ObjectId
-  email       String           @unique
-  name        String           @default("unknown")
-  nickname    String?          @unique
-  password    String
-  about       String?
-  birthDate   DateTime?
-  lastOnline  DateTime?
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  email      String    @unique
+  name       String    @default("unknown")
+  nickname   String?   @unique
+  password   String
+  about      String?
+  birthDate  DateTime?
+  lastOnline DateTime?
 
-  tokens      RefreshToken[]
-  avatar      user_avatars?
+  tokens RefreshToken[]
+  avatar user_avatars?
 
-  friends     friends[]        @relation("UserFriends")
-  friendOf    friends[]        @relation("FriendOf")
+  friends  friends[] @relation("UserFriends")
+  friendOf friends[] @relation("FriendOf")
 
   privateChats1 private_chats[] @relation("User1Chats")
   privateChats2 private_chats[] @relation("User2Chats")
 
   groupMembers group_users[]
 
-  messages      messages[]      @relation("SentMessages")
+  messages messages[] @relation("SentMessages")
 
-  privacy       privacy_settings?
+  privacy privacy_settings?
 }
 
 // =========================
@@ -42,11 +42,11 @@ model users {
 // =========================
 
 model RefreshToken {
-  id        String   @id @map("_id") @default(auto()) @db.ObjectId
-  token     String   @unique
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  token String @unique
 
-  userId    String   @db.ObjectId
-  user      users    @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  user   users  @relation(fields: [userId], references: [id])
 
   expiresAt DateTime
   createdAt DateTime @default(now())
@@ -59,15 +59,15 @@ model RefreshToken {
 // =========================
 
 model friends {
-  id         String  @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId     String  @db.ObjectId
-  friendId   String  @db.ObjectId
+  userId   String @db.ObjectId
+  friendId String @db.ObjectId
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  user     users @relation("UserFriends", fields: [userId], references: [id])
-  friend   users @relation("FriendOf", fields: [friendId], references: [id])
+  user   users @relation("UserFriends", fields: [userId], references: [id])
+  friend users @relation("FriendOf", fields: [friendId], references: [id])
 
   @@unique([userId, friendId])
   @@index([userId])
@@ -79,16 +79,16 @@ model friends {
 // =========================
 
 model privacy_settings {
-  id                   String   @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  userId               String   @unique @db.ObjectId
-  user                 users    @relation(fields: [userId], references: [id])
+  userId String @unique @db.ObjectId
+  user   users  @relation(fields: [userId], references: [id])
 
-  showLastOnline       PrivacyLevel @default(ALL)
-  showAbout            PrivacyLevel @default(ALL)
-  showEmail            PrivacyLevel @default(FRIENDS)
-  showBirthDate        PrivacyLevel @default(FRIENDS)
-  allowCalls           PrivacyLevel @default(FRIENDS)
+  showLastOnline PrivacyLevel @default(ALL)
+  showAbout      PrivacyLevel @default(ALL)
+  showEmail      PrivacyLevel @default(FRIENDS)
+  showBirthDate  PrivacyLevel @default(FRIENDS)
+  allowCalls     PrivacyLevel @default(FRIENDS)
 }
 
 enum PrivacyLevel {
@@ -102,12 +102,12 @@ enum PrivacyLevel {
 // =========================
 
 model private_chats {
-  id         String    @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  user1Id    String    @db.ObjectId
-  user2Id    String    @db.ObjectId
+  user1Id String @db.ObjectId
+  user2Id String @db.ObjectId
 
-  createdAt  DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   user1 users @relation("User1Chats", fields: [user1Id], references: [id])
   user2 users @relation("User2Chats", fields: [user2Id], references: [id])
@@ -124,13 +124,13 @@ model private_chats {
 // =========================
 
 model groups {
-  id        String         @id @map("_id") @default(auto()) @db.ObjectId
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   name      String
-  createdAt DateTime       @default(now())
+  createdAt DateTime @default(now())
 
-  users     group_users[]
-  messages  messages[]     @relation("GroupMessages")
-  avatar    group_avatars?
+  users    group_users[]
+  messages messages[]     @relation("GroupMessages")
+  avatar   group_avatars?
 }
 
 // =========================
@@ -138,19 +138,19 @@ model groups {
 // =========================
 
 model messages {
-  id         String     @id @map("_id") @default(auto()) @db.ObjectId
-  text       String
-  sentAt     DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  text      String
+  sentAt    DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  senderId   String      @db.ObjectId
-  sender     users       @relation("SentMessages", fields: [senderId], references: [id])
+  senderId String @db.ObjectId
+  sender   users  @relation("SentMessages", fields: [senderId], references: [id])
 
-  privateChatId String?  @db.ObjectId
+  privateChatId String?        @db.ObjectId
   privateChat   private_chats? @relation("PrivateChatMessages", fields: [privateChatId], references: [id])
 
-  groupId     String?    @db.ObjectId
-  group       groups?    @relation("GroupMessages", fields: [groupId], references: [id])
+  groupId String? @db.ObjectId
+  group   groups? @relation("GroupMessages", fields: [groupId], references: [id])
 
   @@index([senderId])
   @@index([privateChatId])
@@ -162,13 +162,13 @@ model messages {
 // =========================
 
 model group_users {
-  id       String   @id @map("_id") @default(auto()) @db.ObjectId
+  id String @id @default(auto()) @map("_id") @db.ObjectId
 
-  groupId  String   @db.ObjectId
-  userId   String   @db.ObjectId
+  groupId String @db.ObjectId
+  userId  String @db.ObjectId
 
-  group    groups  @relation(fields: [groupId], references: [id])
-  user     users   @relation(fields: [userId], references: [id])
+  group groups @relation(fields: [groupId], references: [id])
+  user  users  @relation(fields: [userId], references: [id])
 
   joinedAt DateTime @default(now())
 
@@ -182,7 +182,7 @@ model group_users {
 // =========================
 
 model user_avatars {
-  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   user_id     String   @unique @db.ObjectId
   filename    String
   mime_type   String
@@ -193,7 +193,7 @@ model user_avatars {
 }
 
 model group_avatars {
-  id          String   @id @map("_id") @default(auto()) @db.ObjectId
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   group_id    String   @unique @db.ObjectId
   filename    String
   mime_type   String
