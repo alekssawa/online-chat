@@ -1,264 +1,290 @@
-import prisma from "../../lib/prismaClient.js";
-import type { Message, User, PrivateChat, GroupChat } from "../types.js";
-import { withAuth } from "../../lib/authDecorator.js";
-import { GraphQLError } from "graphql";
+import { GraphQLError } from 'graphql'
+import { withAuth } from '../../lib/authDecorator.js'
+import prisma from '../../lib/prismaClient.js'
+import type { GroupChat, Message, PrivateChat, User } from '../types.js'
 
 export const messageResolvers = {
-  Mutation: {
-    // --- Приватные сообщения ---
-    sendPrivateMessage: withAuth(
-      async (
-        _: any,
-        {
-          chatId,
-          senderId,
-          text,
-        }: { chatId: string; senderId: string; text: string },
-      ): Promise<Message> => {
-        if (!chatId || !senderId || !text) {
-          throw new GraphQLError("chatId, senderId и text обязательны");
-        }
+	Mutation: {
+		// --- Приватные сообщения ---
+		sendPrivateMessage: withAuth(
+			async (
+				_: any,
+				{
+					chatId,
+					senderId,
+					text,
+					iv,
+				}: { chatId: string; senderId: string; text: string; iv: string }
+			): Promise<Message> => {
+				if (!chatId || !senderId || !text || !iv) {
+					throw new GraphQLError('chatId, senderId, text и iv обязательны')
+				}
 
-        const chat = await prisma.private_chats.findUnique({
-          where: { id: chatId },
-        });
-        if (!chat) throw new GraphQLError("Чат не найден");
+				const chat = await prisma.private_chats.findUnique({
+					where: { id: chatId },
+				})
+				if (!chat) throw new GraphQLError('Чат не найден')
 
-        if (senderId !== chat.user1Id && senderId !== chat.user2Id) {
-          throw new GraphQLError("Пользователь не состоит в этом чате");
-        }
+				if (senderId !== chat.user1Id && senderId !== chat.user2Id) {
+					throw new GraphQLError('Пользователь не состоит в этом чате')
+				}
 
-        const message = await prisma.messages.create({
-          data: { text, senderId, privateChatId: chatId },
-          include: { sender: true },
-        });
+				const message = await prisma.messages.create({
+					data: { text, senderId, privateChatId: chatId, iv },
+					include: { sender: true },
+				})
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: message.privateChatId,
-          groupId: null,
-        };
-      },
-    ),
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt.toISOString(),
+					},
+					privateChatId: message.privateChatId,
+					groupId: null,
+				}
+			}
+		),
 
-    updatePrivateMessage: withAuth(
-      async (
-        _: any,
-        { id, text }: { id: string; text: string },
-      ): Promise<Message> => {
-        const message = await prisma.messages.update({
-          where: { id },
-          data: { text, updatedAt: new Date() },
-          include: { sender: true, privateChat: true },
-        });
+		updatePrivateMessage: withAuth(
+			async (
+				_: any,
+				{ id, text, iv }: { id: string; text: string; iv?: string }
+			): Promise<Message> => {
+				const data: any = { text, updatedAt: new Date() }
+				if (iv) data.iv = iv
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: message.privateChatId,
-          groupId: null,
-        };
-      },
-    ),
+				const message = await prisma.messages.update({
+					where: { id },
+					data,
+					include: { sender: true, privateChat: true },
+				})
 
-    deletePrivateMessage: withAuth(
-      async (_: any, { id }: { id: string }): Promise<Message> => {
-        const message = await prisma.messages.delete({
-          where: { id },
-          include: { sender: true, privateChat: true },
-        });
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt.toISOString(),
+					},
+					privateChatId: message.privateChatId,
+					groupId: null,
+				}
+			}
+		),
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: message.privateChatId,
-          groupId: null,
-        };
-      },
-    ),
+		deletePrivateMessage: withAuth(
+			async (_: any, { id }: { id: string }): Promise<Message> => {
+				const message = await prisma.messages.delete({
+					where: { id },
+					include: { sender: true, privateChat: true },
+				})
 
-    // --- Групповые сообщения ---
-    sendGroupMessage: withAuth(
-      async (
-        _: any,
-        {
-          groupId,
-          senderId,
-          text,
-        }: { groupId: string; senderId: string; text: string },
-      ): Promise<Message> => {
-        if (!groupId || !senderId || !text) {
-          throw new GraphQLError("groupId, senderId и text обязательны");
-        }
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt.toISOString(),
+					},
+					privateChatId: message.privateChatId,
+					groupId: null,
+				}
+			}
+		),
 
-        const chat = await prisma.groups.findUnique({ where: { id: groupId } });
-        if (!chat) throw new GraphQLError("Группа не найдена");
+		// --- Групповые сообщения ---
+		sendGroupMessage: withAuth(
+			async (
+				_: any,
+				{
+					groupId,
+					senderId,
+					text,
+					iv,
+				}: { groupId: string; senderId: string; text: string; iv: string }
+			): Promise<Message> => {
+				if (!groupId || !senderId || !text || !iv) {
+					throw new GraphQLError('groupId, senderId, text и iv обязательны')
+				}
 
-        const message = await prisma.messages.create({
-          data: { text, senderId, groupId },
-          include: { sender: true },
-        });
+				const chat = await prisma.groups.findUnique({ where: { id: groupId } })
+				if (!chat) throw new GraphQLError('Группа не найдена')
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: null,
-          groupId: message.groupId,
-        };
-      },
-    ),
+				const message = await prisma.messages.create({
+					data: { text, senderId, groupId, iv },
+					include: { sender: true },
+				})
 
-    updateGroupMessage: withAuth(
-      async (
-        _: any,
-        { id, text }: { id: string; text: string },
-      ): Promise<Message> => {
-        const message = await prisma.messages.update({
-          where: { id },
-          data: { text, updatedAt: new Date() },
-          include: { sender: true, group: true },
-        });
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt.toISOString(),
+					},
+					privateChatId: null,
+					groupId: message.groupId,
+				}
+			}
+		),
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: null,
-          groupId: message.groupId,
-        };
-      },
-    ),
+		updateGroupMessage: withAuth(
+			async (
+				_: any,
+				{ id, text, iv }: { id: string; text: string; iv?: string }
+			): Promise<Message> => {
+				const data: any = { text, updatedAt: new Date() }
+				if (iv) data.iv = iv
 
-    deleteGroupMessage: withAuth(
-      async (_: any, { id }: { id: string }): Promise<Message> => {
-        const message = await prisma.messages.delete({
-          where: { id },
-          include: { sender: true, group: true },
-        });
+				const message = await prisma.messages.update({
+					where: { id },
+					data,
+					include: { sender: true, group: true },
+				})
 
-        return {
-          id: message.id,
-          text: message.text,
-          sentAt: message.sentAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-          senderId: message.senderId,
-          sender: {
-            ...message.sender,
-            birthDate: message.sender.birthDate?.toISOString() || null,
-            lastOnline: message.sender.lastOnline?.toISOString() || null,
-          },
-          privateChatId: null,
-          groupId: message.groupId,
-        };
-      },
-    ),
-  },
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt?.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt?.toISOString(),
+					},
+					privateChatId: null,
+					groupId: message.groupId,
+				}
+			}
+		),
 
-  Message: {
-    sender: withAuth(async (parent: Message): Promise<User> => {
-      if (!parent.sender) throw new GraphQLError("Sender not found");
-      return {
-        ...parent.sender,
-        birthDate: parent.sender.birthDate
-          ? new Date(parent.sender.birthDate).toISOString()
-          : null,
-        lastOnline: parent.sender.lastOnline
-          ? new Date(parent.sender.lastOnline).toISOString()
-          : null,
-      };
-    }),
+		deleteGroupMessage: withAuth(
+			async (_: any, { id }: { id: string }): Promise<Message> => {
+				const message = await prisma.messages.delete({
+					where: { id },
+					include: { sender: true, group: true },
+				})
 
-    privateChat: withAuth(
-      async (parent: Message): Promise<PrivateChat | null> => {
-        if (!parent.privateChatId) return null;
-        const chat = await prisma.private_chats.findUnique({
-          where: { id: parent.privateChatId },
-        });
-        if (!chat) return null;
-        return {
-          id: chat.id,
-          user1Id: chat.user1Id,
-          user2Id: chat.user2Id,
-          createdAt: chat.createdAt.toISOString(),
-        };
-      },
-    ),
+				return {
+					id: message.id,
+					text: message.text,
+					iv: message.iv,
+					sentAt: message.sentAt.toISOString(),
+					updatedAt: message.updatedAt.toISOString(),
+					senderId: message.senderId,
+					sender: {
+						...message.sender,
+						birthDate: message.sender.birthDate?.toISOString() || null,
+						lastOnline: message.sender.lastOnline?.toISOString() || null,
+						keyCreatedAt: message.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: message.sender.keyUpdatedAt?.toISOString(),
+					},
+					privateChatId: null,
+					groupId: message.groupId,
+				}
+			}
+		),
+	},
 
-    groupChat: withAuth(async (parent: Message): Promise<GroupChat | null> => {
-      if (!parent.groupId) return null;
-      const chat = await prisma.groups.findUnique({
-        where: { id: parent.groupId },
-        include: { users: { include: { user: true } }, messages: true },
-      });
-      if (!chat) return null;
+	Message: {
+		sender: withAuth(async (parent: Message): Promise<User> => {
+			if (!parent.sender) throw new GraphQLError('Sender not found')
+			return {
+				...parent.sender,
+				birthDate: parent.sender.birthDate
+					? new Date(parent.sender.birthDate).toISOString()
+					: null,
+				lastOnline: parent.sender.lastOnline
+					? new Date(parent.sender.lastOnline).toISOString()
+					: null,
+			}
+		}),
 
-      return {
-        ...chat,
-        createdAt: chat.createdAt.toISOString(),
-        messages: chat.messages.map((m) => ({
-          ...m,
-          sentAt: m.sentAt.toISOString(),
-          updatedAt: m.updatedAt.toISOString(),
-        })),
-        users: chat.users.map((u) => ({
-          ...u,
-          joinedAt: u.joinedAt.toISOString(),
-          user: {
-            ...u.user,
-            birthDate: u.user.birthDate ? u.user.birthDate.toISOString() : null,
-            lastOnline: u.user.lastOnline
-              ? u.user.lastOnline.toISOString()
-              : null,
-          },
-          group: {
-            id: chat.id,
-            name: chat.name,
-            createdAt: chat.createdAt.toISOString(),
-            messages: [],
-            users: [],
-          },
-        })),
-      };
-    }),
-  },
-};
+		privateChat: withAuth(
+			async (parent: Message): Promise<PrivateChat | null> => {
+				if (!parent.privateChatId) return null
+				const chat = await prisma.private_chats.findUnique({
+					where: { id: parent.privateChatId },
+				})
+				if (!chat) return null
+				return {
+					id: chat.id,
+					user1Id: chat.user1Id,
+					user2Id: chat.user2Id,
+					createdAt: chat.createdAt.toISOString(),
+				}
+			}
+		),
+
+		groupChat: withAuth(async (parent: Message): Promise<GroupChat | null> => {
+			if (!parent.groupId) return null
+			const chat = await prisma.groups.findUnique({
+				where: { id: parent.groupId },
+				include: { users: { include: { user: true } }, messages: true },
+			})
+			if (!chat) return null
+
+			return {
+				...chat,
+				createdAt: chat.createdAt.toISOString(),
+				messages: chat.messages.map(m => ({
+					...m,
+					sentAt: m.sentAt.toISOString(),
+					updatedAt: m.updatedAt.toISOString(),
+				})),
+				users: chat.users.map(u => ({
+					...u,
+					joinedAt: u.joinedAt.toISOString(),
+					user: {
+						...u.user,
+						birthDate: u.user.birthDate ? u.user.birthDate.toISOString() : null,
+						lastOnline: u.user.lastOnline?.toISOString() || null,
+						keyCreatedAt: u.user.keyCreatedAt.toISOString(),
+						keyUpdatedAt: u.user.keyUpdatedAt.toISOString(),
+					},
+					group: {
+						id: chat.id,
+						name: chat.name,
+						createdAt: chat.createdAt.toISOString(),
+						messages: [],
+						users: [],
+					},
+				})),
+			}
+		}),
+	},
+}

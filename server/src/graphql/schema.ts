@@ -15,6 +15,15 @@ export const typeDefs = `#graphql
     privateChats: [PrivateChat!]!
     groupChats: [GroupChat!]!
     messages: [Message!]!
+
+    # 🔐 Crypto fields
+    publicKey: String         # Можно отдавать клиенту
+    encryptedPrivateKey: String
+    salt: String
+    iv: String
+    kdfIterations: Int
+    keyCreatedAt: String      # ISO
+    keyUpdatedAt: String      # ISO
   }
 
   type Friend {
@@ -78,6 +87,7 @@ export const typeDefs = `#graphql
   type Message {
     id: ID!
     text: String!
+    iv: String! 
     sentAt: String!
     updatedAt: String!
     sender: User!
@@ -121,7 +131,17 @@ export const typeDefs = `#graphql
   # Мутации
   type Mutation {
     # --- Аутентификация ---
-    register(email: String!, password: String!, name: String): AuthPayload!
+    register(
+    email: String!
+    password: String!
+    name: String
+
+    publicKey: String!
+    encryptedPrivateKey: String!
+    salt: String!
+    iv: String!
+    kdfIterations: Int!
+  ): AuthPayload!
     login(email: String!, password: String!): AuthPayload!
     refreshToken: AuthPayload!
     logout: Boolean!
@@ -159,7 +179,7 @@ export const typeDefs = `#graphql
 
     # --- Приватные чаты ---
     createPrivateChat(user1Id: ID!, user2Id: ID!): PrivateChat!
-    sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!): Message!
+    sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!, iv: String!): Message!
     updatePrivateMessage(id: ID!, text: String!): Message!
     deletePrivateMessage(id: ID!): Message!
 
@@ -172,8 +192,8 @@ export const typeDefs = `#graphql
     addUserToGroup(groupId: ID!, userId: ID!): GroupChat!
     removeUserFromGroup(groupId: ID!, userId: ID!): GroupChat!
 
-    sendGroupMessage(groupId: ID!, senderId: ID!, text: String!): Message!
+    sendGroupMessage(groupId: ID!, senderId: ID!, text: String!, iv: String!): Message!
     updateGroupMessage(id: ID!, text: String!): Message!
     deleteGroupMessage(id: ID!): Message!
   }
-`;
+`

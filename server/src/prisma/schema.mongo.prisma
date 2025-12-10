@@ -35,6 +35,14 @@ model users {
   messages messages[] @relation("SentMessages")
 
   privacy privacy_settings?
+
+  publicKey           String // Публичный ключ пользователя
+  encryptedPrivateKey String // Приватный ключ, зашифрованный паролем
+  salt                String // Соль для KDF
+  iv                  String // IV для AES-GCM
+  kdfIterations       Int // Количество итераций KDF
+  keyCreatedAt        DateTime @default(now()) // Когда ключ был сгенерирован
+  keyUpdatedAt        DateTime @updatedAt // Когда ключ обновлялся
 }
 
 // =========================
@@ -140,6 +148,7 @@ model groups {
 model messages {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   text      String
+  iv        String
   sentAt    DateTime @default(now())
   updatedAt DateTime @updatedAt
 

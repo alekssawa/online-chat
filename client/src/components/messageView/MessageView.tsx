@@ -52,6 +52,7 @@ function MessageView({
 		const initialMessages: Message[] = selectedChat.chat.messages.map(m => ({
 			id: m.id,
 			text: m.text,
+			iv: m.iv,
 			senderId: m.sender?.id ?? '',
 			chatId,
 			sentAt: m.sentAt,
@@ -170,6 +171,7 @@ function MessageView({
 									<MessageBox
 										id={m.id}
 										text={m.text}
+										iv={m.iv}
 										senderId={m.senderId}
 										chatId={chatId}
 										sender={m.sender}
@@ -177,6 +179,7 @@ function MessageView({
 										updatedAt={m.updatedAt}
 										privateChatId={m.privateChatId}
 										groupId={m.groupId}
+										selectedChat={selectedChat}
 									/>
 								</li>
 							))}

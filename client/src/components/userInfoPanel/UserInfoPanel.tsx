@@ -2,16 +2,16 @@ import styles from './UserInfoPanel.module.css'
 
 import ArrowLeft from '../../assets/icons/ArrowLeft.svg?react'
 import ArrowShare from '../../assets/icons/ArrowShare.svg?react'
-import PencilIcon from '../../assets/icons/PencilIcon.svg?react'
-import TrashIcon from '../../assets/icons/TrashIcon.svg?react'
 import BlockIcon from '../../assets/icons/BlockIcon.svg?react'
 import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
+import PencilIcon from '../../assets/icons/PencilIcon.svg?react'
+import TrashIcon from '../../assets/icons/TrashIcon.svg?react'
 
 import type { SelectedChat, User } from '../type'
 
 import { ToastContainer, toast } from 'react-toastify'
 
-import { getUserStatus } from './../../utills/getUserStatus'
+import { getUserStatus } from '../../utils/getUserStatus'
 
 interface UserInfoPanelProps {
 	selectedChat: SelectedChat | null

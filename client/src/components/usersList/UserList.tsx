@@ -1,13 +1,13 @@
 import UserBox from './userBox/UserBox'
 import styles from './UserList.module.css'
 
+import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 import userIcon from '../../assets/icons/usersIcon.svg'
 import ToolsbarAddRooms from './toolsbarSettings/ToolsbarSettings'
-import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 
 import type { GroupChat, PrivateChat, SelectedChat, User } from '../type'
 
-import { getUserStatus } from './../../utills/getUserStatus'
+import { getUserStatus } from '../../utils/getUserStatus'
 
 interface UserListProps {
 	selectedChat: SelectedChat | null
@@ -63,6 +63,8 @@ function UserList({
 
 		return []
 	})()
+
+	console.log('Users in UserList:', users)
 
 	// 🔄 Сортировка пользователей
 	const sortedUsers = [...users].sort((a, b) => {

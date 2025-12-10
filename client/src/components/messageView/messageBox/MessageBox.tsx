@@ -1,14 +1,18 @@
+import { useUserKeys } from '../../../hooks/useGenerateUserKeys'
+
 import styles from './MessageBox.module.css'
 
 import ReactMarkdown from 'react-markdown'
-import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
+import remarkGfm from 'remark-gfm'
 
-import type { User } from '../../type'
+import { useEffect, useState } from 'react'
+import type { SelectedChat, User } from '../../type'
 
 interface MessageBoxProps {
 	id: string
 	text: string
+	iv: string
 	senderId: string
 	chatId: string
 	sentAt: string
@@ -16,14 +20,60 @@ interface MessageBoxProps {
 	sender?: User
 	privateChatId?: string | null
 	groupId?: string | null
+	selectedChat: SelectedChat | null
 }
 
-function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
+function MessageBox({
+	text,
+	iv,
+	sentAt,
+	sender,
+	selectedChat,
+}: MessageBoxProps) {
+	const [decrypted, setDecrypted] = useState<string | null>(null)
 	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const { deriveSharedKey, decryptMessage } = useUserKeys()
 
-	// console.log("MessageBox user:", user);
+	useEffect(() => {
+		if (!selectedChat || !user) return
 
-	// console.log(text);
+		const peerPublicKey =
+			selectedChat.type === 'private'
+				? selectedChat.chat.user1Id === user.id
+					? selectedChat.chat.user2.publicKey
+					: selectedChat.chat.user1.publicKey
+				: null
+
+		if (!peerPublicKey || typeof peerPublicKey !== 'string') return
+
+		async function runDecryption() {
+			try {
+				const ivArray = new Uint8Array(
+					atob(iv)
+						.split('')
+						.map(c => c.charCodeAt(0))
+				)
+				const textArray = new Uint8Array(
+					atob(text)
+						.split('')
+						.map(c => c.charCodeAt(0))
+				)
+
+				const sharedKey = await deriveSharedKey(peerPublicKey as string)
+				const decryptedText = await decryptMessage(
+					sharedKey,
+					ivArray,
+					textArray
+				)
+
+				setDecrypted(decryptedText)
+			} catch (err) {
+				console.error('Ошибка расшифровки:', err)
+			}
+		}
+
+		runDecryption()
+	}, [iv, text, selectedChat, user])
 
 	const processText = (text: string): string => {
 		return text
@@ -86,7 +136,7 @@ function MessageBox({ text, sentAt, sender }: MessageBoxProps) {
 		),
 	}
 
-	const processedText = processText(text)
+	const processedText = processText(decrypted ? decrypted : '')
 
 	return (
 		<div

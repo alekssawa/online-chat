@@ -401,44 +401,57 @@ export function registerSocketHandlers(io: Server) {
 			console.log(`🚪 User ${userId} left group ${groupId}`)
 		})
 
-		socket.on('sendGroupChatMessage', async data => {
-			if (!data.groupId || !data.senderId || !data.text) return
+		socket.on(
+			'sendGroupChatMessage',
+			async (data: {
+				groupId: string
+				senderId: string
+				text: string // уже зашифрованный текст от клиента
+				iv: string // теперь IV обязателен
+			}) => {
+				if (!data.groupId || !data.senderId || !data.text || !data.iv) return
 
-			try {
-				const savedMessage = await prisma.messages.create({
-					data: {
-						text: data.text,
-						senderId: data.senderId,
-						groupId: data.groupId,
-					},
-					include: { sender: true },
-				})
+				try {
+					const savedMessage = await prisma.messages.create({
+						data: {
+							text: data.text,
+							iv: data.iv, // сохраняем IV
+							senderId: data.senderId,
+							groupId: data.groupId,
+						},
+						include: { sender: true },
+					})
 
-				const sender = {
-					...savedMessage.sender,
-					birthDate: savedMessage.sender.birthDate?.toISOString() ?? null,
-					lastOnline: savedMessage.sender.lastOnline?.toISOString() ?? null,
+					const sender = {
+						...savedMessage.sender,
+						birthDate: savedMessage.sender.birthDate?.toISOString() ?? null,
+						lastOnline: savedMessage.sender.lastOnline?.toISOString() ?? null,
+						publicKey: savedMessage.sender.publicKey,
+						keyCreatedAt: savedMessage.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: savedMessage.sender.keyUpdatedAt.toISOString(),
+					}
+
+					const message: Message = {
+						id: savedMessage.id,
+						text: savedMessage.text,
+						iv: savedMessage.iv, // добавляем IV
+						senderId: savedMessage.senderId,
+						groupId: savedMessage.groupId,
+						privateChatId: null,
+						sentAt: savedMessage.sentAt.toISOString(),
+						updatedAt: savedMessage.updatedAt.toISOString(),
+						sender,
+					}
+
+					io.to(`group-${data.groupId}`).emit('newGroupMessage', message)
+				} catch (err) {
+					console.error(err)
+					socket.emit('errorMessage', {
+						message: 'Не удалось отправить сообщение в группу',
+					})
 				}
-
-				const message: Message = {
-					id: savedMessage.id,
-					text: savedMessage.text,
-					senderId: savedMessage.senderId,
-					groupId: savedMessage.groupId,
-					privateChatId: null,
-					sentAt: savedMessage.sentAt.toISOString(),
-					updatedAt: savedMessage.updatedAt.toISOString(),
-					sender,
-				}
-
-				io.to(`group-${data.groupId}`).emit('newGroupMessage', message)
-			} catch (err) {
-				console.error(err)
-				socket.emit('errorMessage', {
-					message: 'Не удалось отправить сообщение в группу',
-				})
 			}
-		})
+		)
 
 		// ==========================
 		// ПРИВАТНЫЕ ЧАТЫ
@@ -457,13 +470,19 @@ export function registerSocketHandlers(io: Server) {
 
 		socket.on(
 			'sendPrivateChatMessage',
-			async (data: { chatId: string; senderId: string; text: string }) => {
-				if (!data.chatId || !data.senderId || !data.text) return
+			async (data: {
+				chatId: string
+				senderId: string
+				text: string
+				iv: string
+			}) => {
+				if (!data.chatId || !data.senderId || !data.text || !data.iv) return
 
 				try {
 					const savedMessage = await prisma.messages.create({
 						data: {
 							text: data.text,
+							iv: data.iv, // сохраняем IV
 							senderId: data.senderId,
 							privateChatId: data.chatId,
 						},
@@ -472,17 +491,17 @@ export function registerSocketHandlers(io: Server) {
 
 					const sender = {
 						...savedMessage.sender,
-						birthDate: savedMessage.sender.birthDate
-							? savedMessage.sender.birthDate.toISOString()
-							: null,
-						lastOnline: savedMessage.sender.lastOnline
-							? savedMessage.sender.lastOnline.toISOString()
-							: null,
+						birthDate: savedMessage.sender.birthDate?.toISOString() ?? null,
+						lastOnline: savedMessage.sender.lastOnline?.toISOString() ?? null,
+						publicKey: savedMessage.sender.publicKey,
+						keyCreatedAt: savedMessage.sender.keyCreatedAt.toISOString(),
+						keyUpdatedAt: savedMessage.sender.keyUpdatedAt.toISOString(),
 					}
 
 					const message: Message = {
 						id: savedMessage.id,
 						text: savedMessage.text,
+						iv: savedMessage.iv,
 						senderId: savedMessage.senderId,
 						groupId: null,
 						privateChatId: savedMessage.privateChatId,
