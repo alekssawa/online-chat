@@ -3,7 +3,7 @@ import styles from './UserList.module.css'
 
 import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 import userIcon from '../../assets/icons/usersIcon.svg'
-import ToolsbarAddRooms from './toolsbarSettings/ToolsbarSettings'
+// import ToolsbarAddRooms from './toolsbarSettings/ToolsbarSettings'
 
 import type { GroupChat, PrivateChat, SelectedChat, User } from '../type'
 
@@ -213,7 +213,7 @@ function UserList({
 					</div>
 
 					{/* Нижняя панель */}
-					<ToolsbarAddRooms selectedRoom={selectedChat?.chat ?? null} />
+					{/* <ToolsbarAddRooms selectedRoom={selectedChat?.chat ?? null} /> */}
 				</div>
 			)}
 		</>
