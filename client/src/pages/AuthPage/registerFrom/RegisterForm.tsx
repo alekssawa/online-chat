@@ -138,7 +138,7 @@ function RegisterForm({ setIsAuthForm }: RegisterFormProps) {
 				kdfIterations,
 			}
 
-			const response = await fetch('http://localhost:3000/graphql', {
+			const response = await fetch(`${import.meta.env.URL_BACKEND}/graphql`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				credentials: 'include',

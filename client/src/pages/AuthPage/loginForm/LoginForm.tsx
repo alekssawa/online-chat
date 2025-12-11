@@ -99,12 +99,15 @@ function AuthForm({ setIsAuthForm }: AuthFormProps) {
     `
 			const variables = { email, password }
 
-			const response = await fetch('http://localhost:3000/graphql', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ query, variables }),
-			})
+			const response = await fetch(
+				`${import.meta.env.VITE_URL_BACKEND}/graphql`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+					body: JSON.stringify({ query, variables }),
+				}
+			)
 
 			const result = await response.json()
 			if (result.errors) throw new Error('Login failed')

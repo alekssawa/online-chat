@@ -25,7 +25,7 @@ function ChatRoom() {
 	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
 
 	if (!socketRef.current && user) {
-		const socket = socketIOClient('http://localhost:3000', {
+		const socket = socketIOClient(`${import.meta.env.VITE_URL_BACKEND}`, {
 			auth: { token: localStorage.getItem('accessToken'), userId: user.id },
 		})
 		socketRef.current = socket

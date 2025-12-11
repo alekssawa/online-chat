@@ -88,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 	const httpLink = useMemo(
 		() =>
 			new HttpLink({
-				uri: 'http://localhost:3000/graphql',
+				uri: `${import.meta.env.VITE_URL_BACKEND}/graphql`,
 				credentials: 'include', // важно для cookie-based refresh token
 			}),
 		[]
