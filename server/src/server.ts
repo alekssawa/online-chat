@@ -39,7 +39,7 @@ await apolloServer.start()
 // Разрешаем CORS для всех источников (можно ограничить доменами)
 app.use(
 	cors({
-		origin: 'http://localhost:5173', // явно фронт
+		origin: process.env.API_URL_FRONTEND, // явно фронт
 		credentials: true, // разрешаем cookie
 	})
 )
