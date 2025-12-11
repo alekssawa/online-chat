@@ -2,7 +2,9 @@ import { useEffect, useRef } from 'react'
 import AcceptCall from '../../assets/icons/AcceptCall.svg?react'
 import DeclineCall from '../../assets/icons/DeclineCall.svg?react'
 import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
-import incomingCallSound from '../../assets/sounds/incoming_call.mp3'
+
+import incomingCallSound from '../../assets/sounds/Incoming_call.mp3'
+
 import type { SelectedChat, User } from '../../components/type'
 import type { IncomingCall } from '../../hooks/useWebRTC'
 import styles from './IncomingCallUI.module.css'
