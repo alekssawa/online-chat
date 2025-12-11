@@ -318,7 +318,7 @@ function SendMessage({
 
 		const peerPublicKey =
 			selectedChat.type === 'private'
-				? selectedChat.chat.user1Id === user.id
+				? selectedChat.chat.user1.id === user.id
 					? selectedChat.chat.user2.publicKey
 					: selectedChat.chat.user1.publicKey
 				: null

@@ -138,12 +138,15 @@ function RegisterForm({ setIsAuthForm }: RegisterFormProps) {
 				kdfIterations,
 			}
 
-			const response = await fetch(`${import.meta.env.URL_BACKEND}/graphql`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				credentials: 'include',
-				body: JSON.stringify({ query, variables }),
-			})
+			const response = await fetch(
+				`${import.meta.env.VITE_URL_BACKEND}/graphql`,
+				{
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					credentials: 'include',
+					body: JSON.stringify({ query, variables }),
+				}
+			)
 
 			const result = await response.json()
 			if (result.errors) throw new Error('Register failed')

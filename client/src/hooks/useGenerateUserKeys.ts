@@ -104,6 +104,18 @@ export function useUserKeys() {
 
 			const peerPublicKey = await importPublicKey(peerPublicKeyBase64)
 
+			const sharedKey = await crypto.subtle.deriveKey(
+				{ name: 'ECDH', public: peerPublicKey },
+				privateCryptoKey,
+				{ name: 'AES-GCM', length: 256 },
+				true, // ← теперь можно экспортировать
+				['encrypt', 'decrypt']
+			)
+
+			// экспортируем в raw (Uint8Array)
+			const rawKey = await crypto.subtle.exportKey('raw', sharedKey)
+			console.log('SharedKey bytes:', new Uint8Array(rawKey))
+
 			return crypto.subtle.deriveKey(
 				{ name: 'ECDH', public: peerPublicKey },
 				privateCryptoKey,
