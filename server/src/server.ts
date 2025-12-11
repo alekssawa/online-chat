@@ -77,4 +77,5 @@ const API_URL = process.env.API_URL
 httpServer.listen(PORT, () => {
 	console.log(`Server running at ${API_URL}`)
 	console.log(`GraphQL endpoint at ${API_URL}/graphql`)
+	console.log('Frontend URL:', process.env.API_URL_FRONTEND)
 })
