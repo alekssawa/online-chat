@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import styles from './ChatsList.module.css'
 
 import DefaultGroupAvatar from '../../assets/icons/DefaultGroupAvatar.svg'
-import MenuIcon from '../../assets/icons/MenuIcon2.svg?react'
+import MenuIcon from '../../assets/icons/menuIcon2.svg?react'
 // import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
 import SlideOutMenu from './slideOutMenu/SlideOutMenu'
 
