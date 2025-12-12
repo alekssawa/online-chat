@@ -3,24 +3,32 @@ import IncomingCallUI from '../../../ui/incomingCall/IncomingCallUI'
 import styles from './ChatHeader.module.css'
 
 import { Socket } from 'socket.io-client'
+import ArrowLeft from '../../../assets/icons/ArrowLeft.svg?react'
 import AudioIcon from '../../../assets/icons/audioIcon.svg?react'
 import MenuIcon from '../../../assets/icons/menuIcon.svg?react'
 import SearchIcon from '../../../assets/icons/searchIcon.svg?react'
 import VideoIcon from '../../../assets/icons/videoIcon.svg?react'
 import { useWebRTC } from '../../../hooks/useWebRTC'
+import { useMatchMedia } from '../../../utils/useMatchMedia'
 import type { SelectedChat, User } from '../../type'
 
 interface RoomHeaderProps {
 	selectedChat: SelectedChat | null
+	setSelectedChat: (chat: SelectedChat | null) => void
 	onlineUsers: { userId: string; online: boolean }[]
 	socket: typeof Socket | null
 }
 
-function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
-	// State для звонков
+function RoomHeader({
+	selectedChat,
+	setSelectedChat,
+	onlineUsers,
+	socket,
+}: RoomHeaderProps) {
 	const [callStatus, setCallStatus] = useState<string>('Готов к звонку')
 	const [isCallActive, setIsCallActive] = useState<boolean>(false)
 	const [isConnected, setIsConnected] = useState<boolean>(false)
+	const { isMobile } = useMatchMedia()
 
 	// const userStr =
 	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
@@ -97,6 +105,10 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
 		rejectCall('Отклонено пользователем')
 	}
 
+	const handleSelectChat = (): void => {
+		setSelectedChat(null)
+	}
+
 	function getUserStatus(
 		userId: string | null | undefined,
 		lastOnline: string | null | undefined,
@@ -163,6 +175,11 @@ function RoomHeader({ selectedChat, onlineUsers, socket }: RoomHeaderProps) {
 		<div className={styles.roomHeader}>
 			{/* Левая часть - информация о чате */}
 			<div className={styles.chatInfo}>
+				{isMobile && (
+					<div className={styles.menuIcon} onClick={handleSelectChat}>
+						<ArrowLeft />
+					</div>
+				)}
 				<div className={styles.chatDetails}>
 					<h2 className={styles.chatName}>
 						{selectedChat?.type === 'private'

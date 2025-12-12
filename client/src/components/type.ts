@@ -44,6 +44,16 @@ export type SelectedChat =
 	| { chat: GroupChat; type: 'group' }
 	| { chat: PrivateChat; type: 'private' }
 
+export interface ChatItem {
+	id: string
+	users: User[]
+	name: string
+	type: 'group' | 'private'
+	lastMessage?: string
+	senderName?: string
+	avatarUrl?: string
+}
+
 export interface GroupChat {
 	id: string
 	name: string

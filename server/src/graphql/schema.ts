@@ -148,7 +148,7 @@ export const typeDefs = `#graphql
 
     # --- Пользователи ---
     createUser(email: String!, name: String, password: String!): User!
-    uploadUserAvatar(userId: ID!, file: Upload!): UserAvatar!
+    uploadUserAvatar( file: Upload!): UserAvatar!
     updateUser(
       id: ID!,
       email: String,
@@ -172,13 +172,13 @@ export const typeDefs = `#graphql
     ): PrivacySettings!
 
     # --- Друзья ---
-    addFriend(userId: ID!, friendIdentifier: String!): User!
-    removeFriend(userId: ID!, friendIdentifier: String!): User!
+    addFriend(friendIdentifier: String!): User!
+    removeFriend( friendIdentifier: String!): User!
 
     deleteUser(id: ID!): User!
 
     # --- Приватные чаты ---
-    createPrivateChat(user1Id: ID!, user2Id: ID!): PrivateChat!
+    createPrivateChat(user2Id: ID!): PrivateChat!
     sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!, iv: String!): Message!
     updatePrivateMessage(id: ID!, text: String!): Message!
     deletePrivateMessage(id: ID!): Message!

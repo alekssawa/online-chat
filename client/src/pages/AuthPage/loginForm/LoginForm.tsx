@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUserKeys } from '../../../hooks/useGenerateUserKeys'
-import { useUserKeysStore } from '../../../store/userKeys'
+// import { useUserKeysStore } from '../../../store/userKeys'
 import styles from './LoginForm.module.css'
 
 import { ToastContainer, toast } from 'react-toastify'
@@ -12,7 +12,7 @@ interface AuthFormProps {
 
 function AuthForm({ setIsAuthForm }: AuthFormProps) {
 	const { decryptPrivateKey } = useUserKeys()
-	const { privateKey } = useUserKeysStore()
+	// const { privateKey } = useUserKeysStore()
 	const navigate = useNavigate()
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
@@ -123,8 +123,6 @@ function AuthForm({ setIsAuthForm }: AuthFormProps) {
 				user.iv,
 				user.kdfIterations
 			)
-
-			console.log(privateKey)
 
 			setSuccess(true)
 			localStorage.setItem('user', JSON.stringify(user))

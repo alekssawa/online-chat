@@ -66,10 +66,10 @@ export const userResolvers = {
 		),
 
 		uploadUserAvatar: withAuth(
-			async (
-				_: any,
-				{ userId, file }: { userId: string; file: Promise<any> }
-			) => {
+			async (_: any, { file }: { file: Promise<any> }, context) => {
+				const userId = context.req.user?.userId
+				if (!userId) throw new Error('Unauthorized')
+
 				const { createReadStream, filename, mimetype } = await file
 				const stream = createReadStream()
 
@@ -177,32 +177,43 @@ export const userResolvers = {
 		addFriend: withAuth(
 			async (
 				_: any,
-				{
-					userId,
-					friendIdentifier,
-				}: { userId: string; friendIdentifier: string }
+				{ friendIdentifier }: { friendIdentifier: string },
+				context
 			) => {
-				const friend = await prisma.users.findFirst({
-					where: {
-						OR: [
-							{ id: friendIdentifier },
-							{ nickname: friendIdentifier },
-							{ email: friendIdentifier },
-						],
-					},
-				})
-				if (!friend)
+				const userId = context.req.user?.userId
+				if (!userId) throw new GraphQLError('Unauthorized')
+
+				// Проверяем, похоже ли это на ObjectId (Mongo)
+				const isObjectId = (id: string) => /^[a-f0-9]{24}$/i.test(id)
+
+				let friend
+
+				if (isObjectId(friendIdentifier)) {
+					friend = await prisma.users.findUnique({
+						where: { id: friendIdentifier },
+					})
+				} else {
+					friend = await prisma.users.findFirst({
+						where: {
+							OR: [{ email: friendIdentifier }, { nickname: friendIdentifier }],
+						},
+					})
+				}
+
+				if (!friend) {
 					throw new GraphQLError('Пользователь не найден', {
 						extensions: { code: 'NOT_FOUND' },
 					})
+				}
 
 				const existing = await prisma.friends.findFirst({
 					where: { userId, friendId: friend.id },
 				})
-				if (existing)
+				if (existing) {
 					throw new GraphQLError('Этот пользователь уже в друзьях', {
 						extensions: { code: 'BAD_USER_INPUT' },
 					})
+				}
 
 				await prisma.friends.create({ data: { userId, friendId: friend.id } })
 				return prisma.users.findUnique({ where: { id: userId } })
@@ -211,12 +222,15 @@ export const userResolvers = {
 
 		removeFriend: withAuth(
 			async (
-				_: any,
-				{
-					userId,
-					friendIdentifier,
-				}: { userId: string; friendIdentifier: string }
+				_,
+				{ friendIdentifier }: { friendIdentifier: string },
+				context
 			) => {
+				const userId = context.req.user?.userId
+				if (!userId) {
+					throw new GraphQLError('Unauthorized')
+				}
+
 				const friend = await prisma.users.findFirst({
 					where: {
 						OR: [
@@ -226,15 +240,20 @@ export const userResolvers = {
 						],
 					},
 				})
-				if (!friend)
+
+				if (!friend) {
 					throw new GraphQLError('Пользователь не найден', {
 						extensions: { code: 'NOT_FOUND' },
 					})
+				}
 
 				await prisma.friends.deleteMany({
 					where: { userId, friendId: friend.id },
 				})
-				return prisma.users.findUnique({ where: { id: userId } })
+
+				return prisma.users.findUnique({
+					where: { id: userId },
+				})
 			}
 		),
 

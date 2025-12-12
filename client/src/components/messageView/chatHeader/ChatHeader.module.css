@@ -85,7 +85,50 @@
   background-color: #1e293b;
 }
 
+.menuIcon {
+  display: flex;
+  width: auto;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  /* color: white; */
+}
+
+.menuIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.menuIcon:hover {
+  cursor: pointer;
+  background-color: #2a3b52;
+  border-radius: 8px;
+}
+
+.menuIcon {
+  display: flex;
+  width: auto;
+  padding: 5px;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.menuIcon svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.menuIcon:hover {
+  cursor: pointer;
+  background-color: #2a3b52;
+  border-radius: 8px;
+}
+
 @keyframes pulse {
+
   0%,
   100% {
     opacity: 1;
