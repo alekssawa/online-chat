@@ -227,11 +227,13 @@ function ChatsList({
 		return JSON.parse(localStorage.getItem('user') || 'null')
 	}, [])
 
+	setLoading(false)
+
 	// console.log("user:", user);
 
 	const {
 		data,
-		loading: queryLoading,
+		// loading: queryLoading,
 		error,
 		refetch,
 	} = useQuery<
@@ -253,24 +255,24 @@ function ChatsList({
 		{ chatId: string }
 	>(GET_PRIVATECHAT_DETAILS, { fetchPolicy: 'cache-and-network' })
 
-	useEffect(() => {
-		setLoading(queryLoading)
-	}, [queryLoading, setLoading])
+	// useEffect(() => {
+	// 	setLoading(queryLoading)
+	// }, [queryLoading, setLoading])
 
 	useEffect(() => {
 		if (error) {
-			setLoading(true)
+			// setLoading(true)
 			if (!retryInterval.current) {
 				retryInterval.current = window.setInterval(async () => {
 					try {
 						await refetch()
-						setLoading(false)
+						// setLoading(false)
 						if (retryInterval.current) {
 							clearInterval(retryInterval.current)
 							retryInterval.current = null
 						}
 					} catch {
-						setLoading(true)
+						// setLoading(true)
 					}
 				}, 10000)
 			}
@@ -353,7 +355,7 @@ function ChatsList({
 		[client, data, user?.id]
 	)
 	const refreshChatsList = useCallback(async () => {
-		setLoading(true)
+		// setLoading(true)
 		try {
 			const result = await refetch()
 			const data = result.data
@@ -402,9 +404,9 @@ function ChatsList({
 			if (err instanceof Error) setError(err.message)
 			else setError('Unknown error occurred')
 		} finally {
-			setLoading(false)
+			// setLoading(false)
 		}
-	}, [refetch, setLoading, setError, user?.id])
+	}, [refetch, setError, user?.id])
 
 	useEffect(() => {
 		if (SetUpdateFunction) {
