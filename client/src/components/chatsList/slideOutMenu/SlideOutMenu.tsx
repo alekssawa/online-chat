@@ -20,6 +20,7 @@ import { SettingsModal } from './modal/SettingsModal'
 interface SlideOutMenuProps {
 	ChatsList: ChatItem[] | null
 	handleSelectChat: (item: ChatItem) => void
+	refreshChats: () => void
 	isOpen: boolean
 	onClose: () => void
 	children?: React.ReactNode
@@ -34,6 +35,7 @@ const LOGOUT_MUTATION = gql`
 const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 	ChatsList,
 	handleSelectChat,
+	refreshChats,
 	isOpen,
 	onClose,
 	children,
@@ -139,6 +141,7 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 							<FriendsModal
 								ChatsList={ChatsList}
 								handleSelectChat={handleSelectChat}
+								refreshChats={refreshChats}
 								isOpen={activeModal === 'friends'}
 								onClose={closeModal}
 							/>

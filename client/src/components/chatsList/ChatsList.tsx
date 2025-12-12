@@ -344,12 +344,64 @@ function ChatsList({
 		},
 		[client, data, user?.id]
 	)
+	const refreshChatsList = useCallback(async () => {
+		setLoading(true)
+		try {
+			const result = await refetch()
+			const data = result.data
+			if (!data?.user) return
+
+			const items: ChatItem[] = []
+			const sortMessagesByDate = (messages: Message[]) =>
+				[...messages].sort(
+					(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+				)
+
+			// group chats
+			data.user.groupChats.forEach(g => {
+				const sortedMessages = sortMessagesByDate(g.messages)
+				const lastMsg = sortedMessages[sortedMessages.length - 1]
+				items.push({
+					id: g.id,
+					users: g.users || [],
+					name: g.name,
+					type: 'group',
+					lastMessage: lastMsg?.text || '',
+					senderName: lastMsg?.sender?.name || '',
+					avatarUrl: g.avatar?.url,
+				})
+			})
+
+			// private chats
+			data.user.privateChats.forEach(p => {
+				const otherUser = p.user1.id === user?.id ? p.user2 : p.user1
+				const sortedMessages = sortMessagesByDate(p.messages)
+				const lastMsg = sortedMessages[sortedMessages.length - 1]
+				items.push({
+					id: p.id,
+					users: [p.user1, p.user2],
+					name: otherUser.name,
+					type: 'private',
+					lastMessage: lastMsg?.text || '',
+					senderName: lastMsg?.sender?.name || '',
+					avatarUrl: otherUser.avatar?.url,
+				})
+			})
+
+			setChatItems(items)
+		} catch (err) {
+			if (err instanceof Error) setError(err.message)
+			else setError('Unknown error occurred')
+		} finally {
+			setLoading(false)
+		}
+	}, [refetch, setLoading, setError, user?.id])
 
 	useEffect(() => {
 		if (SetUpdateFunction) {
 			SetUpdateFunction(updateChatLastMessage)
 		}
-	}, [SetUpdateFunction, updateChatLastMessage])
+	}, [SetUpdateFunction, updateChatLastMessage, refreshChatsList])
 
 	useEffect(() => {
 		if (!data?.user) return
@@ -398,11 +450,6 @@ function ChatsList({
 		// console.log("Chat items:", items);
 	}, [data, user])
 
-	// const refreshChats = () => {
-	//   setRefreshCounter((prev) => prev + 1);
-	//   refetch();
-	// };
-
 	const handleSelectChat = async (item: ChatItem) => {
 		try {
 			if (item.type === 'group') {
@@ -450,6 +497,7 @@ function ChatsList({
 								<SlideOutMenu
 									ChatsList={chatItems}
 									handleSelectChat={handleSelectChat}
+									refreshChats={refreshChatsList}
 									isOpen={isMenuOpen}
 									onClose={handleMenuClose}
 								></SlideOutMenu>

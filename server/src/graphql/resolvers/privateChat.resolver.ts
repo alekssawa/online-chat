@@ -160,12 +160,11 @@ export const privateChatResolvers = {
 
 	Mutation: {
 		createPrivateChat: withAuth(
-			async (
-				_: any,
-				{ user1Id, user2Id }: { user1Id: string; user2Id: string }
-			) => {
+			async (_: any, { user2Id }: { user2Id: string }, context: any) => {
+				const user1Id = context.req.user?.userId // берём из токена
+
 				if (!user1Id || !user2Id) {
-					throw new GraphQLError('user1Id и user2Id обязательны', {
+					throw new GraphQLError('userId из токена и user2Id обязательны', {
 						extensions: { code: 'BAD_USER_INPUT' },
 					})
 				}
@@ -176,7 +175,7 @@ export const privateChatResolvers = {
 					})
 				}
 
-				// Проверка на существующий чат (учитываем оба направления)
+				// Проверка существующего чата
 				const existingChat = await prisma.private_chats.findFirst({
 					where: {
 						OR: [
@@ -193,14 +192,23 @@ export const privateChatResolvers = {
 					)
 				}
 
+				// Создание нового чата
 				const chat = await prisma.private_chats.create({
 					data: { user1Id, user2Id },
 				})
 
+				// Достаём полные объекты пользователей
+				const user1 = await prisma.users.findUnique({ where: { id: user1Id } })
+				const user2 = await prisma.users.findUnique({ where: { id: user2Id } })
+
+				if (!user1 || !user2) {
+					throw new GraphQLError('Пользователи не найдены')
+				}
+
 				return {
 					id: chat.id,
-					user1Id: chat.user1Id,
-					user2Id: chat.user2Id,
+					user1,
+					user2,
 					createdAt: chat.createdAt.toISOString(),
 				}
 			}

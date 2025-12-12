@@ -178,7 +178,7 @@ export const typeDefs = `#graphql
     deleteUser(id: ID!): User!
 
     # --- Приватные чаты ---
-    createPrivateChat(user1Id: ID!, user2Id: ID!): PrivateChat!
+    createPrivateChat(user2Id: ID!): PrivateChat!
     sendPrivateMessage(chatId: ID!, senderId: ID!, text: String!, iv: String!): Message!
     updatePrivateMessage(id: ID!, text: String!): Message!
     deletePrivateMessage(id: ID!): Message!

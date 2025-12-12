@@ -9,6 +9,7 @@ import type { ChatItem, Friend, User } from '../../../type'
 interface FriendsModalProps {
 	ChatsList: ChatItem[] | null
 	handleSelectChat: (item: ChatItem) => void
+	refreshChats: () => void
 	isOpen: boolean
 	onClose: () => void
 }
@@ -19,6 +20,18 @@ interface AddFriendData {
 
 interface AddFriendVars {
 	friendIdentifier: string
+}
+
+interface CreatePrivateChatData {
+	createPrivateChat: {
+		id: string
+		user1: User
+		user2: User
+	}
+}
+
+interface CreatePrivateChatVars {
+	user2Id: string
 }
 
 const ADD_FRIEND = gql`
@@ -42,11 +55,36 @@ const ADD_FRIEND = gql`
 	}
 `
 
+const CREATE_PRIVATE_CHAT = gql`
+	mutation CreatePrivateChat($user2Id: ID!) {
+		createPrivateChat(user2Id: $user2Id) {
+			id
+			user1 {
+				id
+				name
+				email
+				avatar {
+					url
+				}
+			}
+			user2 {
+				id
+				name
+				email
+				avatar {
+					url
+				}
+			}
+		}
+	}
+`
+
 const modalRoot = document.getElementById('modal-root') || document.body
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({
 	ChatsList,
 	handleSelectChat,
+	refreshChats,
 	isOpen,
 	onClose,
 }) => {
@@ -56,6 +94,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 		JSON.parse(localStorage.getItem('user') || 'null')
 	)
 	const [addFriend] = useMutation<AddFriendData, AddFriendVars>(ADD_FRIEND)
+	const [createPrivateChat] = useMutation<
+		CreatePrivateChatData,
+		CreatePrivateChatVars
+	>(CREATE_PRIVATE_CHAT)
 
 	useEffect(() => {
 		if (!isOpen) {
@@ -105,11 +147,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 		}
 	}
 
-	const handleOpenChat = (friendId: string) => {
-		if (!ChatsList || !user) return
+	console.log(ChatsList)
 
-		console.log(friendId)
-		console.log(ChatsList)
+	const handleOpenChat = async (friendId: string) => {
+		if (!ChatsList || !user) return
 
 		const chatWithFriend = ChatsList.find(chat =>
 			chat.users.some(u => u.id === friendId)
@@ -119,7 +160,41 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 			handleSelectChat(chatWithFriend)
 			onClose()
 		} else {
-			console.log('Нет чатов с другими пользователями')
+			// Если чата нет — создаём его через Apollo
+			try {
+				const { data } = await createPrivateChat({
+					variables: { user2Id: friendId },
+				})
+				if (data?.createPrivateChat) {
+					handleSelectChat({
+						id: data.createPrivateChat.id,
+						users: [
+							{
+								id: user.id,
+								name: user.name,
+								email: user.email,
+								avatar: user.avatar,
+							},
+							{
+								id: data.createPrivateChat.user1.id,
+								name: data.createPrivateChat.user1.name,
+								email: data.createPrivateChat.user1.email,
+								avatar: data.createPrivateChat.user1.avatar || undefined,
+							},
+						],
+						name: '',
+						type: 'private',
+						lastMessage: undefined,
+						senderName: undefined,
+						avatarUrl: undefined,
+					})
+					refreshChats()
+					console.log(refreshChats)
+					onClose()
+				}
+			} catch (err) {
+				console.error('Ошибка при создании чата:', err)
+			}
 		}
 	}
 
