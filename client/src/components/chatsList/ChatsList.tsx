@@ -9,6 +9,7 @@ import MenuIcon from '../../assets/icons/menuIcon2.svg?react'
 // import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
 import SlideOutMenu from './slideOutMenu/SlideOutMenu'
 
+import { useUserKeys } from '../../hooks/useGenerateUserKeys'
 import type {
 	ChatItem,
 	GroupChat,
@@ -79,6 +80,7 @@ const GET_USER_CHATS = gql`
 				messages {
 					id
 					text
+					iv
 					sentAt
 					sender {
 						name
@@ -93,6 +95,7 @@ const GET_USER_CHATS = gql`
 					avatar {
 						url
 					}
+					publicKey
 				}
 				user2 {
 					id
@@ -100,10 +103,12 @@ const GET_USER_CHATS = gql`
 					avatar {
 						url
 					}
+					publicKey
 				}
 				messages {
 					id
 					text
+					iv
 					sentAt
 					sender {
 						name
@@ -216,6 +221,7 @@ function ChatsList({
 	const retryInterval = useRef<number | null>(null)
 	const client = useApolloClient()
 	const [searchValue, setSearchValue] = useState('')
+	const { deriveSharedKey, decryptMessage } = useUserKeys()
 
 	const user = useMemo(() => {
 		return JSON.parse(localStorage.getItem('user') || 'null')
@@ -277,6 +283,7 @@ function ChatsList({
 	// Функция для обновления последнего сообщения в конкретном чате
 	const updateChatLastMessage = useCallback(
 		(chatId: string, newMessage: { text: string; senderName?: string }) => {
+			console.log(newMessage)
 			// 1. Обновляем локальное состояние
 			setChatItems(prevItems =>
 				prevItems.map(item =>
@@ -340,6 +347,7 @@ function ChatsList({
 						},
 					},
 				})
+				console.log(data)
 			}
 		},
 		[client, data, user?.id]
@@ -389,6 +397,7 @@ function ChatsList({
 			})
 
 			setChatItems(items)
+			console.log(items)
 		} catch (err) {
 			if (err instanceof Error) setError(err.message)
 			else setError('Unknown error occurred')
@@ -406,48 +415,90 @@ function ChatsList({
 	useEffect(() => {
 		if (!data?.user) return
 
-		const items: ChatItem[] = []
-
-		// Функция для сортировки сообщений по дате (от старых к новым)
-		const sortMessagesByDate = (messages: Message[]) => {
-			return [...messages].sort(
+		const sortMessagesByDate = (messages: Message[]) =>
+			[...messages].sort(
 				(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
 			)
+
+		async function buildChatItems(userData: {
+			groupChats: GroupChat[]
+			privateChats: PrivateChat[]
+		}) {
+			const items: ChatItem[] = []
+
+			// group chats
+			userData.groupChats.forEach(g => {
+				const sortedMessages = sortMessagesByDate(g.messages)
+				const lastMsg = sortedMessages[sortedMessages.length - 1]
+				items.push({
+					id: g.id,
+					users: g.users || [],
+					name: g.name,
+					type: 'group',
+					lastMessage: lastMsg?.text,
+					senderName: lastMsg?.sender?.name,
+					avatarUrl: g.avatar?.url,
+				})
+			})
+
+			// private chats
+			for (const p of userData.privateChats) {
+				const otherUser = p.user1.id === user?.id ? p.user2 : p.user1
+				const sortedMessages = sortMessagesByDate(p.messages)
+				const lastMsg = sortedMessages[sortedMessages.length - 1]
+
+				console.log(lastMsg)
+
+				let decryptedText = lastMsg?.text || ''
+
+				if (lastMsg?.iv && otherUser.publicKey) {
+					const peerPublicKey: string = otherUser.publicKey
+
+					async function runDecryption() {
+						try {
+							const ivArray = new Uint8Array(
+								atob(lastMsg.iv)
+									.split('')
+									.map(c => c.charCodeAt(0))
+							)
+							const textArray = new Uint8Array(
+								atob(lastMsg.text)
+									.split('')
+									.map(c => c.charCodeAt(0))
+							)
+
+							const sharedKey = await deriveSharedKey(peerPublicKey)
+							const decrypted = await decryptMessage(
+								sharedKey,
+								ivArray,
+								textArray
+							)
+
+							decryptedText = decrypted
+						} catch (err) {
+							console.error('Ошибка расшифровки lastMessage:', err)
+						}
+					}
+
+					await runDecryption()
+				}
+				console.log(decryptedText)
+
+				items.push({
+					id: p.id,
+					users: [p.user1, p.user2],
+					name: otherUser.name,
+					type: 'private',
+					lastMessage: decryptedText,
+					senderName: lastMsg?.sender?.name || '',
+					avatarUrl: otherUser.avatar?.url,
+				})
+			}
+
+			setChatItems(items)
 		}
 
-		// group chats
-		data.user.groupChats.forEach(g => {
-			const sortedMessages = sortMessagesByDate(g.messages)
-			const lastMsg = sortedMessages[sortedMessages.length - 1]
-			items.push({
-				id: g.id,
-				users: g.users || [],
-				name: g.name,
-				type: 'group',
-				lastMessage: lastMsg?.text,
-				senderName: lastMsg?.sender?.name,
-				avatarUrl: g.avatar?.url,
-			})
-		})
-
-		// private chats
-		data.user.privateChats.forEach(p => {
-			const otherUser = p.user1.id === user?.id ? p.user2 : p.user1
-			const sortedMessages = sortMessagesByDate(p.messages)
-			const lastMsg = sortedMessages[sortedMessages.length - 1]
-			items.push({
-				id: p.id,
-				users: [p.user1, p.user2],
-				name: otherUser.name,
-				type: 'private',
-				lastMessage: lastMsg?.text,
-				senderName: lastMsg?.sender?.name,
-				avatarUrl: otherUser.avatar?.url,
-			})
-		})
-
-		setChatItems(items)
-		// console.log("Chat items:", items);
+		buildChatItems(data.user)
 	}, [data, user])
 
 	const handleSelectChat = async (item: ChatItem) => {
@@ -483,6 +534,8 @@ function ChatsList({
 	const handleMenuClose = () => {
 		setIsMenuOpen(false)
 	}
+
+	console.log(chatItems)
 
 	return (
 		<>

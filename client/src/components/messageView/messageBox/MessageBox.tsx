@@ -44,17 +44,6 @@ function MessageBox({
 					: selectedChat.chat.user1.publicKey
 				: null
 
-		// console.log('peerPublicKey', peerPublicKey)
-		// console.log(user.id)
-		// const test =
-		// 	selectedChat.type === 'private'
-		// 		? selectedChat.chat.user1.id === user.id
-		// 			? console.log('user2: ', selectedChat.chat.user2.publicKey)
-		// 			: console.log('user1: ', selectedChat.chat.user1.publicKey)
-		// 		: null
-		// console.log('test', test)
-		// console.log(selectedChat)
-
 		if (!peerPublicKey || typeof peerPublicKey !== 'string') return
 
 		async function runDecryption() {

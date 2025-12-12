@@ -359,6 +359,8 @@ function SendMessage({
 				text: markdown,
 				senderName: user.name,
 			})
+
+			console.log(markdown)
 		}
 
 		// Очистка редактора
