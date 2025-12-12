@@ -148,7 +148,7 @@ export const typeDefs = `#graphql
 
     # --- Пользователи ---
     createUser(email: String!, name: String, password: String!): User!
-    uploadUserAvatar(userId: ID!, file: Upload!): UserAvatar!
+    uploadUserAvatar( file: Upload!): UserAvatar!
     updateUser(
       id: ID!,
       email: String,

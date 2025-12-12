@@ -2,25 +2,25 @@ import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
 import styles from './Modal.module.css'
 
+import Adjustments from '../../../../assets/icons/adjustmentsIcon.svg?react'
+import Bell from '../../../../assets/icons/Bell.svg?react'
+import ChatBubbleIcon from '../../../../assets/icons/chatBubbleIcon.svg?react'
 import DefaultUserAvatar from '../../../../assets/icons/DefaultUserAvatar.svg?react'
 import DefaultUserAvatar3 from '../../../../assets/icons/DefaultUserAvatar3.svg?react'
-import Bell from '../../../../assets/icons/Bell.svg?react'
-import LockIcon from '../../../../assets/icons/lockIcon.svg?react'
-import ChatBubbleIcon from '../../../../assets/icons/chatBubbleIcon.svg?react'
-import Adjustments from '../../../../assets/icons/adjustmentsIcon.svg?react'
 import FolderIcon from '../../../../assets/icons/folderIcon.svg?react'
-import SpeackerIcon from '../../../../assets/icons/speackerIcon.svg?react'
 import LanguageIcon from '../../../../assets/icons/languageIcon.svg?react'
+import LockIcon from '../../../../assets/icons/lockIcon.svg?react'
+import SpeackerIcon from '../../../../assets/icons/speackerIcon.svg?react'
 
 import ArrowLeft from '../../../../assets/icons/ArrowLeft.svg?react'
 
 import { ToastContainer, toast } from 'react-toastify'
 
 // Импортируем отдельные компоненты категорий
+import type { User } from '../../../type'
 import { MyAccount } from './tabs/MyAccount'
 import { NotificationsAndSounds } from './tabs/NotificationsAndSounds'
 import { PrivacyAndSecurity } from './tabs/PrivacyAndSecurity'
-import type { User } from '../../../type'
 // Остальные категории импортируем по аналогии
 
 interface SettingsModalProps {
@@ -133,16 +133,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 							{TABS.map(tab => {
 								const Icon = tab.icon
 								return (
-									<button
-										key={tab.name}
-										className={styles.tabButton}
-										onClick={() => setActiveTab(tab.name)}
-									>
-										<Icon
-											style={{ marginRight: 14, width: '20px', height: 'auto' }}
-										/>
-										{tab.name}
-									</button>
+									<>
+										{tab.name !== 'Privacy and Security' &&
+										tab.name !== 'My Account' ? (
+											<button
+												key={tab.name}
+												className={`${styles.tabButton} ${styles.disabled}`}
+												onClick={() => setActiveTab(tab.name)}
+											>
+												<Icon
+													style={{
+														marginRight: 14,
+														width: '20px',
+														height: 'auto',
+													}}
+												/>
+												{tab.name}
+											</button>
+										) : (
+											<button
+												key={tab.name}
+												className={styles.tabButton}
+												onClick={() => setActiveTab(tab.name)}
+											>
+												<Icon
+													style={{
+														marginRight: 14,
+														width: '20px',
+														height: 'auto',
+													}}
+												/>
+												{tab.name}
+											</button>
+										)}
+									</>
 								)
 							})}
 						</div>

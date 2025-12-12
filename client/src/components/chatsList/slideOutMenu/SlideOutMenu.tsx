@@ -1,19 +1,19 @@
-import React, { useMemo, useState } from 'react'
-import styles from './SlideOutMenu.module.css'
-import { useMutation, useApolloClient } from '@apollo/client/react'
 import { gql } from '@apollo/client'
+import { useApolloClient, useMutation } from '@apollo/client/react'
+import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import styles from './SlideOutMenu.module.css'
 
 import DefaultUserAvatar from '../../../assets/icons/DefaultUserAvatar.svg?react'
 import DefaultUserAvatar3 from '../../../assets/icons/DefaultUserAvatar3.svg?react'
-import UsersIcon from '../../../assets/icons/usersIcon.svg?react'
-import ProfileIcon from '../../../assets/icons/profileIcon.svg?react'
-import SettingsIcon from '../../../assets/icons/settingsIcon.svg?react'
 import NightMode from '../../../assets/icons/NightMode.svg?react'
 import ExitIcon from '../../../assets/icons/exitIcon.svg?react'
+import ProfileIcon from '../../../assets/icons/profileIcon.svg?react'
+import SettingsIcon from '../../../assets/icons/settingsIcon.svg?react'
+import UsersIcon from '../../../assets/icons/usersIcon.svg?react'
 
-import { ProfileModal } from './modal/ProfileModal'
 import { FriendsModal } from './modal/FriendsModal'
+import { ProfileModal } from './modal/ProfileModal'
 import { SettingsModal } from './modal/SettingsModal'
 
 interface SlideOutMenuProps {
@@ -86,20 +86,26 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 							<div className={styles.userInfo}>
 								<div className={styles.avatar}>
 									{user?.avatar ? (
-										<img src={user.avatar.url} alt='User avatar' />
+										<img
+											className={styles.user_avatar}
+											src={user.avatar.url}
+											alt='User avatar'
+										/>
 									) : (
-										<DefaultUserAvatar />
+										<DefaultUserAvatar
+											className={`${styles.user_avatar} ${styles.defaultAvatar}`}
+										/>
 									)}
 								</div>
 							</div>
 							<ul className={styles.menuList}>
 								<li
-									className={styles.menuItem}
-									onClick={() => openModal('profile')}
+									className={`${styles.menuItem} ${styles.disabled}`}
+									onClick={/*() => openModal('profile') */ undefined}
 								>
 									<DefaultUserAvatar3 /> Profile
 								</li>
-								<li className={styles.menuItem}>
+								<li className={`${styles.menuItem} ${styles.disabled}`}>
 									<UsersIcon /> New Group
 								</li>
 								<li
@@ -114,7 +120,7 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 								>
 									<SettingsIcon /> Settings
 								</li>
-								<li className={styles.menuItem}>
+								<li className={`${styles.menuItem} ${styles.disabled}`}>
 									<NightMode /> Night mode
 								</li>
 								<li className={styles.menuItem} onClick={handleExit}>

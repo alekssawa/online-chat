@@ -66,10 +66,10 @@ export const userResolvers = {
 		),
 
 		uploadUserAvatar: withAuth(
-			async (
-				_: any,
-				{ userId, file }: { userId: string; file: Promise<any> }
-			) => {
+			async (_: any, { file }: { file: Promise<any> }, context) => {
+				const userId = context.req.user?.userId
+				if (!userId) throw new Error('Unauthorized')
+
 				const { createReadStream, filename, mimetype } = await file
 				const stream = createReadStream()
 

@@ -1,3 +1,7 @@
+h2 {
+  color: white;
+}
+
 .modalOverlay {
   position: fixed;
   top: 0;
@@ -138,6 +142,10 @@
   color: white;
 }
 
+.modalBody li {
+  cursor: pointer;
+}
+
 .modalTabs {
   display: flex;
   flex-direction: column;
@@ -164,6 +172,12 @@
   cursor: pointer;
   border-radius: 4px;
   transition: background 0.2s;
+}
+
+.tabButton.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .tabButton:hover {
