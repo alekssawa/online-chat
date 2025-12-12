@@ -269,6 +269,8 @@ export const userResolvers = {
 				where: { user_id: parent.id },
 			})
 			if (!avatar) return null
+
+			console.log(`${process.env.API_URL_BACKEND}/avatar/${avatar.user_id}`)
 			return {
 				id: avatar.id.toString(),
 				filename: avatar.filename,
