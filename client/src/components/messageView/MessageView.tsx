@@ -13,6 +13,7 @@ interface MessageViewProps {
 	socketRef: React.RefObject<TSocket | null>
 	isSocketConnected: boolean
 	selectedChat: SelectedChat | null
+	setSelectedChat: (chat: SelectedChat | null) => void
 	onlineUsers: OnlineUser[]
 	updateChatLastMessage: (
 		chatId: string,
@@ -29,6 +30,7 @@ function MessageView({
 	socketRef,
 	isSocketConnected,
 	selectedChat,
+	setSelectedChat,
 	onlineUsers,
 	updateChatLastMessage,
 }: MessageViewProps) {
@@ -144,6 +146,7 @@ function MessageView({
 			<ChatHeader
 				onlineUsers={onlineUsers}
 				selectedChat={selectedChat}
+				setSelectedChat={setSelectedChat}
 				socket={socketRef.current}
 			/>
 

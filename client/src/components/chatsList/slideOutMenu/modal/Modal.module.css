@@ -195,5 +195,50 @@
 
 .backButton:hover svg {
   color: #dcdcdc;
-  
+
+}
+
+.modalFooter {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.addButton {
+  width: 100%;
+  padding: 10px;
+  background-color: #4f7cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  background-color: #3d67e6;
+}
+
+.addForm {
+  display: flex;
+  gap: 8px;
+}
+
+.input {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.submitButton {
+  padding: 8px 14px;
+  background-color: #4f7cff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.submitButton:hover {
+  background-color: #3d67e6;
 }
