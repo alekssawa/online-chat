@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom'
 import styles from './Modal.module.css'
 
-import type { Friend, User } from '../../../type'
+import type { ChatItem, Friend, User } from '../../../type'
 
 interface FriendsModalProps {
+	ChatsList: ChatItem[] | null
+	handleSelectChat: (item: ChatItem) => void
 	isOpen: boolean
 	onClose: () => void
 }
@@ -43,17 +45,16 @@ const ADD_FRIEND = gql`
 const modalRoot = document.getElementById('modal-root') || document.body
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({
+	ChatsList,
+	handleSelectChat,
 	isOpen,
 	onClose,
 }) => {
 	const [inputVisible, setInputVisible] = useState(false)
 	const [inputValue, setInputValue] = useState('')
-
-	// Держим локально user для мгновенного обновления списка друзей
 	const [user, setUser] = useState<User | null>(() =>
 		JSON.parse(localStorage.getItem('user') || 'null')
 	)
-
 	const [addFriend] = useMutation<AddFriendData, AddFriendVars>(ADD_FRIEND)
 
 	useEffect(() => {
@@ -104,6 +105,24 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 		}
 	}
 
+	const handleOpenChat = (friendId: string) => {
+		if (!ChatsList || !user) return
+
+		console.log(friendId)
+		console.log(ChatsList)
+
+		const chatWithFriend = ChatsList.find(chat =>
+			chat.users.some(u => u.id === friendId)
+		)
+
+		if (chatWithFriend) {
+			handleSelectChat(chatWithFriend)
+			onClose()
+		} else {
+			console.log('Нет чатов с другими пользователями')
+		}
+	}
+
 	return ReactDOM.createPortal(
 		<div className={styles.modalOverlay} onClick={onClose}>
 			<div className={styles.modalContent} onClick={e => e.stopPropagation()}>
@@ -115,7 +134,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 					<ul>
 						{user?.friends?.length ? (
 							user.friends.map((f: Friend) => (
-								<li key={f.id}>
+								<li key={f.id} onClick={() => handleOpenChat(f.friend.id)}>
 									<p>{f.friend.name}</p>
 									{f.friend.avatar && (
 										<img src={f.friend.avatar.url} alt={f.friend.name} />

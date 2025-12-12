@@ -9,7 +9,13 @@ import MenuIcon from '../../assets/icons/menuIcon2.svg?react'
 // import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
 import SlideOutMenu from './slideOutMenu/SlideOutMenu'
 
-import type { GroupChat, Message, PrivateChat, SelectedChat } from '../type'
+import type {
+	ChatItem,
+	GroupChat,
+	Message,
+	PrivateChat,
+	SelectedChat,
+} from '../type'
 
 interface ChatsListProps {
 	containerRef?: React.RefObject<HTMLDivElement | null>
@@ -24,15 +30,6 @@ interface ChatsListProps {
 			newMessage: { text: string; senderName?: string }
 		) => void
 	) => void
-}
-
-interface ChatItem {
-	id: string
-	name: string
-	type: 'group' | 'private'
-	lastMessage?: string
-	senderName?: string
-	avatarUrl?: string
 }
 
 // Выносим элемент чата в отдельный компонент для оптимизации
@@ -372,6 +369,7 @@ function ChatsList({
 			const lastMsg = sortedMessages[sortedMessages.length - 1]
 			items.push({
 				id: g.id,
+				users: g.users || [],
 				name: g.name,
 				type: 'group',
 				lastMessage: lastMsg?.text,
@@ -387,6 +385,7 @@ function ChatsList({
 			const lastMsg = sortedMessages[sortedMessages.length - 1]
 			items.push({
 				id: p.id,
+				users: [p.user1, p.user2],
 				name: otherUser.name,
 				type: 'private',
 				lastMessage: lastMsg?.text,
@@ -449,6 +448,8 @@ function ChatsList({
 									<MenuIcon />
 								</div>
 								<SlideOutMenu
+									ChatsList={chatItems}
+									handleSelectChat={handleSelectChat}
 									isOpen={isMenuOpen}
 									onClose={handleMenuClose}
 								></SlideOutMenu>
