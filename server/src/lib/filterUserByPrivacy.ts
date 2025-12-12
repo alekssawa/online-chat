@@ -7,7 +7,7 @@ const filterUserByPrivacy = (user: any, isFriend: boolean) => {
 		name: user.name,
 		nickname: user.nickname,
 		avatar: user.avatar
-			? { url: `http://localhost:3000/avatar/${user.id}` }
+			? { url: `${process.env.API_URL_BACKEND}/avatar/${user.id}` }
 			: null,
 
 		publicKey: user.publicKey,

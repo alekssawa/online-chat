@@ -274,7 +274,7 @@ export const userResolvers = {
 				filename: avatar.filename,
 				mimeType: avatar.mime_type,
 				uploadedAt: avatar.uploaded_at!.toISOString(),
-				url: `${process.env.API_URL}/avatar/${avatar.user_id}`,
+				url: `${process.env.API_URL_BACKEND}/avatar/${avatar.user_id}`,
 				user: { id: parent.id, email: parent.email, name: parent.name },
 			}
 		},
@@ -345,7 +345,7 @@ export const userResolvers = {
 						name: user.name,
 						nickname: user.nickname,
 						avatar: user.avatar
-							? { url: `http://localhost:3000/avatar/${user.id}` }
+							? { url: `${process.env.API_URL_BACKEND}/avatar/${user.id}` }
 							: null,
 						about: user.about,
 						email: user.email,
@@ -381,7 +381,7 @@ export const userResolvers = {
 							name: sender.name,
 							nickname: sender.nickname,
 							avatar: sender.avatar
-								? { url: `http://localhost:3000/avatar/${sender.id}` }
+								? { url: `${process.env.API_URL_BACKEND}/avatar/${sender.id}` }
 								: null,
 							about: sender.about,
 							email: sender.email,
@@ -398,7 +398,7 @@ export const userResolvers = {
 					name: group.name,
 					createdAt: group.createdAt.toISOString(),
 					avatar: group.avatar
-						? { url: `http://localhost:3000/avatar/group/${group.id}` }
+						? { url: `${process.env.API_URL_BACKEND}/avatar/group/${group.id}` }
 						: null,
 					users: users,
 					messages: messages, // Теперь messages всегда будет массивом
