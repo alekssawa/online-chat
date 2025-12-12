@@ -172,8 +172,8 @@ export const typeDefs = `#graphql
     ): PrivacySettings!
 
     # --- Друзья ---
-    addFriend(userId: ID!, friendIdentifier: String!): User!
-    removeFriend(userId: ID!, friendIdentifier: String!): User!
+    addFriend(friendIdentifier: String!): User!
+    removeFriend( friendIdentifier: String!): User!
 
     deleteUser(id: ID!): User!
 

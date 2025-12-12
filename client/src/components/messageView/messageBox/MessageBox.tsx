@@ -44,7 +44,7 @@ function MessageBox({
 					: selectedChat.chat.user1.publicKey
 				: null
 
-		console.log('peerPublicKey', peerPublicKey)
+		// console.log('peerPublicKey', peerPublicKey)
 		// console.log(user.id)
 		// const test =
 		// 	selectedChat.type === 'private'
