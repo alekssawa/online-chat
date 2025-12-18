@@ -1,6 +1,7 @@
 import { gql } from '@apollo/client'
 import { useMutation } from '@apollo/client/react'
 import React, { useEffect, useState } from 'react'
+import { ToastContainer, toast } from 'react-toastify'
 import ReactDOM from 'react-dom'
 import styles from './Modal.module.css'
 
@@ -140,6 +141,11 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 				return updatedUser
 			})
 
+			
+			toast.success(`${data?.addFriend.friends?.find(f =>
+			f.friend.email == inputValue
+			)?.friend.name} added as a friend`)
+			
 			setInputValue('')
 			setInputVisible(false)
 		} catch (err) {
@@ -211,6 +217,19 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 							user.friends.map((f: Friend) => (
 								<li key={f.id} onClick={() => handleOpenChat(f.friend.id)}>
 									<p>{f.friend.name}</p>
+									<div className={styles.user_info}>
+										{user?.avatar ? (
+											<img className={styles.user_avatar} src={user.avatar.url} />
+										) : (
+											<DefaultUserAvatar
+												className={`${styles.user_avatar} ${styles.defaultAvatar}`}
+											/>
+										)}
+										<div className={styles.user_details}>
+											<h2 className={styles.user_name}>{user?.name}</h2>
+											<h2 className={styles.user_email}>{user?.email}</h2>
+										</div>
+									</div>
 									{f.friend.avatar && (
 										<img src={f.friend.avatar.url} alt={f.friend.name} />
 									)}
@@ -247,6 +266,17 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 					)}
 				</div>
 			</div>
+			<ToastContainer
+							position='top-center'
+							pauseOnHover={false}
+							pauseOnFocusLoss={false}
+							hideProgressBar
+							closeOnClick={false}
+							draggable={false}
+							limit={2}
+							autoClose={1500}
+							theme='dark'
+						/>
 		</div>,
 		modalRoot
 	)

@@ -136,6 +136,8 @@ export const authResolvers = {
 				data: { token: refreshToken, userId: user.id, expiresAt },
 			})
 
+			console.log(user)
+
 			context.res.cookie('refreshToken', refreshToken, {
 				httpOnly: true,
 				secure: false, // локально

@@ -449,7 +449,7 @@ function ChatsList({
 				const sortedMessages = sortMessagesByDate(p.messages)
 				const lastMsg = sortedMessages[sortedMessages.length - 1]
 
-				console.log(lastMsg)
+				// console.log(lastMsg)
 
 				let decryptedText = lastMsg?.text || ''
 
@@ -484,7 +484,7 @@ function ChatsList({
 
 					await runDecryption()
 				}
-				console.log(decryptedText)
+				// console.log(decryptedText)
 
 				items.push({
 					id: p.id,
@@ -537,7 +537,7 @@ function ChatsList({
 		setIsMenuOpen(false)
 	}
 
-	console.log(chatItems)
+	// console.log(chatItems)
 
 	return (
 		<>

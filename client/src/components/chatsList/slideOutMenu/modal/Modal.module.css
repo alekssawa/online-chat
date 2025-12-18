@@ -1,258 +1,261 @@
 h2 {
-  color: white;
+	color: white;
 }
 
 .modalOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0, 0, 0, 0.5);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
 }
 
 .modalContent {
-  background: #17212b;
-  border-radius: 8px;
-  padding: 0;
-  max-width: 350px;
-  width: 90%;
-  max-height: 80vh;
-  overflow: auto;
-  border: 1px solid #232e3c;
+	background: #17212b;
+	border-radius: 8px;
+	padding: 0;
+	max-width: 350px;
+	width: 90%;
+	max-height: 80vh;
+	overflow: auto;
+	border: 1px solid #232e3c;
 }
 
 .modalHeader {
-  /* display: flex; */
-  /* justify-content: flex-start; */
-  padding: 16px 20px;
-  border-bottom: 8px solid #232e3c;
+	/* display: flex; */
+	/* justify-content: flex-start; */
+	padding: 16px 20px;
+	border-bottom: 8px solid #232e3c;
 }
 
 .title {
-  display: flex;
-  width: 100%;
-  margin: 0;
-  color: white;
-  font-size: 20px;
-  white-space: nowrap;
-  margin-bottom: 26px;
+	display: flex;
+	width: 100%;
+	margin: 0;
+	color: white;
+	font-size: 20px;
+	white-space: nowrap;
+	margin-bottom: 26px;
 }
 
 .user_info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
 }
 
 .user_avatar {
-  width: 90px;
-  height: 90px;
-  margin-right: 10px;
+	width: 90px;
+	height: 90px;
+	margin-right: 10px;
 
-  color: rgb(0, 0, 0);
-  fill: currentColor;
-  border-radius: 50%;
-  /* делает форму круглой */
+	color: rgb(0, 0, 0);
+	fill: currentColor;
+	border-radius: 50%;
+	/* делает форму круглой */
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  /* чтобы контент не выходил за круг */
-  user-select: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden;
+	/* чтобы контент не выходил за круг */
+	user-select: none;
 }
 
 .user_details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: flex-start;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	align-items: flex-start;
 }
 
 .user_name {
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  margin: 0;
-  /* Убираем стандартные отступы h2 */
+	font-size: 16px;
+	font-weight: 600;
+	color: white;
+	margin: 0;
+	/* Убираем стандартные отступы h2 */
 }
 
 .user_email {
-  font-size: 16px;
-  font-weight: 400;
-  color: white;
-  margin: 0;
-  /* Убираем стандартные отступы h2 */
+	font-size: 16px;
+	font-weight: 400;
+	color: white;
+	margin: 0;
+	/* Убираем стандартные отступы h2 */
 }
 
 .user_nickname {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgb(131, 131, 131);
-  margin: 0;
-  /* Убираем стандартные отступы h2 */
+	font-size: 14px;
+	font-weight: 500;
+	color: rgb(131, 131, 131);
+	margin: 0;
+	/* Убираем стандартные отступы h2 */
 }
 
 .nickname {
-  display: inline-block;
-  /* ширина по содержимому */
-  color: #708499;
-  cursor: pointer;
-  text-decoration: none;
-  box-shadow: inset 0 -1px 0 0 transparent;
-  transition: box-shadow 0.2s;
-  white-space: nowrap;
-  /* чтобы текст не переносился */
-  align-self: flex-start;
-  /* 🌟 ключевой момент для flex-column родителя */
+	display: inline-block;
+	/* ширина по содержимому */
+	color: #708499;
+	cursor: pointer;
+	text-decoration: none;
+	box-shadow: inset 0 -1px 0 0 transparent;
+	transition: box-shadow 0.2s;
+	white-space: nowrap;
+	/* чтобы текст не переносился */
+	align-self: flex-start;
+	/* 🌟 ключевой момент для flex-column родителя */
 }
 
 .nickname:hover {
-  box-shadow: inset 0 -1px 0 0 #708499;
+	box-shadow: inset 0 -1px 0 0 #708499;
 }
 
 .closeButton {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+	background: none;
+	border: none;
+	color: #94a3b8;
+	font-size: 24px;
+	cursor: pointer;
+	padding: 0;
+	width: 30px;
+	height: 30px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 }
 
 .closeButton:hover {
-  color: white;
+	color: white;
 }
 
 .modalBody {
-  padding: 20px;
+	padding: 20px;
 }
 
 .modalBody ul {
-  color: white;
+	color: white;
 }
 
 .modalBody li {
-  cursor: pointer;
+	cursor: pointer;
 }
 
 .modalTabs {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  gap: 8px;
-  /* margin-bottom: 16px; */
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	gap: 8px;
+	/* margin-bottom: 16px; */
 
-  /* Центрируем список по контейнеру */
-  /* align-items: center; */
+	/* Центрируем список по контейнеру */
+	/* align-items: center; */
 }
 
 .tabButton {
-  display: flex;
-  /* чтобы иконка и текст в одной строке */
-  align-items: center;
-  /* вертикально по центру */
-  justify-content: flex-start;
-  /* текст с иконкой слева */
-  padding: 6px 12px;
-  width: 100%;
-  border: none;
-  color: white;
-  /* background: #1f2a40;       */
-  cursor: pointer;
-  border-radius: 4px;
-  transition: background 0.2s;
+	display: flex;
+	/* чтобы иконка и текст в одной строке */
+	align-items: center;
+	/* вертикально по центру */
+	justify-content: flex-start;
+	/* текст с иконкой слева */
+	padding: 6px 12px;
+	width: 100%;
+	border: none;
+	color: white;
+	/* background: #1f2a40;       */
+	cursor: pointer;
+	border-radius: 4px;
+	transition: background 0.2s;
 }
 
 .tabButton.disabled {
-  opacity: 0.5;
-  pointer-events: none;
-  cursor: not-allowed;
+	opacity: 0.5;
+	pointer-events: none;
+	cursor: not-allowed;
 }
 
 .tabButton:hover {
-  background: #232e3c;
-  border-radius: 8px
+	background: #232e3c;
+	border-radius: 8px;
 }
 
 .activeTab {
-  background: #6ab3d5;
-  color: white;
+	background: #6ab3d5;
+	color: white;
 }
 
 .backButton {
-  display: flex;
-  gap: 16px;
-  width: 100%;
-  font-size: 20px;
-  font-weight: 600;
-  color: white;
-  margin-bottom: 20px;
-  white-space: nowrap;
+	display: flex;
+	gap: 16px;
+	width: 100%;
+	font-size: 20px;
+	font-weight: 600;
+	color: white;
+	margin-bottom: 20px;
+	white-space: nowrap;
 }
 
 .backButton svg {
-  color: #737e87;
-  width: 24px;
-  height: auto;
+	color: #737e87;
+	width: 24px;
+	height: auto;
 }
 
 .backButton:hover svg {
-  color: #dcdcdc;
-
+	color: #dcdcdc;
 }
 
 .modalFooter {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
+	margin-top: 16px;
+	padding-top: 12px;
+	border-top: 1px solid #e5e5e5;
 }
 
 .addButton {
-  width: 100%;
-  padding: 10px;
-  background-color: #4f7cff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+	width: 100%;
+	padding: 10px;
+	background-color: #4f7cff;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
 }
 
 .addButton:hover {
-  background-color: #3d67e6;
+	background-color: #3d67e6;
 }
 
 .addForm {
-  display: flex;
-  gap: 8px;
+	display: flex;
+	gap: 8px;
+	padding: 16px 20px;
 }
 
 .input {
-  flex: 1;
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+	/* flex: 1; */
+	padding: 8px 10px;
+	border-radius: 6px;
+	color: white;
+	border: 1px solid #ccc;
+	width: 100%;
+	/* max-width: 400px; */
 }
 
 .submitButton {
-  padding: 8px 14px;
-  background-color: #4f7cff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+	padding: 8px 14px;
+	background-color: #4f7cff;
+	color: white;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
 }
 
 .submitButton:hover {
-  background-color: #3d67e6;
+	background-color: #3d67e6;
 }
