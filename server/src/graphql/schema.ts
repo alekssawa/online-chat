@@ -184,7 +184,7 @@ export const typeDefs = `#graphql
     deletePrivateMessage(id: ID!): Message!
 
     # --- Групповые чаты ---
-    createGroupChat(name: String!, creatorId: ID!): GroupChat!
+    createGroupChat(name: String!): GroupChat!
     uploadGroupAvatar(groupId: ID!, file: Upload!): GroupAvatar!
     updateGroupChat(id: ID!, name: String!): GroupChat!
     deleteGroupChat(id: ID!): GroupChat!

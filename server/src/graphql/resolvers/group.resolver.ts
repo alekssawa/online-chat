@@ -1,9 +1,8 @@
-import prisma from '../../lib/prismaClient.js'
-import type { User, Message } from '../types.js'
 import { GraphQLError } from 'graphql'
-import { withAuth } from '../../lib/authDecorator.js'
-import { GraphQLUpload } from 'graphql-upload-minimal'
 import type { FileUpload } from 'graphql-upload-minimal'
+import { GraphQLUpload } from 'graphql-upload-minimal'
+import { withAuth } from '../../lib/authDecorator.js'
+import prisma from '../../lib/prismaClient.js'
 
 import filterUserByPrivacy from '../../lib/filterUserByPrivacy.js'
 
@@ -257,10 +256,9 @@ export const groupResolvers = {
 
 	Mutation: {
 		createGroupChat: withAuth(
-			async (
-				_: any,
-				{ name, creatorId }: { name: string; creatorId: string }
-			) => {
+			async (_: any, { name }: { name: string }, context: any) => {
+				const creatorId = context.req.user?.userId
+
 				if (!name || !creatorId) {
 					throw new GraphQLError('name и creatorId обязательны', {
 						extensions: { code: 'BAD_USER_INPUT' },
@@ -270,18 +268,32 @@ export const groupResolvers = {
 				const user = await prisma.users.findUnique({
 					where: { id: creatorId },
 				})
+
 				if (!user) {
 					throw new GraphQLError('Пользователь не найден', {
 						extensions: { code: 'NOT_FOUND' },
 					})
 				}
 
-				const group = await prisma.groups.create({ data: { name } })
-				await prisma.group_users.create({
-					data: { groupId: group.id, userId: creatorId },
+				// Создаём группу
+				const group = await prisma.groups.create({
+					data: { name },
 				})
 
-				return { ...group, createdAt: group.createdAt.toISOString() }
+				// Добавляем создателя в группу
+				await prisma.group_users.create({
+					data: {
+						groupId: group.id,
+						userId: creatorId,
+					},
+				})
+
+				return {
+					id: group.id,
+					name: group.name,
+					users: [user], // 🔥 ВАЖНО
+					createdAt: group.createdAt.toISOString(),
+				}
 			}
 		),
 

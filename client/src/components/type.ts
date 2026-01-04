@@ -39,28 +39,40 @@ export interface PrivacySettings {
 }
 
 export type PrivacyLevel = 'ALL' | 'FRIENDS' | 'NONE'
+export interface newMessage {
+	text: string
+	iv: string
+	senderName?: string
+	sentAt?: string
+	updatedAt?: string
+}
 
-export type SelectedChat =
+export type ChatItem =
 	| { chat: GroupChat; type: 'group' }
 	| { chat: PrivateChat; type: 'private' }
 
-export interface ChatItem {
+interface BaseChat {
 	id: string
-	users: User[]
-	name: string
-	type: 'group' | 'private'
+	createdAt: string
+	messages: Message[]
 	lastMessage?: string
+	iv?: string
+	sentAt?: string
+	updatedAt?: string
 	senderName?: string
-	avatarUrl?: string
 }
 
-export interface GroupChat {
-	id: string
+export interface PrivateChat extends BaseChat {
+	user1Id: string
+	user2Id: string
+	user1: User
+	user2: User
+}
+
+export interface GroupChat extends BaseChat {
 	name: string
-	createdAt: string
 	avatar?: GroupAvatar | null
 	users?: User[]
-	messages: Message[]
 }
 
 export interface GroupAvatar {
@@ -75,16 +87,6 @@ export interface GroupUser {
 	joinedAt: string
 	user: User
 	group?: GroupChat
-}
-
-export interface PrivateChat {
-	id: string
-	user1Id: string
-	user2Id: string
-	user1: User
-	user2: User
-	createdAt: string
-	messages: Message[]
 }
 
 export interface Message {

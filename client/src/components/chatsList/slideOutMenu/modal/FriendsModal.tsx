@@ -1,15 +1,16 @@
 import { gql } from '@apollo/client'
 import { useMutation } from '@apollo/client/react'
 import React, { useEffect, useState } from 'react'
-import { ToastContainer, toast } from 'react-toastify'
 import ReactDOM from 'react-dom'
+import { ToastContainer, toast } from 'react-toastify'
 import styles from './Modal.module.css'
 
+import DefaultUserAvatar from '../../../../assets/icons/DefaultUserAvatar.svg?react'
+
+import { useChatStore } from '../../../../store/useChatStore'
 import type { ChatItem, Friend, User } from '../../../type'
 
 interface FriendsModalProps {
-	ChatsList: ChatItem[] | null
-	handleSelectChat: (item: ChatItem) => void
 	refreshChats: () => void
 	isOpen: boolean
 	onClose: () => void
@@ -83,12 +84,13 @@ const CREATE_PRIVATE_CHAT = gql`
 const modalRoot = document.getElementById('modal-root') || document.body
 
 export const FriendsModal: React.FC<FriendsModalProps> = ({
-	ChatsList,
-	handleSelectChat,
 	refreshChats,
 	isOpen,
 	onClose,
 }) => {
+	const chatItems = useChatStore(s => s.chats)
+	const addChat = useChatStore(s => s.addChat)
+	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
 	const [inputVisible, setInputVisible] = useState(false)
 	const [inputValue, setInputValue] = useState('')
 	const [user, setUser] = useState<User | null>(() =>
@@ -141,11 +143,13 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 				return updatedUser
 			})
 
-			
-			toast.success(`${data?.addFriend.friends?.find(f =>
-			f.friend.email == inputValue
-			)?.friend.name} added as a friend`)
-			
+			toast.success(
+				`${
+					data?.addFriend.friends?.find(f => f.friend.email == inputValue)
+						?.friend.name
+				} added as a friend`
+			)
+
 			setInputValue('')
 			setInputVisible(false)
 		} catch (err) {
@@ -153,17 +157,26 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 		}
 	}
 
-	console.log(ChatsList)
+	console.log(chatItems)
 
 	const handleOpenChat = async (friendId: string) => {
-		if (!ChatsList || !user) return
+		if (!chatItems || !user) return
 
-		const chatWithFriend = ChatsList.find(chat =>
-			chat.users.some(u => u.id === friendId)
-		)
+		const chatWithFriend = chatItems.find(chat => {
+			if (chat.type === 'private') {
+				return (
+					chat.chat.user1.id === friendId || chat.chat.user2.id === friendId
+				)
+			}
+			// для групп, если нужно
+			if (chat.type === 'group') {
+				return chat.chat.users?.some(u => u.id === friendId)
+			}
+			return false
+		})
 
 		if (chatWithFriend) {
-			handleSelectChat(chatWithFriend)
+			setSelectedChatId(chatWithFriend.chat.id)
 			onClose()
 		} else {
 			// Если чата нет — создаём его через Apollo
@@ -172,30 +185,23 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 					variables: { user2Id: friendId },
 				})
 				if (data?.createPrivateChat) {
-					handleSelectChat({
-						id: data.createPrivateChat.id,
-						users: [
-							{
-								id: user.id,
-								name: user.name,
-								email: user.email,
-								avatar: user.avatar,
-							},
-							{
-								id: data.createPrivateChat.user1.id,
-								name: data.createPrivateChat.user1.name,
-								email: data.createPrivateChat.user1.email,
-								avatar: data.createPrivateChat.user1.avatar || undefined,
-							},
-						],
-						name: '',
+					const newChat: ChatItem = {
 						type: 'private',
-						lastMessage: undefined,
-						senderName: undefined,
-						avatarUrl: undefined,
-					})
+						chat: {
+							...data.createPrivateChat,
+							user1Id: data.createPrivateChat.user1.id,
+							user2Id: data.createPrivateChat.user2.id,
+							messages: [],
+							lastMessage: undefined,
+							senderName: undefined,
+							sentAt: new Date().toISOString(),
+							createdAt: new Date().toISOString(), // или data.createPrivateChat.createdAt, если есть
+						},
+					}
+
+					addChat(newChat)
+					setSelectedChatId(newChat.chat.id)
 					refreshChats()
-					console.log(refreshChats)
 					onClose()
 				}
 			} catch (err) {
@@ -219,7 +225,10 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 									<p>{f.friend.name}</p>
 									<div className={styles.user_info}>
 										{user?.avatar ? (
-											<img className={styles.user_avatar} src={user.avatar.url} />
+											<img
+												className={styles.user_avatar}
+												src={user.avatar.url}
+											/>
 										) : (
 											<DefaultUserAvatar
 												className={`${styles.user_avatar} ${styles.defaultAvatar}`}
@@ -267,16 +276,16 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 				</div>
 			</div>
 			<ToastContainer
-							position='top-center'
-							pauseOnHover={false}
-							pauseOnFocusLoss={false}
-							hideProgressBar
-							closeOnClick={false}
-							draggable={false}
-							limit={2}
-							autoClose={1500}
-							theme='dark'
-						/>
+				position='top-center'
+				pauseOnHover={false}
+				pauseOnFocusLoss={false}
+				hideProgressBar
+				closeOnClick={false}
+				draggable={false}
+				limit={2}
+				autoClose={1500}
+				theme='dark'
+			/>
 		</div>,
 		modalRoot
 	)

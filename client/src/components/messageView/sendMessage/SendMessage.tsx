@@ -6,16 +6,13 @@ import { useUserKeysStore } from '../../../store/userKeys'
 
 import styles from './SendMessage.module.css'
 
-import type { SelectedChat, User } from '../../type'
+import { useSelectedChat } from '../../../store/useChatStore'
+import type { User, newMessage } from '../../type'
 
 interface SendMessageProps {
-	selectedChat: SelectedChat | null
 	socket: typeof Socket | null
 	isSocketConnected: boolean
-	updateChatLastMessage: (
-		chatId: string,
-		newMessage: { text: string; senderName?: string }
-	) => void
+	updateChatLastMessage: (chatId: string, newMessage: newMessage) => void
 }
 
 interface ContextMenuPosition {
@@ -24,11 +21,11 @@ interface ContextMenuPosition {
 }
 
 function SendMessage({
-	selectedChat,
 	socket,
 	isSocketConnected,
 	updateChatLastMessage,
 }: SendMessageProps) {
+	const selectedChat = useSelectedChat()
 	const { privateKey } = useUserKeysStore()
 	const { deriveSharedKey, encryptMessage } = useUserKeys()
 	const editorRef = useRef<HTMLDivElement>(null)
@@ -345,7 +342,10 @@ function SendMessage({
 			})
 			updateChatLastMessage(selectedChat.chat.id, {
 				text: markdown,
+				iv: '',
 				senderName: user.name,
+				sentAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
 			})
 		} else {
 			// Сообщение в приватный чат
@@ -357,7 +357,10 @@ function SendMessage({
 			})
 			updateChatLastMessage(selectedChat.chat.id, {
 				text: markdown,
+				iv: '',
 				senderName: user.name,
+				sentAt: new Date().toISOString(),
+				updatedAt: new Date().toISOString(),
 			})
 
 			console.log(markdown)

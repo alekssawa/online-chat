@@ -6,14 +6,17 @@ import ChatsList from '../../components/chatsList/ChatsList'
 import MessageView from '../../components/messageView/MessageView'
 import UserList from '../../components/usersList/UserList'
 
-import type { OnlineUser, SelectedChat, User } from '../../components/type'
+import type { OnlineUser, User, newMessage } from '../../components/type'
 import UserInfoPanel from '../../components/userInfoPanel/UserInfoPanel'
 import { useMatchMedia } from '../../utils/useMatchMedia'
+import { useChatStore, useSelectedChat } from '../../store/useChatStore'
 
 export type TSocket = ReturnType<typeof socketIOClient>
 
-function ChatRoom() {
-	const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null)
+function ChatPage() {
+	const selectedChatId = useChatStore(s => s.selectedChatId)
+	const selectedChat = useSelectedChat()
+
 	const [selectedUser, setSelectedUser] = useState<User | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
@@ -57,16 +60,11 @@ function ChatRoom() {
 	}
 
 	const [updateChatLastMessage, setUpdateChatLastMessage] = useState<
-		(chatId: string, newMessage: { text: string; senderName?: string }) => void
+		(chatId: string, newMessage: newMessage) => void
 	>(() => () => {})
 
 	const handleUpdateFunction = useCallback(
-		(
-			updateFn: (
-				chatId: string,
-				newMessage: { text: string; senderName?: string }
-			) => void
-		) => {
+		(updateFn: (chatId: string, newMessage: newMessage) => void) => {
 			setUpdateChatLastMessage(() => updateFn)
 		},
 		[]
@@ -86,10 +84,10 @@ function ChatRoom() {
 			)}
 
 			<>
-				{(!isMobile || (isMobile && !selectedChat)) && (
+				{(!isMobile || (isMobile && !selectedChatId)) && (
 					<ChatsList
+						socketRef={socketRef}
 						containerRef={containerRef}
-						setSelectedChat={setSelectedChat}
 						setIsUserPageOpen={setIsUserPageOpen}
 						loading={loading}
 						setLoading={setLoading}
@@ -98,13 +96,11 @@ function ChatRoom() {
 					/>
 				)}
 
-				{selectedChat && (
+				{selectedChatId && (
 					<>
 						<MessageView
 							socketRef={socketRef}
 							isSocketConnected={isSocketConnected}
-							selectedChat={selectedChat}
-							setSelectedChat={setSelectedChat}
 							onlineUsers={onlineUsers}
 							updateChatLastMessage={updateChatLastMessage}
 						/>
@@ -132,4 +128,4 @@ function ChatRoom() {
 	)
 }
 
-export default ChatRoom
+export default ChatPage

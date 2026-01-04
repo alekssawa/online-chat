@@ -12,14 +12,11 @@ import ProfileIcon from '../../../assets/icons/profileIcon.svg?react'
 import SettingsIcon from '../../../assets/icons/settingsIcon.svg?react'
 import UsersIcon from '../../../assets/icons/usersIcon.svg?react'
 
-import type { ChatItem } from '../../type'
 import { FriendsModal } from './modal/FriendsModal'
 import { ProfileModal } from './modal/ProfileModal'
 import { SettingsModal } from './modal/SettingsModal'
 
 interface SlideOutMenuProps {
-	ChatsList: ChatItem[] | null
-	handleSelectChat: (item: ChatItem) => void
 	refreshChats: () => void
 	isOpen: boolean
 	onClose: () => void
@@ -33,8 +30,6 @@ const LOGOUT_MUTATION = gql`
 `
 
 const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
-	ChatsList,
-	handleSelectChat,
 	refreshChats,
 	isOpen,
 	onClose,
@@ -139,8 +134,6 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 								onClose={closeModal}
 							/>
 							<FriendsModal
-								ChatsList={ChatsList}
-								handleSelectChat={handleSelectChat}
 								refreshChats={refreshChats}
 								isOpen={activeModal === 'friends'}
 								onClose={closeModal}
