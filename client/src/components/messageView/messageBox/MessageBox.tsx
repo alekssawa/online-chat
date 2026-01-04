@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 
 import { useEffect, useState } from 'react'
 import { useSelectedChat } from '../../../store/useChatStore'
+import { parseDate } from '../../../utils/parseDate'
 import type { User } from '../../type'
 
 interface MessageBoxProps {
@@ -27,6 +28,8 @@ function MessageBox({ text, iv, sentAt, sender }: MessageBoxProps) {
 	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
 	const { deriveSharedKey, decryptMessage } = useUserKeys()
 	const selectedChat = useSelectedChat()
+
+	// console.log('MessageBox render:', { text, iv, sentAt, sender })
 
 	useEffect(() => {
 		if (!selectedChat || !user) return
@@ -163,12 +166,12 @@ function MessageBox({ text, iv, sentAt, sender }: MessageBoxProps) {
 							user?.id === sender?.id ? styles.MyTimestamp : styles.timestamp
 						}
 					>
-						{new Date(Number(sentAt)).toLocaleString(undefined, {
-							// month: "numeric",
-							// day: "numeric",
-							hour: '2-digit',
-							minute: '2-digit',
-						})}
+						{sentAt
+							? parseDate(sentAt).toLocaleString(undefined, {
+									hour: '2-digit',
+									minute: '2-digit',
+							  })
+							: ''}
 					</span>
 				</div>
 			</div>

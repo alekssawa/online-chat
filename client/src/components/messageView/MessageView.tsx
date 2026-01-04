@@ -8,6 +8,7 @@ import SendMessage from './sendMessage/SendMessage'
 import { useSelectedChat } from '../../store/useChatStore'
 import type { ChatItem, Message, newMessage, OnlineUser, User } from '../type'
 import ChatHeader from './chatHeader/ChatHeader'
+import { parseDate } from '../../utils/parseDate'
 // import { c } from "@apollo/client/react/internal/compiler-runtime";
 
 interface MessageViewProps {
@@ -101,15 +102,21 @@ function MessageView({
 	if (!selectedChat) return null
 
 	const getReadableDate = (dateString: string) => {
-		const date = new Date(Number(dateString))
+		const date = parseDate(dateString)
+
+		if (isNaN(date.getTime())) return ''
+
 		const today = new Date()
-		const yesterday = new Date(Number(today))
-		yesterday.setDate(yesterday.getDate() - 1)
+		const yesterday = new Date(today)
+		yesterday.setDate(today.getDate() - 1)
 
 		if (date.toDateString() === today.toDateString()) return 'Today'
 		if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
 
-		return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })
+		return date.toLocaleDateString('en-US', {
+			day: 'numeric',
+			month: 'long',
+		})
 	}
 
 	const groupMessagesByDate = (messages: Message[]) => {

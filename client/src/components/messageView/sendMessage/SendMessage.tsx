@@ -355,6 +355,7 @@ function SendMessage({
 				text: ciphertextB64,
 				iv: ivB64,
 			})
+			console.log('Сообщение отправлено в приватный чат')
 			updateChatLastMessage(selectedChat.chat.id, {
 				text: markdown,
 				iv: '',

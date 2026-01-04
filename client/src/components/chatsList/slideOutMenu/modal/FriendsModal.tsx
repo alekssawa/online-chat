@@ -157,7 +157,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 		}
 	}
 
-	console.log(chatItems)
+	console.log(user?.friends)
 
 	const handleOpenChat = async (friendId: string) => {
 		if (!chatItems || !user) return
@@ -222,27 +222,26 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 						{user?.friends?.length ? (
 							user.friends.map((f: Friend) => (
 								<li key={f.id} onClick={() => handleOpenChat(f.friend.id)}>
-									<p>{f.friend.name}</p>
-									<div className={styles.user_info}>
-										{user?.avatar ? (
+									<div className={styles.friend_info}>
+										{f?.friend.avatar ? (
 											<img
-												className={styles.user_avatar}
-												src={user.avatar.url}
+												className={styles.friend_avatar}
+												src={f.friend.avatar.url}
 											/>
 										) : (
 											<DefaultUserAvatar
-												className={`${styles.user_avatar} ${styles.defaultAvatar}`}
+												className={`${styles.friend_avatar} ${styles.defaultAvatar}`}
 											/>
 										)}
 										<div className={styles.user_details}>
-											<h2 className={styles.user_name}>{user?.name}</h2>
-											<h2 className={styles.user_email}>{user?.email}</h2>
+											<h2 className={styles.user_name}>{f?.friend.name}</h2>
+											<h2 className={styles.user_email}>{f?.friend.email}</h2>
 										</div>
 									</div>
-									{f.friend.avatar && (
+									{/* {f.friend.avatar && (
 										<img src={f.friend.avatar.url} alt={f.friend.name} />
 									)}
-									{f.friend.nickname && <span>@{f.friend.nickname}</span>}
+									{f.friend.nickname && <span>@{f.friend.nickname}</span>} */}
 								</li>
 							))
 						) : (
