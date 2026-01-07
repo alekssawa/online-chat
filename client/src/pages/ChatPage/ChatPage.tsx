@@ -71,7 +71,7 @@ function ChatPage() {
 		[]
 	)
 
-	// console.log("Selected Room:", selectedRoom);
+	console.log('Selected Room:', selectedChat, isUserPageOpen)
 	// console.log("selectedUser:", selectedUser);
 
 	return (
@@ -97,7 +97,7 @@ function ChatPage() {
 					/>
 				)}
 
-				{selectedChatId && (
+				{selectedChatId && selectedChat && (
 					<>
 						<MessageView
 							socketRef={socketRef}
