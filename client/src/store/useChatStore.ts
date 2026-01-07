@@ -10,6 +10,9 @@ type ChatStore = {
 	setSelectedChatId: (chatId: string | null) => void
 
 	updateLastMessage: (chatId: string, msg: newMessage) => void
+
+	refreshChatsList: (() => Promise<void>) | null
+	setRefreshChatsList: (fn: (() => Promise<void>) | null) => void
 }
 
 export const useChatStore = create<ChatStore>(set => ({
@@ -59,6 +62,9 @@ export const useChatStore = create<ChatStore>(set => ({
 				}
 			}),
 		})),
+
+	refreshChatsList: null,
+	setRefreshChatsList: fn => set({ refreshChatsList: fn }),
 }))
 
 export const useSelectedChat = () =>

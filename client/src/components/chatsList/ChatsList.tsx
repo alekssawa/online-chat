@@ -1,7 +1,7 @@
 import type { Reference } from '@apollo/client'
 import { gql } from '@apollo/client'
 import { useApolloClient, useQuery } from '@apollo/client/react'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './ChatsList.module.css'
 
 import DefaultGroupAvatar from '../../assets/icons/DefaultGroupAvatar.svg'
@@ -10,6 +10,7 @@ import MenuIcon from '../../assets/icons/menuIcon2.svg?react'
 import { useUserKeys } from '../../hooks/useGenerateUserKeys'
 import { type TSocket } from '../../pages/ChatPage/ChatPage'
 import { useChatStore } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
 import { buildChatItems } from '../../utils/buildChatItems'
 import type {
 	ChatItem,
@@ -77,7 +78,7 @@ const ChatListItem = React.memo(
 		onSelect: (selectedChat: string) => void
 		currentUserId?: string
 	}) => {
-		console.log(item, item.chat.sentAt)
+		// console.log(item, item.chat.sentAt)
 		const { name, avatarUrl } = getChatDisplayData(item, currentUserId)
 
 		return (
@@ -306,6 +307,7 @@ function ChatsList({
 	const setChats = useChatStore(s => s.setChats)
 	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
 	const updateLastMessage = useChatStore(s => s.updateLastMessage)
+	const setRefreshChatsList = useChatStore(s => s.setRefreshChatsList)
 	// const selectedChat = useChatStore(s => s.selectChat)
 
 	const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -316,9 +318,7 @@ function ChatsList({
 	const [searchValue, setSearchValue] = useState('')
 	const { deriveSharedKey, decryptMessage } = useUserKeys()
 
-	const user = useMemo(() => {
-		return JSON.parse(localStorage.getItem('user') || 'null')
-	}, [])
+	const user = useUserStore(s => s.user)
 
 	useEffect(() => {
 		setLoading(false)
@@ -485,6 +485,10 @@ function ChatsList({
 	}, [refreshChatsList])
 
 	useEffect(() => {
+		setRefreshChatsList(refreshChatsList)
+	}, [refreshChatsList, setRefreshChatsList])
+
+	useEffect(() => {
 		if (SetUpdateFunction) {
 			SetUpdateFunction(updateChatLastMessage)
 		}
@@ -506,7 +510,7 @@ function ChatsList({
 		setIsMenuOpen(false)
 	}
 
-	console.log(chatItems)
+	// console.log(chatItems)
 	// console.log()
 
 	return (

@@ -119,7 +119,7 @@ export const typeDefs = `#graphql
   # Запросы
   type Query {
     users: [User!]!
-    user(id: ID!): User
+    user(id: ID): User
 
     privateChats: [PrivateChat!]!  
     privateChat(chatId: ID!): PrivateChat

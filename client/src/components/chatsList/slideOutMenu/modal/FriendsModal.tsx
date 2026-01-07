@@ -8,6 +8,7 @@ import styles from './Modal.module.css'
 import DefaultUserAvatar from '../../../../assets/icons/DefaultUserAvatar.svg?react'
 
 import { useChatStore } from '../../../../store/useChatStore'
+import { useUserStore } from '../../../../store/useUserStore'
 import type { ChatItem, Friend, User } from '../../../type'
 
 interface FriendsModalProps {
@@ -93,9 +94,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
 	const [inputVisible, setInputVisible] = useState(false)
 	const [inputValue, setInputValue] = useState('')
-	const [user, setUser] = useState<User | null>(() =>
-		JSON.parse(localStorage.getItem('user') || 'null')
-	)
+	const user = useUserStore(s => s.user)
 	const [addFriend] = useMutation<AddFriendData, AddFriendVars>(ADD_FRIEND)
 	const [createPrivateChat] = useMutation<
 		CreatePrivateChatData,
@@ -134,14 +133,7 @@ export const FriendsModal: React.FC<FriendsModalProps> = ({
 			if (!data?.addFriend) return
 
 			// Обновляем локальный user и список друзей
-			setUser(prev => {
-				const updatedUser: User = {
-					...prev!,
-					friends: data.addFriend.friends,
-				}
-				localStorage.setItem('user', JSON.stringify(updatedUser))
-				return updatedUser
-			})
+			useUserStore.getState().refreshUser()
 
 			toast.success(
 				`${

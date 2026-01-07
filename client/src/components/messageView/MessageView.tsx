@@ -6,17 +6,15 @@ import MessageBox from './messageBox/MessageBox'
 import SendMessage from './sendMessage/SendMessage'
 
 import { useSelectedChat } from '../../store/useChatStore'
-import type { ChatItem, Message, newMessage, OnlineUser, User } from '../type'
-import ChatHeader from './chatHeader/ChatHeader'
+import { useUserStore } from '../../store/useUserStore'
 import { parseDate } from '../../utils/parseDate'
+import type { Message, newMessage, OnlineUser } from '../type'
+import ChatHeader from './chatHeader/ChatHeader'
 // import { c } from "@apollo/client/react/internal/compiler-runtime";
 
 interface MessageViewProps {
 	socketRef: React.RefObject<TSocket | null>
 	isSocketConnected: boolean
-	chatItems: ChatItem[]
-	selectedChat: string | null
-	setSelectedChat: (chat: string | null) => void
 	onlineUsers: OnlineUser[]
 	updateChatLastMessage: (chatId: string, newMessage: newMessage) => void
 }
@@ -34,13 +32,13 @@ function MessageView({
 }: MessageViewProps) {
 	const [messages, setMessages] = useState<Message[]>([])
 	const messagesEndRef = useRef<HTMLDivElement>(null)
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 	const selectedChat = useSelectedChat()
 
 	// Прокрутка вниз при новых сообщениях
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-		console.log(messages)
+		// console.log(messages)
 	}, [messages])
 
 	// Загрузка начальных сообщений

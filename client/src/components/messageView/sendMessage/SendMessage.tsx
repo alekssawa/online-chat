@@ -7,7 +7,8 @@ import { useUserKeysStore } from '../../../store/userKeys'
 import styles from './SendMessage.module.css'
 
 import { useSelectedChat } from '../../../store/useChatStore'
-import type { User, newMessage } from '../../type'
+import { useUserStore } from '../../../store/useUserStore'
+import type { newMessage } from '../../type'
 
 interface SendMessageProps {
 	socket: typeof Socket | null
@@ -96,7 +97,7 @@ function SendMessage({
 	})
 
 	// Получаем пользователя из localStorage
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	// Функция для сохранения и восстановления выделения
 	const saveSelection = (): Range | null => {

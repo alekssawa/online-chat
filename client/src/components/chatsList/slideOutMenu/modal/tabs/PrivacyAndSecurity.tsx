@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 
 import styles from './PrivacyAndSecurity.module.css'
 
-import type { PrivacyLevel, PrivacySettings, User } from '../../../../type'
+import { useUserStore } from '../../../../../store/useUserStore'
+import type { PrivacyLevel, PrivacySettings } from '../../../../type'
 
 interface PrivacyProps {
 	privacy?: PrivacySettings
@@ -14,7 +15,7 @@ export const PrivacyAndSecurity: React.FC<PrivacyProps> = ({
 	privacy,
 	onChange,
 }) => {
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	const initialSettings = privacy ?? user?.privacy ?? undefined
 	const [settings, setSettings] = useState<PrivacySettings | undefined>(

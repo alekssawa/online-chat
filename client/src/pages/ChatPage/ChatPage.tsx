@@ -8,8 +8,9 @@ import UserList from '../../components/usersList/UserList'
 
 import type { OnlineUser, User, newMessage } from '../../components/type'
 import UserInfoPanel from '../../components/userInfoPanel/UserInfoPanel'
-import { useMatchMedia } from '../../utils/useMatchMedia'
 import { useChatStore, useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
+import { useMatchMedia } from '../../utils/useMatchMedia'
 
 export type TSocket = ReturnType<typeof socketIOClient>
 
@@ -28,7 +29,7 @@ function ChatPage() {
 	const socketRef = useRef<TSocket | null>(null)
 	const [isSocketConnected, setIsSocketConnected] = useState(false)
 
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	useEffect(() => {
 		if (isMobile) {
@@ -107,14 +108,12 @@ function ChatPage() {
 
 						{isUserPageOpen || selectedChat?.type === 'private' ? (
 							<UserInfoPanel
-								selectedChat={selectedChat}
 								selectedUser={selectedUser}
 								setIsUserPageOpen={setIsUserPageOpen}
 								onlineUsers={onlineUsers}
 							/>
 						) : (
 							<UserList
-								selectedChat={selectedChat}
 								loading={loading}
 								onlineUsers={onlineUsers}
 								setSelectedUser={setSelectedUser}

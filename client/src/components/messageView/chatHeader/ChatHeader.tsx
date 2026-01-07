@@ -10,8 +10,8 @@ import SearchIcon from '../../../assets/icons/searchIcon.svg?react'
 import VideoIcon from '../../../assets/icons/videoIcon.svg?react'
 import { useWebRTC } from '../../../hooks/useWebRTC'
 import { useChatStore, useSelectedChat } from '../../../store/useChatStore'
+import { useUserStore } from '../../../store/useUserStore'
 import { useMatchMedia } from '../../../utils/useMatchMedia'
-import type { User } from '../../type'
 
 interface RoomHeaderProps {
 	onlineUsers: { userId: string; online: boolean }[]
@@ -26,7 +26,7 @@ function RoomHeader({ onlineUsers, socket }: RoomHeaderProps) {
 	const selectedChat = useSelectedChat()
 	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
 	// const userStr =
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	// Получаем ID собеседника для приватных чатов
 	const getTargetUserId = (): string | null => {
@@ -285,7 +285,6 @@ function RoomHeader({ onlineUsers, socket }: RoomHeaderProps) {
 			{incomingCall && (
 				<IncomingCallUI
 					incomingCall={incomingCall}
-					selectedChat={selectedChat}
 					handleAcceptCall={handleAcceptCall}
 					handleRejectCall={handleRejectCall}
 				/>

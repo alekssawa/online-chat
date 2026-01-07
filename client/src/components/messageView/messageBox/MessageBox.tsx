@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 
 import { useEffect, useState } from 'react'
 import { useSelectedChat } from '../../../store/useChatStore'
+import { useUserStore } from '../../../store/useUserStore'
 import { parseDate } from '../../../utils/parseDate'
 import type { User } from '../../type'
 
@@ -25,7 +26,7 @@ interface MessageBoxProps {
 
 function MessageBox({ text, iv, sentAt, sender }: MessageBoxProps) {
 	const [decrypted, setDecrypted] = useState<string | null>(null)
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 	const { deriveSharedKey, decryptMessage } = useUserKeys()
 	const selectedChat = useSelectedChat()
 

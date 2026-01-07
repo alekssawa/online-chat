@@ -1,6 +1,6 @@
 import { gql } from '@apollo/client'
 import { useApolloClient, useMutation } from '@apollo/client/react'
-import React, { useMemo, useState } from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './SlideOutMenu.module.css'
 
@@ -12,6 +12,7 @@ import ProfileIcon from '../../../assets/icons/profileIcon.svg?react'
 import SettingsIcon from '../../../assets/icons/settingsIcon.svg?react'
 import UsersIcon from '../../../assets/icons/usersIcon.svg?react'
 
+import { useUserStore } from '../../../store/useUserStore'
 import { FriendsModal } from './modal/FriendsModal'
 import { ProfileModal } from './modal/ProfileModal'
 import { SettingsModal } from './modal/SettingsModal'
@@ -45,9 +46,7 @@ const SlideOutMenu: React.FC<SlideOutMenuProps> = ({
 		setActiveModal(modalName)
 		onClose()
 	}
-	const user = useMemo(() => {
-		return JSON.parse(localStorage.getItem('user') || 'null')
-	}, [])
+	const user = useUserStore(s => s.user)
 
 	const navigate = useNavigate()
 	const client = useApolloClient()

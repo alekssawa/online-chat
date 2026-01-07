@@ -25,9 +25,20 @@ export const userResolvers = {
 		}),
 
 		user: withAuth(
-			async (_: any, { id }: { id: string }): Promise<User | null> => {
-				const user = await prisma.users.findUnique({ where: { id } })
+			async (
+				_: any,
+				{ id }: { id?: string }, // ❗ id теперь необязательный
+				context // обычно здесь лежит user из токена
+			): Promise<User | null> => {
+				// Если id нет, берём его из токена
+				// const userId = context.req.user?.userId
+				const userId = id ?? context.req.user?.userId
+				if (!userId) return null // нет id ни в аргументах, ни в токене
+				console.log('Searching user with id:', userId)
+				const user = await prisma.users.findUnique({ where: { id: userId } })
+				console.log('Prisma result:', user)
 				if (!user) return null
+
 				return {
 					...user,
 					birthDate: user.birthDate ? user.birthDate.toISOString() : null,
@@ -247,8 +258,37 @@ export const userResolvers = {
 					})
 				}
 
-				await prisma.friends.deleteMany({
-					where: { userId, friendId: friend.id },
+				await prisma.$transaction(async tx => {
+					// 1️⃣ найти приватный чат
+					const privateChat = await tx.private_chats.findFirst({
+						where: {
+							OR: [
+								{ user1Id: userId, user2Id: friend.id },
+								{ user1Id: friend.id, user2Id: userId },
+							],
+						},
+						select: { id: true },
+					})
+
+					// 2️⃣ удалить сообщения чата
+					if (privateChat) {
+						await tx.messages.deleteMany({
+							where: { privateChatId: privateChat.id },
+						})
+
+						// 3️⃣ удалить чат
+						await tx.private_chats.delete({
+							where: { id: privateChat.id },
+						})
+					}
+
+					// 4️⃣ удалить друга
+					await tx.friends.deleteMany({
+						where: {
+							userId,
+							friendId: friend.id,
+						},
+					})
 				})
 
 				return prisma.users.findUnique({

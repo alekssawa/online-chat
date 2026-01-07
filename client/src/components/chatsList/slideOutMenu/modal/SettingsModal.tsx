@@ -17,7 +17,7 @@ import ArrowLeft from '../../../../assets/icons/ArrowLeft.svg?react'
 import { ToastContainer, toast } from 'react-toastify'
 
 // Импортируем отдельные компоненты категорий
-import type { User } from '../../../type'
+import { useUserStore } from '../../../../store/useUserStore'
 import { MyAccount } from './tabs/MyAccount'
 import { NotificationsAndSounds } from './tabs/NotificationsAndSounds'
 import { PrivacyAndSecurity } from './tabs/PrivacyAndSecurity'
@@ -55,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
 	const [activeTab, setActiveTab] = useState<string | null>(null)
 
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	// Блокировка прокрутки при открытии модалки
 	useEffect(() => {

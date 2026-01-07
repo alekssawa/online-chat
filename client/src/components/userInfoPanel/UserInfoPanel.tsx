@@ -1,3 +1,6 @@
+import { gql } from '@apollo/client'
+import { useMutation } from '@apollo/client/react'
+
 import styles from './UserInfoPanel.module.css'
 
 import ArrowLeft from '../../assets/icons/ArrowLeft.svg?react'
@@ -7,28 +10,92 @@ import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 import PencilIcon from '../../assets/icons/PencilIcon.svg?react'
 import TrashIcon from '../../assets/icons/TrashIcon.svg?react'
 
-import type { SelectedChat, User } from '../type'
+import type { User } from '../type'
 
 import { ToastContainer, toast } from 'react-toastify'
 
+import { useEffect } from 'react'
+import { useChatStore, useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
 import { getUserStatus } from '../../utils/getUserStatus'
 
 interface UserInfoPanelProps {
-	selectedChat: SelectedChat | null
 	selectedUser: User | null
 	setIsUserPageOpen: (isUserPageOpen: boolean) => void
 	onlineUsers: { userId: string; online: boolean }[]
 }
 
+interface RemoveFriendData {
+	removeFriend: User
+}
+
+interface RemoveFriendVars {
+	friendIdentifier: string
+}
+
+const REMOVE_FRIEND = gql`
+	mutation RemoveFriend($friendIdentifier: String!) {
+		removeFriend(friendIdentifier: $friendIdentifier) {
+			id
+			friends {
+				id
+				friend {
+					id
+					name
+					email
+					nickname
+					about
+					birthDate
+					lastOnline
+				}
+			}
+		}
+	}
+`
+
 function UserInfoPanel({
-	selectedChat,
 	selectedUser,
 	setIsUserPageOpen,
 	onlineUsers,
 }: UserInfoPanelProps) {
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
+	const selectedChat = useSelectedChat()
+	const refreshChatsList = useChatStore(s => s.refreshChatsList)
+	const [removeFriend] = useMutation<RemoveFriendData, RemoveFriendVars>(
+		REMOVE_FRIEND
+	)
 
-	// console.log(selectedChat);
+	useEffect(() => {
+		console.log('Selected user changed:', selectedUser)
+	}, [selectedUser])
+
+	const handleDeleteContact = async () => {
+		if (!user || !selectedChat || !refreshChatsList) return
+
+		let userToDelete = selectedUser
+
+		if (!userToDelete && selectedChat.type === 'private') {
+			userToDelete =
+				selectedChat.chat.user1.id === user.id
+					? selectedChat.chat.user2
+					: selectedChat.chat.user1
+		}
+
+		console.log('userToDelete user changed:', userToDelete)
+
+		if (!userToDelete) return
+
+		const { data } = await removeFriend({
+			variables: { friendIdentifier: userToDelete.id },
+		})
+
+		if (!data?.removeFriend) return
+
+		console.log('Contact deleted:', data.removeFriend)
+
+		useUserStore.getState().refreshUser()
+		refreshChatsList()
+	}
 	return (
 		<div className={styles.container}>
 			<div className={styles.header}>
@@ -204,7 +271,7 @@ function UserInfoPanel({
 					<button className={styles.actionButton}>
 						<PencilIcon /> Edit contact
 					</button>
-					<button className={styles.actionButton}>
+					<button onClick={handleDeleteContact} className={styles.actionButton}>
 						<TrashIcon /> Delete contact
 					</button>
 					<button className={`${styles.actionButton} ${styles.highlight}`}>

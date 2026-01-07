@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import styles from './MyAccount.module.css'
 
 import DefaultUserAvatar from '../../../../../assets/icons/DefaultUserAvatar.svg?react'
+import { useUserStore } from '../../../../../store/useUserStore'
 
 export const MyAccount: React.FC = () => {
 	const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
@@ -10,9 +11,7 @@ export const MyAccount: React.FC = () => {
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
 
-	const user = useMemo(() => {
-		return JSON.parse(localStorage.getItem('user') || 'null')
-	}, [])
+	const user = useUserStore(s => s.user)
 
 	const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
@@ -99,7 +98,7 @@ export const MyAccount: React.FC = () => {
 				<div style={{ marginBottom: 12 }}>
 					{avatarPreview || avatarUrl || user?.avatar ? (
 						<img
-							src={avatarPreview || avatarUrl || user?.avatar.url}
+							src={avatarPreview || avatarUrl || user?.avatar?.url}
 							alt='avatar'
 							style={{
 								width: 110,
