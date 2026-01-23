@@ -3,15 +3,15 @@ export const typeDefs = `#graphql
 
   type User {
     id: ID!
-    email: String!
+    email: String
     name: String!
     nickname: String
     about: String
     birthDate: String
     lastOnline: String
     avatar: UserAvatar
-    friends: [Friend!]!
-    privacy: PrivacySettings!
+    friends: [Friend!]
+    privacy: PrivacySettings
     privateChats: [PrivateChat!]!
     groupChats: [GroupChat!]!
     messages: [Message!]!
@@ -159,7 +159,6 @@ export const typeDefs = `#graphql
       birthDate: String
     ): User!
     updateProfile(
-      id: ID!,
       nickname: String,
       about: String,
       birthDate: String
@@ -196,4 +195,4 @@ export const typeDefs = `#graphql
     updateGroupMessage(id: ID!, text: String!): Message!
     deleteGroupMessage(id: ID!): Message!
   }
-`
+`;

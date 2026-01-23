@@ -3,6 +3,7 @@ node_modules/
 node_modules/.prisma
 /src/generated/prisma/
 /src/prisma/migrations/
+/src/prisma/generated/
 
 # TypeScript
 dist/

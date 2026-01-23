@@ -1,59 +1,46 @@
-const filterUserByPrivacy = (user: any, isFriend: boolean) => {
-	if (!user) return null
+import type { UserOutputDTO } from "../graphql/types.js";
 
-	// ✅ всегда создаём новый объект, без ссылок на оригинал
-	const filteredUser: any = {
-		id: user.id,
-		name: user.name,
-		nickname: user.nickname,
-		avatar: user.avatar
-			? { url: `${process.env.API_URL_BACKEND}/avatar/${user.id}` }
-			: null,
+const filterUserByPrivacy = (
+  user: any,
+  isFriend: boolean,
+): UserOutputDTO | null => {
+  if (!user) return null;
 
-		publicKey: user.publicKey,
-		keyCreatedAt: user.keyCreatedAt,
-		keyUpdatedAt: user.keyUpdatedAt,
-	}
+  const result: UserOutputDTO = {
+    id: user.id,
+    name: user.name,
+    nickname: user.nickname ?? null,
+    avatar: user.avatar
+      ? { url: `${process.env.API_URL_BACKEND}/avatar/${user.id}` }
+      : null,
+    email: null,
+    about: null,
+    birthDate: null,
+    lastOnline: null,
+  };
 
-	// если нет настроек приватности — возвращаем только базовые поля
-	if (!user.privacy) return filteredUser
+  if (!user.privacy) return result;
 
-	// сначала добавляем все, потом удаляем, чтобы было проще отлаживать
-	filteredUser.lastOnline = user.lastOnline ?? null
-	filteredUser.about = user.about ?? null
-	filteredUser.email = user.email ?? null
-	filteredUser.birthDate = user.birthDate ?? null
+  const canView = (level: "ALL" | "FRIENDS" | "NONE") =>
+    level === "ALL" || (level === "FRIENDS" && isFriend);
 
-	// скрываем поля, если приватность не разрешает
-	if (
-		user.privacy.showLastOnline !== 'ALL' &&
-		(user.privacy.showLastOnline !== 'FRIENDS' || !isFriend)
-	) {
-		filteredUser.lastOnline = null
-	}
+  if (canView(user.privacy.showEmail)) {
+    result.email = user.email ?? null;
+  }
 
-	if (
-		user.privacy.showAbout !== 'ALL' &&
-		(user.privacy.showAbout !== 'FRIENDS' || !isFriend)
-	) {
-		filteredUser.about = null
-	}
+  if (canView(user.privacy.showAbout)) {
+    result.about = user.about ?? null;
+  }
 
-	if (
-		user.privacy.showEmail !== 'ALL' &&
-		(user.privacy.showEmail !== 'FRIENDS' || !isFriend)
-	) {
-		filteredUser.email = null
-	}
+  if (canView(user.privacy.showBirthDate)) {
+    result.birthDate = user.birthDate ? user.birthDate.toISOString() : null;
+  }
 
-	if (
-		user.privacy.showBirthDate !== 'ALL' &&
-		(user.privacy.showBirthDate !== 'FRIENDS' || !isFriend)
-	) {
-		filteredUser.birthDate = null
-	}
+  if (canView(user.privacy.showLastOnline)) {
+    result.lastOnline = user.lastOnline ? user.lastOnline.toISOString() : null;
+  }
 
-	return filteredUser
-}
+  return result;
+};
 
-export default filterUserByPrivacy
+export default filterUserByPrivacy;

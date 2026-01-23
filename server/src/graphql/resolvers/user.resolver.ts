@@ -3,46 +3,81 @@ import { withAuth } from '../../lib/authDecorator.js'
 import prisma from '../../lib/prismaClient.js'
 import type { User } from '../types.js'
 
-import filterUserByPrivacy from '../../lib/filterUserByPrivacy.js'
+import { buildPrivacyContext } from '../../domain/user/user.policy.js'
+import { applyUserPolicy } from '../../domain/user/user.policy.service.js'
+import { mapUserToUserWithPrivacy } from '../../domain/user/user.policyMap.js'
+
+// Вспомогательная функция, чтобы не дублировать код получения друзей
+async function getViewerFriendIds(
+	prisma: any,
+	viewerId: string | undefined,
+): Promise<Set<string>> {
+	if (!viewerId) return new Set()
+
+	const friends = await prisma.friends.findMany({
+		where: { userId: viewerId },
+		select: { friendId: true },
+	})
+
+	return new Set(friends.map((f: any) => f.friendId))
+}
 
 export const userResolvers = {
 	Query: {
-		users: withAuth(async (_: any): Promise<User[]> => {
-			const users = await prisma.users.findMany()
-			return users.map(u => ({
-				...u,
-				birthDate: u.birthDate ? u.birthDate.toISOString() : null,
-				lastOnline: u.lastOnline ? u.lastOnline.toISOString() : null,
+		users: withAuth(async (_: any, __: any, context: any): Promise<any[]> => {
+			const viewerId = context.userId
 
-				// 🔐 Crypto fields — отдаём только publicKey и даты ключа
-				publicKey: u.publicKey,
-				keyCreatedAt: u.keyCreatedAt.toISOString(),
-				keyUpdatedAt: u.keyUpdatedAt.toISOString(),
+			// 1. Загружаем пользователей ВМЕСТЕ с настройками приватности
+			const users = await prisma.users.findMany({
+				include: {
+					privacy: true,
+					avatar: true, // Если аватар нужен в списке
+				},
+			})
 
-				// ❌ Не отдаём encryptedPrivateKey, salt, iv, kdfIterations
-				// ❌ Не отдаём пароль
-			}))
+			// 2. Получаем список друзей смотрящего (один раз для всего списка)
+			const friendIds = await getViewerFriendIds(prisma, viewerId)
+
+			// 3. Прогоняем каждого через политику безопасности
+			return users.map(u => {
+				const ctx = buildPrivacyContext(viewerId, u.id, friendIds)
+				const userWithPrivacy = mapUserToUserWithPrivacy(u)
+				return applyUserPolicy(userWithPrivacy, ctx)
+			})
 		}),
 
 		user: withAuth(
-			async (_: any, { id }: { id: string }): Promise<User | null> => {
-				const user = await prisma.users.findUnique({ where: { id } })
-				if (!user) return null
-				return {
-					...user,
-					birthDate: user.birthDate ? user.birthDate.toISOString() : null,
-					lastOnline: user.lastOnline ? user.lastOnline.toISOString() : null,
+			async (
+				_: any,
+				{ id }: { id: string },
+				context: any,
+			): Promise<any | null> => {
+				const viewerId = context.userId
 
-					// 🔐 Crypto fields
-					publicKey: user.publicKey,
-					encryptedPrivateKey: user.encryptedPrivateKey,
-					salt: user.salt,
-					iv: user.iv,
-					kdfIterations: user.kdfIterations,
-					keyCreatedAt: user.keyCreatedAt.toISOString(),
-					keyUpdatedAt: user.keyUpdatedAt.toISOString(),
-				}
-			}
+				// 1. Загружаем конкретного пользователя с privacy
+				const user = await prisma.users.findUnique({
+					where: { id },
+					include: {
+						privacy: true,
+						avatar: true,
+					},
+				})
+
+				if (!user) return null
+
+				// 2. Получаем список друзей смотрящего
+				const friendIds = await getViewerFriendIds(prisma, viewerId)
+
+				// 3. Строим контекст (Я это или Друг?)
+				const ctx = buildPrivacyContext(viewerId, user.id, friendIds)
+
+				// 4. Маппим данные для функции
+				const userWithPrivacy = mapUserToUserWithPrivacy(user)
+
+				// 5. Применяем политику.
+				// ВАЖНО: Она сама скроет encryptedPrivateKey, если ctx.isSelf === false
+				return applyUserPolicy(userWithPrivacy, ctx)
+			},
 		),
 	},
 
@@ -55,14 +90,14 @@ export const userResolvers = {
 					email,
 					password,
 					name,
-				}: { id: string; email?: string; password?: string; name?: string }
+				}: { id: string; email?: string; password?: string; name?: string },
 			) => {
 				const data: any = {}
 				if (email) data.email = email
 				if (password) data.password = password
 				if (name) data.name = name
 				return prisma.users.update({ where: { id }, data })
-			}
+			},
 		),
 
 		uploadUserAvatar: withAuth(
@@ -102,7 +137,7 @@ export const userResolvers = {
 					url: `${process.env.API_URL}/avatar/${avatar.user.id}`,
 					user: avatar.user,
 				}
-			}
+			},
 		),
 
 		updatePrivacySettings: withAuth(
@@ -118,7 +153,7 @@ export const userResolvers = {
 					showEmail?: boolean
 					showLastOnline?: boolean
 					showBirthDate?: boolean
-				}
+				},
 			) => {
 				const data: any = {}
 				if (showEmail !== undefined) data.showEmail = showEmail
@@ -148,37 +183,38 @@ export const userResolvers = {
 					showBirthDate: updated.showBirthDate,
 					user: updated.user,
 				}
-			}
+			},
 		),
 
 		updateProfile: withAuth(
 			async (
 				_: any,
 				{
-					id,
 					nickname,
 					about,
 					birthDate,
 				}: {
-					id: string
 					nickname?: string
 					about?: string
 					birthDate?: string
-				}
+				},
+				context,
 			) => {
+				const userId = context.req.user?.userId
+				if (!userId) throw new Error('Unauthorized')
 				const data: any = {}
 				if (nickname !== undefined) data.nickname = nickname
 				if (about !== undefined) data.about = about
 				if (birthDate !== undefined) data.birthDate = new Date(birthDate)
-				return prisma.users.update({ where: { id }, data })
-			}
+				return prisma.users.update({ where: { id: userId }, data })
+			},
 		),
 
 		addFriend: withAuth(
 			async (
 				_: any,
 				{ friendIdentifier }: { friendIdentifier: string },
-				context
+				context,
 			) => {
 				const userId = context.req.user?.userId
 				if (!userId) throw new GraphQLError('Unauthorized')
@@ -217,14 +253,14 @@ export const userResolvers = {
 
 				await prisma.friends.create({ data: { userId, friendId: friend.id } })
 				return prisma.users.findUnique({ where: { id: userId } })
-			}
+			},
 		),
 
 		removeFriend: withAuth(
 			async (
 				_,
 				{ friendIdentifier }: { friendIdentifier: string },
-				context
+				context,
 			) => {
 				const userId = context.req.user?.userId
 				if (!userId) {
@@ -254,7 +290,7 @@ export const userResolvers = {
 				return prisma.users.findUnique({
 					where: { id: userId },
 				})
-			}
+			},
 		),
 
 		deleteUser: withAuth(async (_: any, { id }: { id: string }) => {
@@ -264,7 +300,7 @@ export const userResolvers = {
 	},
 
 	User: {
-		avatar: async (parent: User) => {
+		avatar: withAuth(async (parent: User) => {
 			const avatar = await prisma.user_avatars.findUnique({
 				where: { user_id: parent.id },
 			})
@@ -279,14 +315,14 @@ export const userResolvers = {
 				url: `${process.env.API_URL_BACKEND}/avatar/${avatar.user_id}`,
 				user: { id: parent.id, email: parent.email, name: parent.name },
 			}
-		},
+		}),
 
-		groupChats: async (parent: User, _: any, context: any) => {
-			const currentUserId = context.userId
+		groupChats: withAuth(async (parent: User, _: any, context: any) => {
+			const viewerId = context.userId
 
-			// Загружаем друзей для фильтрации приватности
+			// Друзья текущего пользователя
 			const friends = await prisma.friends.findMany({
-				where: { userId: currentUserId },
+				where: { userId: viewerId },
 				select: { friendId: true },
 			})
 			const friendIds = new Set(friends.map(f => f.friendId))
@@ -326,69 +362,35 @@ export const userResolvers = {
 			return groupUsers.map(gu => {
 				const group = gu.group
 
-				// Обрабатываем пользователей с учетом приватности
-				const users = (group.users ?? []).map(groupUser => {
-					const user = filterUserByPrivacy(
-						groupUser.user,
-						friendIds.has(groupUser.userId)
-					) ?? {
-						id: groupUser.userId,
-						name: 'unknown',
-						nickname: null,
-						avatar: null,
-						about: null,
-						email: null,
-						birthDate: null,
-						lastOnline: null,
-					}
+				const users = group.users.map(groupUser => {
+					const ctx = buildPrivacyContext(
+						viewerId,
+						groupUser.user.id,
+						friendIds,
+					)
+
+					const userWithPrivacy = mapUserToUserWithPrivacy(groupUser.user)
+					const userDto = applyUserPolicy(userWithPrivacy, ctx)
 
 					return {
-						id: user.id,
-						name: user.name,
-						nickname: user.nickname,
-						avatar: user.avatar
-							? { url: `${process.env.API_URL_BACKEND}/avatar/${user.id}` }
-							: null,
-						about: user.about,
-						email: user.email,
-						birthDate: user.birthDate,
-						lastOnline: user.lastOnline,
+						...userDto,
 						__typename: 'GroupChatUser',
 					}
 				})
 
-				// Обрабатываем сообщения с учетом приватности
-				const messages = (group.messages ?? []).map(msg => {
-					const sender = filterUserByPrivacy(
-						msg.sender,
-						friendIds.has(msg.senderId)
-					) ?? {
-						id: msg.senderId,
-						name: 'unknown',
-						nickname: null,
-						avatar: null,
-						about: null,
-						email: null,
-						birthDate: null,
-						lastOnline: null,
-					}
+				const messages = group.messages.map(msg => {
+					const ctx = buildPrivacyContext(viewerId, msg.sender.id, friendIds)
+
+					const senderWithPrivacy = mapUserToUserWithPrivacy(msg.sender)
+					const senderDto = applyUserPolicy(senderWithPrivacy, ctx)
 
 					return {
 						id: msg.id,
 						text: msg.text ?? '',
 						sentAt: msg.sentAt.toISOString(),
-						updatedAt: msg.updatedAt?.toISOString() ?? new Date().toISOString(),
+						updatedAt: msg.updatedAt?.toISOString(),
 						sender: {
-							id: sender.id,
-							name: sender.name,
-							nickname: sender.nickname,
-							avatar: sender.avatar
-								? { url: `${process.env.API_URL_BACKEND}/avatar/${sender.id}` }
-								: null,
-							about: sender.about,
-							email: sender.email,
-							birthDate: sender.birthDate,
-							lastOnline: sender.lastOnline,
+							...senderDto,
 							__typename: 'GroupChatUser',
 						},
 						__typename: 'Message',
@@ -402,50 +404,136 @@ export const userResolvers = {
 					avatar: group.avatar
 						? { url: `${process.env.API_URL_BACKEND}/avatar/group/${group.id}` }
 						: null,
-					users: users,
-					messages: messages, // Теперь messages всегда будет массивом
+					users,
+					messages,
 					__typename: 'GroupChat',
 				}
 			})
-		},
+		}),
 
-		privateChats: async (parent: User) => {
+		privateChats: withAuth(async (parent: User, _: any, context: any) => {
+			const viewerId = context.userId
+
 			const chats = await prisma.private_chats.findMany({
 				where: { OR: [{ user1Id: parent.id }, { user2Id: parent.id }] },
 				include: {
-					user1: true,
-					user2: true,
+					user1: {
+						include: {
+							privacy: true,
+							avatar: true,
+						},
+					},
+					user2: {
+						include: {
+							privacy: true,
+							avatar: true,
+						},
+					},
 					messages: { include: { sender: true } },
 				},
 			})
-			return chats.map(chat => ({
-				...chat,
-				createdAt: chat.createdAt.toISOString(),
-			}))
-		},
 
-		messages: async (parent: User) => {
+			const friends = await prisma.friends.findMany({
+				where: { userId: viewerId },
+				select: { friendId: true },
+			})
+			const friendIds = new Set(friends.map(f => f.friendId))
+
+			return chats.map(chat => {
+				console.log('chat', chat.user1.privacy)
+				console.log('chat', chat.user2.privacy)
+				const ctxUser1 = buildPrivacyContext(viewerId, chat.user1.id, friendIds)
+
+				const ctxUser2 = buildPrivacyContext(viewerId, chat.user2.id, friendIds)
+
+				console.log('--- DEBUG ---')
+				console.log('Viewer ID:', viewerId, typeof viewerId)
+				console.log('User1 ID:', chat.user1.id, typeof chat.user1.id)
+				console.log('Are they equal?', viewerId === chat.user1.id)
+
+				const user1WithPrivacy = mapUserToUserWithPrivacy(chat.user1)
+				const user2WithPrivacy = mapUserToUserWithPrivacy(chat.user2)
+
+				return {
+					...chat,
+					createdAt: chat.createdAt.toISOString(),
+					user1: applyUserPolicy(user1WithPrivacy, ctxUser1),
+					user2: applyUserPolicy(user2WithPrivacy, ctxUser2),
+					messages: chat.messages.map(msg => {
+						const ctxMsgSender = buildPrivacyContext(
+							viewerId,
+							msg.senderId,
+							friendIds,
+						)
+						return {
+							...msg,
+							sentAt: msg.sentAt.toISOString(),
+							updatedAt: msg.updatedAt.toISOString(),
+							sender: applyUserPolicy(
+								mapUserToUserWithPrivacy(msg.sender),
+								ctxMsgSender,
+							),
+						}
+					}),
+				}
+			})
+		}),
+
+		messages: withAuth(async (parent: User, _: any, context: any) => {
+			const viewerId = context.userId
+
 			const msgs = await prisma.messages.findMany({
 				where: { senderId: parent.id },
-				include: { sender: true, privateChat: true, group: true },
-			})
-			return msgs.map(m => ({
-				...m,
-				sentAt: m.sentAt.toISOString(),
-				updatedAt: m.updatedAt.toISOString(),
-				sender: {
-					...m.sender,
-					birthDate: m.sender.birthDate
-						? m.sender.birthDate.toISOString()
-						: null,
-					lastOnline: m.sender.lastOnline
-						? m.sender.lastOnline.toISOString()
-						: null,
+				include: {
+					sender: {
+						include: {
+							privacy: true,
+							avatar: true,
+						},
+					},
+					privateChat: true,
+					group: true,
 				},
-			}))
-		},
+			})
 
-		friends: async (parent: User) => {
+			// друзья viewer
+			const friends = viewerId
+				? await prisma.friends.findMany({
+						where: { userId: viewerId },
+						select: { friendId: true },
+					})
+				: []
+
+			const friendIds = new Set(friends.map(f => f.friendId))
+
+			return msgs.map(m => {
+				const ctx = buildPrivacyContext(viewerId, m.sender.id, friendIds)
+
+				const senderWithPrivacy = mapUserToUserWithPrivacy(m.sender)
+				const senderDto = applyUserPolicy(senderWithPrivacy, ctx)
+
+				return {
+					id: m.id,
+					text: m.text,
+					sentAt: m.sentAt.toISOString(),
+					updatedAt: m.updatedAt.toISOString(),
+					sender: senderDto,
+					privateChat: m.privateChat,
+					group: m.group,
+				}
+			})
+		}),
+
+		friends: withAuth(async (parent: User, _: any, context: any) => {
+			const viewerId = context.userId
+
+			// Получаем всех друзей текущего viewer
+			const viewerFriends = await prisma.friends.findMany({
+				where: { userId: viewerId },
+				select: { friendId: true },
+			})
+			const friendIds = new Set(viewerFriends.map(f => f.friendId))
+
 			const friends = await prisma.friends.findMany({
 				where: { userId: parent.id },
 				include: {
@@ -458,61 +546,32 @@ export const userResolvers = {
 				},
 			})
 
-			return friends.map(f => ({
-				id: f.id,
-				createdAt: f.createdAt.toISOString(), // ✅ добавляем createdAt
-				friend: {
-					id: f.friend.id,
-					email: f.friend.email,
-					name: f.friend.name,
-					nickname: f.friend.nickname,
-					about: f.friend.about,
-					birthDate: f.friend.birthDate
-						? f.friend.birthDate.toISOString()
-						: null,
-					lastOnline: f.friend.lastOnline
-						? f.friend.lastOnline.toISOString()
-						: null,
-					avatar: f.friend.avatar
-						? {
-								id: f.friend.avatar.id,
-								filename: f.friend.avatar.filename,
-								mimeType: f.friend.avatar.mime_type,
-								uploadedAt: f.friend.avatar.uploaded_at.toISOString(),
-								url: `${process.env.API_URL}/avatar/${f.friend.avatar.user_id}`,
-								user: {
-									id: f.friend.id,
-									email: f.friend.email,
-									name: f.friend.name,
-								},
-						  }
-						: null,
-					privacy: f.friend.privacy
-						? {
-								showLastOnline: f.friend.privacy.showLastOnline,
-								showAbout: f.friend.privacy.showAbout,
-								showEmail: f.friend.privacy.showEmail,
-								showBirthDate: f.friend.privacy.showBirthDate,
-								allowCalls: f.friend.privacy.allowCalls,
-						  }
-						: null,
-				},
-			}))
-		},
+			return friends.map(f => {
+				const ctx = buildPrivacyContext(viewerId, f.friend.id, friendIds)
+				const userWithPrivacy = mapUserToUserWithPrivacy(f.friend)
+				const userDto = applyUserPolicy(userWithPrivacy, ctx)
 
-		privacy: async (parent: User) => {
-			const settings = await prisma.privacy_settings.findUnique({
-				where: { userId: parent.id },
+				return {
+					id: f.id,
+					createdAt: f.createdAt.toISOString(),
+					friend: userDto,
+				}
 			})
-			if (!settings) return null
-			return {
-				showAbout: settings.showAbout,
-				allowCalls: settings.allowCalls,
-				showEmail: settings.showEmail,
-				showLastOnline: settings.showLastOnline,
-				showBirthDate: settings.showBirthDate,
-				user: parent,
-			}
-		},
+		}),
+
+		// privacy: async (parent: User) => {
+		// 	const settings = await prisma.privacy_settings.findUnique({
+		// 		where: { userId: parent.id },
+		// 	})
+		// 	if (!settings) return null
+		// 	return {
+		// 		showAbout: settings.showAbout,
+		// 		allowCalls: settings.allowCalls,
+		// 		showEmail: settings.showEmail,
+		// 		showLastOnline: settings.showLastOnline,
+		// 		showBirthDate: settings.showBirthDate,
+		// 		user: parent,
+		// 	}
+		// },
 	},
 }
