@@ -1,36 +1,70 @@
+import type { Reference } from '@apollo/client'
 import { gql } from '@apollo/client'
-import { useApolloClient, useLazyQuery, useQuery } from '@apollo/client/react'
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useApolloClient, useQuery } from '@apollo/client/react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import styles from './ChatsList.module.css'
 
 import DefaultGroupAvatar from '../../assets/icons/DefaultGroupAvatar.svg'
 import MenuIcon from '../../assets/icons/menuIcon2.svg?react'
 
-// import ToolsbarAddRooms from "./toolsbarAddRooms/ToolsbarAddRooms";
-import SlideOutMenu from './slideOutMenu/SlideOutMenu'
-
 import { useUserKeys } from '../../hooks/useGenerateUserKeys'
+import { type TSocket } from '../../pages/ChatPage/ChatPage'
+import { useChatStore } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
+import { buildChatItems } from '../../utils/buildChatItems'
 import type {
 	ChatItem,
 	GroupChat,
 	Message,
+	newMessage,
 	PrivateChat,
-	SelectedChat,
 } from '../type'
+import SlideOutMenu from './slideOutMenu/SlideOutMenu'
+
+type GroupChatCache = {
+	__typename: 'GroupChat'
+	id: string
+	messages: Message[]
+}
+
+type PrivateChatCache = {
+	__typename: 'PrivateChat'
+	id: string
+	messages: Message[]
+}
 
 interface ChatsListProps {
+	socketRef: React.RefObject<TSocket | null>
 	containerRef?: React.RefObject<HTMLDivElement | null>
-	setSelectedChat: (chat: SelectedChat) => void
+
 	setIsUserPageOpen: (isUserPageOpen: boolean) => void
 	loading: boolean
 	setLoading: (loading: boolean) => void
 	setError: (error: string | null) => void
 	SetUpdateFunction?: (
-		updateFn: (
-			chatId: string,
-			newMessage: { text: string; senderName?: string }
-		) => void
+		updateFn: (chatId: string, newMessage: newMessage) => void
 	) => void
+}
+
+function getChatDisplayData(item: ChatItem, currentUserId?: string) {
+	if (item.type === 'private') {
+		const { user1, user2 } = item.chat
+
+		const otherUser = user1.id === currentUserId ? user2 : user1
+
+		// console.log(user1, user2, otherUser)
+
+		return {
+			name: otherUser.nickname ? `@${otherUser.nickname}` : otherUser.name,
+			avatarUrl: otherUser.avatar?.url,
+		}
+	}
+
+	// group chat
+	return {
+		name: item.chat.name,
+		avatarUrl: item.chat.avatar?.url,
+	}
 }
 
 // Выносим элемент чата в отдельный компонент для оптимизации
@@ -38,25 +72,46 @@ const ChatListItem = React.memo(
 	({
 		item,
 		onSelect,
+		currentUserId,
 	}: {
 		item: ChatItem
-		onSelect: (item: ChatItem) => void
+		onSelect: (selectedChat: string) => void
+		currentUserId?: string
 	}) => {
+		// console.log(item, item.chat.sentAt)
+		const { name, avatarUrl } = getChatDisplayData(item, currentUserId)
+
 		return (
-			<li onClick={() => onSelect(item)}>
+			<li onClick={() => onSelect(item.chat.id)}>
 				<button className={styles.roomButton}>
 					<div className={styles.group_element}>
 						<img
 							className={styles.group_avatar}
-							src={item.avatarUrl || DefaultGroupAvatar}
-							alt={item.name}
+							src={avatarUrl || DefaultGroupAvatar}
+							alt={name}
 						/>
+
 						<div className={styles.groupInfo}>
-							<p className={styles.groupName}>{item.name}</p>
+							<div className={styles.groupTitle}>
+								<p className={styles.groupName}>{name}</p>
+
+								<p className={styles.sentAt}>
+									{item.chat.sentAt
+										? new Date(Number(item.chat.sentAt)).toLocaleTimeString(
+												[],
+												{
+													hour: '2-digit',
+													minute: '2-digit',
+												}
+										  )
+										: ''}
+								</p>
+							</div>
+
 							<p className={styles.groupMessagePreview}>
-								{item.senderName
-									? `${item.senderName}: ${item.lastMessage}`
-									: item.lastMessage}
+								{item.chat.senderName
+									? `${item.chat.senderName}: ${item.chat.lastMessage}`
+									: item.chat.lastMessage}
 							</p>
 						</div>
 					</div>
@@ -77,41 +132,75 @@ const GET_USER_CHATS = gql`
 				avatar {
 					url
 				}
+				users {
+					id
+					email
+					name
+					avatar {
+						url
+					}
+					nickname
+					about
+					birthDate
+					lastOnline
+				}
 				messages {
 					id
 					text
 					iv
 					sentAt
+					updatedAt
 					sender {
+						id
 						name
 					}
 				}
 			}
 			privateChats {
 				id
+				createdAt
 				user1 {
 					id
+					email
 					name
 					avatar {
 						url
 					}
+					nickname
+					about
+					birthDate
+					lastOnline
 					publicKey
+					keyCreatedAt
+					keyUpdatedAt
 				}
 				user2 {
 					id
+					email
 					name
 					avatar {
 						url
 					}
+					nickname
+					about
+					birthDate
+					lastOnline
 					publicKey
+					keyCreatedAt
+					keyUpdatedAt
 				}
 				messages {
 					id
 					text
 					iv
 					sentAt
+					updatedAt
 					sender {
+						id
 						name
+						publicKey
+						keyCreatedAt
+						keyUpdatedAt
 					}
 				}
 			}
@@ -119,120 +208,126 @@ const GET_USER_CHATS = gql`
 	}
 `
 
-const GET_GROUPCHAT_DETAILS = gql`
-	query GetGroupChatDetails($groupId: ID!) {
-		groupChat(id: $groupId) {
-			id
-			name
-			createdAt
-			avatar {
-				url
-			}
-			users {
-				id
-				email
-				name
-				avatar {
-					url
-				}
-				nickname
-				about
-				birthDate
-				lastOnline
-			}
-			messages {
-				id
-				text
-				sentAt
-				sender {
-					id
-					name
-				}
-			}
-		}
-	}
-`
+// const GET_GROUPCHAT_DETAILS = gql`
+// 	query GetGroupChatDetails($groupId: ID!) {
+// 		groupChat(id: $groupId) {
+// 			id
+// 			name
+// 			createdAt
+// 			avatar {
+// 				url
+// 			}
+// 			users {
+// 				id
+// 				email
+// 				name
+// 				avatar {
+// 					url
+// 				}
+// 				nickname
+// 				about
+// 				birthDate
+// 				lastOnline
+// 			}
+// 			messages {
+// 				id
+// 				text
+// 				sentAt
+// 				sender {
+// 					id
+// 					name
+// 				}
+// 			}
+// 		}
+// 	}
+// `
 
-const GET_PRIVATECHAT_DETAILS = gql`
-	query GetPrivateChat($chatId: ID!) {
-		privateChat(chatId: $chatId) {
-			id
-			createdAt
-			user1 {
-				id
-				email
-				name
-				avatar {
-					url
-				}
-				nickname
-				about
-				birthDate
-				lastOnline
-				publicKey
-				keyCreatedAt
-				keyUpdatedAt
-			}
-			user2 {
-				id
-				email
-				name
-				avatar {
-					url
-				}
-				nickname
-				about
-				birthDate
-				lastOnline
-				publicKey
-				keyCreatedAt
-				keyUpdatedAt
-			}
-			messages {
-				id
-				text
-				iv
-				sentAt
-				sender {
-					id
-					name
-					publicKey
-					keyCreatedAt
-					keyUpdatedAt
-				}
-			}
-		}
-	}
-`
+// const GET_PRIVATECHAT_DETAILS = gql`
+// 	query GetPrivateChat($chatId: ID!) {
+// 		privateChat(chatId: $chatId) {
+// 			id
+// 			createdAt
+// 			user1 {
+// 				id
+// 				email
+// 				name
+// 				avatar {
+// 					url
+// 				}
+// 				nickname
+// 				about
+// 				birthDate
+// 				lastOnline
+// 				publicKey
+// 				keyCreatedAt
+// 				keyUpdatedAt
+// 			}
+// 			user2 {
+// 				id
+// 				email
+// 				name
+// 				avatar {
+// 					url
+// 				}
+// 				nickname
+// 				about
+// 				birthDate
+// 				lastOnline
+// 				publicKey
+// 				keyCreatedAt
+// 				keyUpdatedAt
+// 			}
+// 			messages {
+// 				id
+// 				text
+// 				iv
+// 				sentAt
+// 				sender {
+// 					id
+// 					name
+// 					publicKey
+// 					keyCreatedAt
+// 					keyUpdatedAt
+// 				}
+// 			}
+// 		}
+// 	}
+// `
 
 function ChatsList({
+	socketRef,
 	containerRef,
-	setSelectedChat,
 	setIsUserPageOpen,
 	loading,
 	setLoading,
 	setError,
 	SetUpdateFunction,
 }: ChatsListProps) {
+	const chatItems = useChatStore(s => s.chats)
+	const setChats = useChatStore(s => s.setChats)
+	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
+	const updateLastMessage = useChatStore(s => s.updateLastMessage)
+	const setRefreshChatsList = useChatStore(s => s.setRefreshChatsList)
+	// const selectedChat = useChatStore(s => s.selectChat)
+
 	const [isMenuOpen, setIsMenuOpen] = useState(false)
 
-	const [chatItems, setChatItems] = useState<ChatItem[]>([])
 	// const [, /*refreshCounter*/ setRefreshCounter] = useState(0);
 	const retryInterval = useRef<number | null>(null)
 	const client = useApolloClient()
 	const [searchValue, setSearchValue] = useState('')
 	const { deriveSharedKey, decryptMessage } = useUserKeys()
 
-	const user = useMemo(() => {
-		return JSON.parse(localStorage.getItem('user') || 'null')
-	}, [])
+	const user = useUserStore(s => s.user)
 
-	setLoading(false)
+	useEffect(() => {
+		setLoading(false)
+	}, [setLoading])
 
 	// console.log("user:", user);
 
 	const {
-		data,
+		// data,
 		// loading: queryLoading,
 		error,
 		refetch,
@@ -245,19 +340,46 @@ function ChatsList({
 		fetchPolicy: 'network-only',
 	})
 
-	const [loadGroupChatDetails] = useLazyQuery<
-		{ groupChat: GroupChat },
-		{ groupId: string }
-	>(GET_GROUPCHAT_DETAILS, { fetchPolicy: 'cache-and-network' })
+	useEffect(() => {
+		const socket = socketRef.current
+		if (!socket) return
+		if (!chatItems.length) return
 
-	const [loadPrivateChatDetails] = useLazyQuery<
-		{ privateChat: PrivateChat },
-		{ chatId: string }
-	>(GET_PRIVATECHAT_DETAILS, { fetchPolicy: 'cache-and-network' })
+		const handleNewMessage = (message: Message) => {
+			console.log(message)
+			// обновляешь lastMessage / sentAt / senderName
+			updateChatLastMessage(message.senderId, {
+				text: message.text,
+				iv: message.iv,
+				senderName: message.sender?.name,
+				sentAt: message.sentAt,
+			})
+		}
 
-	// useEffect(() => {
-	// 	setLoading(queryLoading)
-	// }, [queryLoading, setLoading])
+		chatItems.forEach(chat => {
+			if (chat.type === 'group') {
+				socket.emit('joinGroupChat', chat.chat.id)
+			} else {
+				socket.emit('joinPrivateChat', chat.chat.id)
+			}
+		})
+
+		socket.on('newGroupMessage', handleNewMessage)
+		socket.on('newPrivateMessage', handleNewMessage)
+
+		return () => {
+			chatItems.forEach(chat => {
+				if (chat.type === 'group') {
+					socket.emit('leaveGroupChat', chat.chat.id)
+				} else {
+					socket.emit('leavePrivateChat', chat.chat.id)
+				}
+			})
+
+			socket.off('newGroupMessage', handleNewMessage)
+			socket.off('newPrivateMessage', handleNewMessage)
+		}
+	}, [chatItems])
 
 	useEffect(() => {
 		if (error) {
@@ -284,129 +406,87 @@ function ChatsList({
 
 	// Функция для обновления последнего сообщения в конкретном чате
 	const updateChatLastMessage = useCallback(
-		(chatId: string, newMessage: { text: string; senderName?: string }) => {
-			console.log(newMessage)
-			// 1. Обновляем локальное состояние
-			setChatItems(prevItems =>
-				prevItems.map(item =>
-					item.id === chatId
-						? {
-								...item,
-								lastMessage: newMessage.text,
-								senderName: newMessage.senderName || item.senderName,
-						  }
-						: item
-				)
-			)
+		(chatId: string, newMessage: newMessage) => {
+			// 1️⃣ Zustand
+			updateLastMessage(chatId, newMessage)
 
-			// 2. Обновляем кэш Apollo без рефетча
-			if (data?.user) {
-				// Создаем новое сообщение для кэша
-				const tempMessageId = `temp-${Date.now()}`
+			// 2️⃣ Apollo cache
+			if (!user?.id) return
 
-				const newMessageForCache = {
-					__typename: 'Message',
-					id: tempMessageId,
-					text: newMessage.text,
-					sentAt: new Date().toISOString(),
-					sender: {
-						__typename: 'User',
-						name: newMessage.senderName,
-					},
-				}
-
-				// Обновляем кэш для groupChats
-				const updatedGroupChats = data.user.groupChats.map(groupChat => {
-					if (groupChat.id === chatId) {
-						return {
-							...groupChat,
-							messages: [...groupChat.messages, newMessageForCache],
-						}
-					}
-					return groupChat
-				})
-
-				// Обновляем кэш для privateChats
-				const updatedPrivateChats = data.user.privateChats.map(privateChat => {
-					if (privateChat.id === chatId) {
-						return {
-							...privateChat,
-							messages: [...privateChat.messages, newMessageForCache],
-						}
-					}
-					return privateChat
-				})
-
-				// Записываем обновленные данные в кэш
-				client.writeQuery({
-					query: GET_USER_CHATS,
-					variables: { userId: user?.id || '' },
-					data: {
-						user: {
-							...data.user,
-							groupChats: updatedGroupChats,
-							privateChats: updatedPrivateChats,
-						},
-					},
-				})
-				console.log(data)
+			const newMessageForCache = {
+				__typename: 'Message',
+				id: `temp-${Date.now()}`,
+				text: newMessage.text,
+				iv: newMessage.iv,
+				sentAt: newMessage.sentAt,
+				updatedAt: newMessage.updatedAt,
+				sender: {
+					__typename: 'User',
+					name: newMessage.senderName,
+				},
 			}
+
+			const updateCache = <T extends { id: string; messages: Message[] }>(
+				existingRefs: readonly Reference[],
+				fragmentName: string
+			) =>
+				existingRefs.map(ref => {
+					const chat = client.cache.readFragment<T>({
+						id: ref.__ref,
+						fragment: gql`
+            fragment ${fragmentName} on ${fragmentName} {
+              id
+              messages
+            }
+          `,
+					})
+					if (!chat || chat.id !== chatId) return ref
+					return {
+						...ref,
+						messages: [...chat.messages, newMessageForCache],
+					}
+				})
+
+			client.cache.modify({
+				id: client.cache.identify({ __typename: 'User', id: user.id }),
+				fields: {
+					groupChats: (existing: readonly Reference[] = []) =>
+						updateCache<GroupChatCache>(existing, 'GroupChatCache'),
+					privateChats: (existing: readonly Reference[] = []) =>
+						updateCache<PrivateChatCache>(existing, 'PrivateChatCache'),
+				},
+			})
 		},
-		[client, data, user?.id]
+		[updateLastMessage, client, user?.id]
 	)
+
 	const refreshChatsList = useCallback(async () => {
-		// setLoading(true)
+		if (!user?.id) return
 		try {
 			const result = await refetch()
 			const data = result.data
 			if (!data?.user) return
 
-			const items: ChatItem[] = []
-			const sortMessagesByDate = (messages: Message[]) =>
-				[...messages].sort(
-					(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-				)
-
-			// group chats
-			data.user.groupChats.forEach(g => {
-				const sortedMessages = sortMessagesByDate(g.messages)
-				const lastMsg = sortedMessages[sortedMessages.length - 1]
-				items.push({
-					id: g.id,
-					users: g.users || [],
-					name: g.name,
-					type: 'group',
-					lastMessage: lastMsg?.text || '',
-					senderName: lastMsg?.sender?.name || '',
-					avatarUrl: g.avatar?.url,
-				})
-			})
-
-			// private chats
-			data.user.privateChats.forEach(p => {
-				const otherUser = p.user1.id === user?.id ? p.user2 : p.user1
-				const sortedMessages = sortMessagesByDate(p.messages)
-				const lastMsg = sortedMessages[sortedMessages.length - 1]
-				items.push({
-					id: p.id,
-					users: [p.user1, p.user2],
-					name: otherUser.name,
-					type: 'private',
-					lastMessage: lastMsg?.text || '',
-					senderName: lastMsg?.sender?.name || '',
-					avatarUrl: otherUser.avatar?.url,
-				})
-			})
-
-			setChatItems(items)
-			console.log(items)
+			const items = await buildChatItems(
+				data.user,
+				user.id,
+				deriveSharedKey,
+				decryptMessage
+			)
+			setChats(items)
 		} catch (err) {
 			if (err instanceof Error) setError(err.message)
 			else setError('Unknown error occurred')
-		} finally {
-			// setLoading(false)
 		}
-	}, [refetch, setError, user?.id])
+	}, [refetch, setError, setChats, user?.id, deriveSharedKey, decryptMessage])
+
+	useEffect(() => {
+		refreshChatsList()
+	}, [refreshChatsList])
+
+	useEffect(() => {
+		setRefreshChatsList(refreshChatsList)
+	}, [refreshChatsList, setRefreshChatsList])
 
 	useEffect(() => {
 		if (SetUpdateFunction) {
@@ -414,119 +494,12 @@ function ChatsList({
 		}
 	}, [SetUpdateFunction, updateChatLastMessage, refreshChatsList])
 
-	useEffect(() => {
-		if (!data?.user) return
+	const handleSelectChat = (chatId: string) => {
+		const item = chatItems.find(c => c.chat.id === chatId)
+		if (!item) return // если не нашли, ничего не делаем
 
-		const sortMessagesByDate = (messages: Message[]) =>
-			[...messages].sort(
-				(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
-			)
-
-		async function buildChatItems(userData: {
-			groupChats: GroupChat[]
-			privateChats: PrivateChat[]
-		}) {
-			const items: ChatItem[] = []
-
-			// group chats
-			userData.groupChats.forEach(g => {
-				const sortedMessages = sortMessagesByDate(g.messages)
-				const lastMsg = sortedMessages[sortedMessages.length - 1]
-				items.push({
-					id: g.id,
-					users: g.users || [],
-					name: g.name,
-					type: 'group',
-					lastMessage: lastMsg?.text,
-					senderName: lastMsg?.sender?.name,
-					avatarUrl: g.avatar?.url,
-				})
-			})
-
-			// private chats
-			for (const p of userData.privateChats) {
-				const otherUser = p.user1.id === user?.id ? p.user2 : p.user1
-				const sortedMessages = sortMessagesByDate(p.messages)
-				const lastMsg = sortedMessages[sortedMessages.length - 1]
-
-				// console.log(lastMsg)
-
-				let decryptedText = lastMsg?.text || ''
-
-				if (lastMsg?.iv && otherUser.publicKey) {
-					const peerPublicKey: string = otherUser.publicKey
-
-					async function runDecryption() {
-						try {
-							const ivArray = new Uint8Array(
-								atob(lastMsg.iv)
-									.split('')
-									.map(c => c.charCodeAt(0))
-							)
-							const textArray = new Uint8Array(
-								atob(lastMsg.text)
-									.split('')
-									.map(c => c.charCodeAt(0))
-							)
-
-							const sharedKey = await deriveSharedKey(peerPublicKey)
-							const decrypted = await decryptMessage(
-								sharedKey,
-								ivArray,
-								textArray
-							)
-
-							decryptedText = decrypted
-						} catch (err) {
-							console.error('Ошибка расшифровки lastMessage:', err)
-						}
-					}
-
-					await runDecryption()
-				}
-				// console.log(decryptedText)
-
-				items.push({
-					id: p.id,
-					users: [p.user1, p.user2],
-					name: otherUser.name,
-					type: 'private',
-					lastMessage: decryptedText,
-					senderName: lastMsg?.sender?.name || '',
-					avatarUrl: otherUser.avatar?.url,
-				})
-			}
-
-			setChatItems(items)
-		}
-
-		buildChatItems(data.user)
-	}, [data, user])
-
-	const handleSelectChat = async (item: ChatItem) => {
-		try {
-			if (item.type === 'group') {
-				const result = await loadGroupChatDetails({
-					variables: { groupId: item.id },
-				})
-				if (result.data?.groupChat) {
-					setSelectedChat({ chat: result.data.groupChat, type: 'group' })
-					// console.log(result.data.groupChat)
-					setIsUserPageOpen(false)
-				}
-			} else {
-				const result = await loadPrivateChatDetails({
-					variables: { chatId: item.id },
-				})
-				if (result.data?.privateChat) {
-					setSelectedChat({ chat: result.data.privateChat, type: 'private' })
-					setIsUserPageOpen(false)
-				}
-			}
-		} catch (err) {
-			if (err instanceof Error) setError(err.message)
-			else setError('Unknown error occurred')
-		}
+		setSelectedChatId(item.chat.id)
+		setIsUserPageOpen(false)
 	}
 
 	const handleMenuToggle = () => {
@@ -538,6 +511,7 @@ function ChatsList({
 	}
 
 	// console.log(chatItems)
+	// console.log()
 
 	return (
 		<>
@@ -550,8 +524,6 @@ function ChatsList({
 									<MenuIcon />
 								</div>
 								<SlideOutMenu
-									ChatsList={chatItems}
-									handleSelectChat={handleSelectChat}
 									refreshChats={refreshChatsList}
 									isOpen={isMenuOpen}
 									onClose={handleMenuClose}
@@ -606,13 +578,19 @@ function ChatsList({
 								</div>
 							</div>
 							<ul>
-								{chatItems.map(item => (
-									<ChatListItem
-										key={item.id}
-										item={item}
-										onSelect={handleSelectChat}
-									/>
-								))}
+								{chatItems.map(item => {
+									// console.log(item)
+									// if (!item?.chat?.id) return null
+
+									return (
+										<ChatListItem
+											key={item.chat.id}
+											item={item}
+											onSelect={handleSelectChat}
+											currentUserId={user?.id}
+										/>
+									)
+								})}
 							</ul>
 						</>
 					</div>

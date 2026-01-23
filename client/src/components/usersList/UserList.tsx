@@ -5,12 +5,13 @@ import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 import userIcon from '../../assets/icons/usersIcon.svg'
 // import ToolsbarAddRooms from './toolsbarSettings/ToolsbarSettings'
 
-import type { GroupChat, PrivateChat, SelectedChat, User } from '../type'
+import type { GroupChat, PrivateChat, User } from '../type'
 
+import { useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
 import { getUserStatus } from '../../utils/getUserStatus'
 
 interface UserListProps {
-	selectedChat: SelectedChat | null
 	loading: boolean
 	onlineUsers: { userId: string; online: boolean }[]
 	setSelectedUser?: (user: User | null) => void
@@ -24,13 +25,13 @@ interface DisplayUser {
 }
 
 function UserList({
-	selectedChat,
 	loading,
 	onlineUsers,
 	setSelectedUser,
 	setIsUserPageOpen,
 }: UserListProps) {
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
+	const selectedChat = useSelectedChat()
 
 	// 🧩 Определяем список пользователей в зависимости от типа чата
 	const users: DisplayUser[] = (() => {
@@ -193,7 +194,7 @@ function UserList({
 															? chat.user2
 															: null
 												}
-												// console.log("Full User:", fullUser);
+												console.log('Full User:', fullUser)
 
 												setSelectedUser?.(fullUser)
 												setIsUserPageOpen?.(true)

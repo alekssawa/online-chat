@@ -5,20 +5,18 @@ import styles from './MessageView.module.css'
 import MessageBox from './messageBox/MessageBox'
 import SendMessage from './sendMessage/SendMessage'
 
-import type { Message, OnlineUser, SelectedChat, User } from '../type'
+import { useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
+import { parseDate } from '../../utils/parseDate'
+import type { Message, newMessage, OnlineUser } from '../type'
 import ChatHeader from './chatHeader/ChatHeader'
 // import { c } from "@apollo/client/react/internal/compiler-runtime";
 
 interface MessageViewProps {
 	socketRef: React.RefObject<TSocket | null>
 	isSocketConnected: boolean
-	selectedChat: SelectedChat | null
-	setSelectedChat: (chat: SelectedChat | null) => void
 	onlineUsers: OnlineUser[]
-	updateChatLastMessage: (
-		chatId: string,
-		newMessage: { text: string; senderName?: string }
-	) => void
+	updateChatLastMessage: (chatId: string, newMessage: newMessage) => void
 }
 
 interface MessageGroup {
@@ -29,19 +27,18 @@ interface MessageGroup {
 function MessageView({
 	socketRef,
 	isSocketConnected,
-	selectedChat,
-	setSelectedChat,
 	onlineUsers,
 	updateChatLastMessage,
 }: MessageViewProps) {
 	const [messages, setMessages] = useState<Message[]>([])
 	const messagesEndRef = useRef<HTMLDivElement>(null)
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
-	const chatId = selectedChat?.chat.id ?? null
+	const user = useUserStore(s => s.user)
+	const selectedChat = useSelectedChat()
 
 	// Прокрутка вниз при новых сообщениях
 	useEffect(() => {
 		messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+		// console.log(messages)
 	}, [messages])
 
 	// Загрузка начальных сообщений
@@ -51,12 +48,13 @@ function MessageView({
 			return
 		}
 
+		console.log(selectedChat)
+
 		const initialMessages: Message[] = selectedChat.chat.messages.map(m => ({
 			id: m.id,
 			text: m.text,
 			iv: m.iv,
 			senderId: m.sender?.id ?? '',
-			chatId,
 			sentAt: m.sentAt,
 			updatedAt: m.updatedAt,
 			sender: m.sender
@@ -71,7 +69,7 @@ function MessageView({
 	}, [selectedChat])
 
 	useEffect(() => {
-		if (!chatId || !user || !selectedChat?.type) return
+		if (!user || !selectedChat?.type) return
 
 		const socket = socketRef.current
 		if (!socket) return
@@ -81,47 +79,55 @@ function MessageView({
 		}
 
 		if (selectedChat.type === 'group') {
-			socket.emit('joinGroupChat', chatId)
+			// socket.emit('joinGroupChat', chatId)
 			socket.on('newGroupMessage', handleNewMessage)
 		} else {
-			socket.emit('joinPrivateChat', chatId)
+			// socket.emit('joinPrivateChat', chatId)
 			socket.on('newPrivateMessage', handleNewMessage)
 		}
 
 		return () => {
 			if (selectedChat.type === 'group') {
-				socket.emit('leaveGroupChat', chatId)
+				// socket.emit('leaveGroupChat', chatId)
 				socket.off('newGroupMessage', handleNewMessage)
 			} else {
-				socket.emit('leavePrivateChat', chatId)
+				// socket.emit('leavePrivateChat', chatId)
 				socket.off('newPrivateMessage', handleNewMessage)
 			}
 		}
-	}, [chatId, selectedChat?.type])
+	}, [selectedChat?.type])
 
-	if (!chatId) return null
+	if (!selectedChat) return null
 
 	const getReadableDate = (dateString: string) => {
-		const date = new Date(dateString)
+		const date = parseDate(dateString)
+
+		if (isNaN(date.getTime())) return ''
+
 		const today = new Date()
 		const yesterday = new Date(today)
-		yesterday.setDate(yesterday.getDate() - 1)
+		yesterday.setDate(today.getDate() - 1)
 
 		if (date.toDateString() === today.toDateString()) return 'Today'
 		if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
 
-		return date.toLocaleDateString('en-US', { day: 'numeric', month: 'long' })
+		return date.toLocaleDateString('en-US', {
+			day: 'numeric',
+			month: 'long',
+		})
 	}
 
 	const groupMessagesByDate = (messages: Message[]) => {
 		const sortedMessages = [...messages].sort(
-			(a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime()
+			(a, b) =>
+				new Date(Number(a.sentAt)).getTime() -
+				new Date(Number(b.sentAt)).getTime()
 		)
 
 		const groups: { [key: string]: MessageGroup } = {}
 
 		sortedMessages.forEach(message => {
-			const dateKey = new Date(message.sentAt).toDateString()
+			const dateKey = new Date(Number(message.sentAt)).toDateString()
 			const readableDate = getReadableDate(message.sentAt)
 
 			if (!groups[dateKey]) {
@@ -143,18 +149,14 @@ function MessageView({
 				</div>
 			)}
 
-			<ChatHeader
-				onlineUsers={onlineUsers}
-				selectedChat={selectedChat}
-				setSelectedChat={setSelectedChat}
-				socket={socketRef.current}
-			/>
+			<ChatHeader onlineUsers={onlineUsers} socket={socketRef.current} />
 
 			<ul>
 				{Object.entries(groupMessagesByDate(messages))
 					.sort(
 						([dateA], [dateB]) =>
-							new Date(dateA).getTime() - new Date(dateB).getTime()
+							new Date(Number(dateA)).getTime() -
+							new Date(Number(dateB)).getTime()
 					)
 					.map(([dateKey, group]) => (
 						<div key={dateKey}>
@@ -176,13 +178,11 @@ function MessageView({
 										text={m.text}
 										iv={m.iv}
 										senderId={m.senderId}
-										chatId={chatId}
 										sender={m.sender}
 										sentAt={m.sentAt}
 										updatedAt={m.updatedAt}
 										privateChatId={m.privateChatId}
 										groupId={m.groupId}
-										selectedChat={selectedChat}
 									/>
 								</li>
 							))}
@@ -192,7 +192,6 @@ function MessageView({
 			</ul>
 
 			<SendMessage
-				selectedChat={selectedChat}
 				socket={socketRef.current}
 				isSocketConnected={isSocketConnected}
 				updateChatLastMessage={updateChatLastMessage}

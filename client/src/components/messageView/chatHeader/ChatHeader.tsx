@@ -9,29 +9,24 @@ import MenuIcon from '../../../assets/icons/menuIcon.svg?react'
 import SearchIcon from '../../../assets/icons/searchIcon.svg?react'
 import VideoIcon from '../../../assets/icons/videoIcon.svg?react'
 import { useWebRTC } from '../../../hooks/useWebRTC'
+import { useChatStore, useSelectedChat } from '../../../store/useChatStore'
+import { useUserStore } from '../../../store/useUserStore'
 import { useMatchMedia } from '../../../utils/useMatchMedia'
-import type { SelectedChat, User } from '../../type'
 
 interface RoomHeaderProps {
-	selectedChat: SelectedChat | null
-	setSelectedChat: (chat: SelectedChat | null) => void
 	onlineUsers: { userId: string; online: boolean }[]
 	socket: typeof Socket | null
 }
 
-function RoomHeader({
-	selectedChat,
-	setSelectedChat,
-	onlineUsers,
-	socket,
-}: RoomHeaderProps) {
+function RoomHeader({ onlineUsers, socket }: RoomHeaderProps) {
 	const [callStatus, setCallStatus] = useState<string>('Готов к звонку')
 	const [isCallActive, setIsCallActive] = useState<boolean>(false)
 	const [isConnected, setIsConnected] = useState<boolean>(false)
 	const { isMobile } = useMatchMedia()
-
+	const selectedChat = useSelectedChat()
+	const setSelectedChatId = useChatStore(s => s.setSelectedChatId)
 	// const userStr =
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	// Получаем ID собеседника для приватных чатов
 	const getTargetUserId = (): string | null => {
@@ -106,7 +101,7 @@ function RoomHeader({
 	}
 
 	const handleSelectChat = (): void => {
-		setSelectedChat(null)
+		setSelectedChatId(null)
 	}
 
 	function getUserStatus(
@@ -130,7 +125,7 @@ function RoomHeader({
 			timestamp = timestamp * 1000
 		}
 
-		const date = new Date(timestamp)
+		const date = new Date(Number(timestamp))
 		if (isNaN(date.getTime())) return 'был(а) недавно'
 
 		const now = new Date()
@@ -290,7 +285,6 @@ function RoomHeader({
 			{incomingCall && (
 				<IncomingCallUI
 					incomingCall={incomingCall}
-					selectedChat={selectedChat}
 					handleAcceptCall={handleAcceptCall}
 					handleRejectCall={handleRejectCall}
 				/>

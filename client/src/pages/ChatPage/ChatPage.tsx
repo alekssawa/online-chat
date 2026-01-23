@@ -6,14 +6,18 @@ import ChatsList from '../../components/chatsList/ChatsList'
 import MessageView from '../../components/messageView/MessageView'
 import UserList from '../../components/usersList/UserList'
 
-import type { OnlineUser, SelectedChat, User } from '../../components/type'
+import type { OnlineUser, User, newMessage } from '../../components/type'
 import UserInfoPanel from '../../components/userInfoPanel/UserInfoPanel'
+import { useChatStore, useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
 import { useMatchMedia } from '../../utils/useMatchMedia'
 
 export type TSocket = ReturnType<typeof socketIOClient>
 
-function ChatRoom() {
-	const [selectedChat, setSelectedChat] = useState<SelectedChat | null>(null)
+function ChatPage() {
+	const selectedChatId = useChatStore(s => s.selectedChatId)
+	const selectedChat = useSelectedChat()
+
 	const [selectedUser, setSelectedUser] = useState<User | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
@@ -25,7 +29,7 @@ function ChatRoom() {
 	const socketRef = useRef<TSocket | null>(null)
 	const [isSocketConnected, setIsSocketConnected] = useState(false)
 
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 
 	useEffect(() => {
 		if (isMobile) {
@@ -57,22 +61,17 @@ function ChatRoom() {
 	}
 
 	const [updateChatLastMessage, setUpdateChatLastMessage] = useState<
-		(chatId: string, newMessage: { text: string; senderName?: string }) => void
+		(chatId: string, newMessage: newMessage) => void
 	>(() => () => {})
 
 	const handleUpdateFunction = useCallback(
-		(
-			updateFn: (
-				chatId: string,
-				newMessage: { text: string; senderName?: string }
-			) => void
-		) => {
+		(updateFn: (chatId: string, newMessage: newMessage) => void) => {
 			setUpdateChatLastMessage(() => updateFn)
 		},
 		[]
 	)
 
-	// console.log("Selected Room:", selectedRoom);
+	console.log('Selected Room:', selectedChat, isUserPageOpen)
 	// console.log("selectedUser:", selectedUser);
 
 	return (
@@ -86,10 +85,10 @@ function ChatRoom() {
 			)}
 
 			<>
-				{(!isMobile || (isMobile && !selectedChat)) && (
+				{(!isMobile || (isMobile && !selectedChatId)) && (
 					<ChatsList
+						socketRef={socketRef}
 						containerRef={containerRef}
-						setSelectedChat={setSelectedChat}
 						setIsUserPageOpen={setIsUserPageOpen}
 						loading={loading}
 						setLoading={setLoading}
@@ -98,27 +97,23 @@ function ChatRoom() {
 					/>
 				)}
 
-				{selectedChat && (
+				{selectedChatId && selectedChat && (
 					<>
 						<MessageView
 							socketRef={socketRef}
 							isSocketConnected={isSocketConnected}
-							selectedChat={selectedChat}
-							setSelectedChat={setSelectedChat}
 							onlineUsers={onlineUsers}
 							updateChatLastMessage={updateChatLastMessage}
 						/>
 
 						{isUserPageOpen || selectedChat?.type === 'private' ? (
 							<UserInfoPanel
-								selectedChat={selectedChat}
 								selectedUser={selectedUser}
 								setIsUserPageOpen={setIsUserPageOpen}
 								onlineUsers={onlineUsers}
 							/>
 						) : (
 							<UserList
-								selectedChat={selectedChat}
 								loading={loading}
 								onlineUsers={onlineUsers}
 								setSelectedUser={setSelectedUser}
@@ -132,4 +127,4 @@ function ChatRoom() {
 	)
 }
 
-export default ChatRoom
+export default ChatPage

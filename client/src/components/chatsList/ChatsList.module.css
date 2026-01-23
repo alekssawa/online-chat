@@ -12,6 +12,7 @@
 .groupInfo {
   display: flex;
   flex-direction: column;
+  width: 100%;
   /* имя сверху, статус снизу */
   align-items: start;
 }
@@ -21,7 +22,8 @@
   /* занимает всё доступное место */
   overflow-y: auto;
   /* скроллится только список */
-  padding: 20px;
+  padding-top: 20px;
+  padding-bottom: 20px;
   text-align: center;
 }
 
@@ -35,7 +37,11 @@
 
 .container ul li:hover {
   background-color: #2a3b52;
-  border-radius: 8px;
+  /* border-radius: 8px; */
+}
+
+li>button {
+  width: 100%;
 }
 
 .roomsIcon {
@@ -53,11 +59,26 @@
 .group_element {
   display: flex;
   align-items: center;
+  /* justify-content: space-between; */
+}
+
+.sentAt {
+  /* justify-content: space-between */
+  /* margin-left: auto; */
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.groupTitle {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
 }
 
 .group_avatar {
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   margin-right: 10px;
   border-radius: 50%;
   /* делает форму круглой */
@@ -94,6 +115,8 @@
 
 .header {
   margin-bottom: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   display: flex;
   align-items: center;
   gap: 8px;

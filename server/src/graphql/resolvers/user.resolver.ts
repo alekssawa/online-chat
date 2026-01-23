@@ -283,8 +283,37 @@ export const userResolvers = {
 					})
 				}
 
-				await prisma.friends.deleteMany({
-					where: { userId, friendId: friend.id },
+				await prisma.$transaction(async tx => {
+					// 1️⃣ найти приватный чат
+					const privateChat = await tx.private_chats.findFirst({
+						where: {
+							OR: [
+								{ user1Id: userId, user2Id: friend.id },
+								{ user1Id: friend.id, user2Id: userId },
+							],
+						},
+						select: { id: true },
+					})
+
+					// 2️⃣ удалить сообщения чата
+					if (privateChat) {
+						await tx.messages.deleteMany({
+							where: { privateChatId: privateChat.id },
+						})
+
+						// 3️⃣ удалить чат
+						await tx.private_chats.delete({
+							where: { id: privateChat.id },
+						})
+					}
+
+					// 4️⃣ удалить друга
+					await tx.friends.deleteMany({
+						where: {
+							userId,
+							friendId: friend.id,
+						},
+					})
 				})
 
 				return prisma.users.findUnique({

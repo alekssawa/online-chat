@@ -7,32 +7,30 @@ import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm'
 
 import { useEffect, useState } from 'react'
-import type { SelectedChat, User } from '../../type'
+import { useSelectedChat } from '../../../store/useChatStore'
+import { useUserStore } from '../../../store/useUserStore'
+import { parseDate } from '../../../utils/parseDate'
+import type { User } from '../../type'
 
 interface MessageBoxProps {
 	id: string
 	text: string
 	iv: string
 	senderId: string
-	chatId: string
 	sentAt: string
 	updatedAt: string
 	sender?: User
 	privateChatId?: string | null
 	groupId?: string | null
-	selectedChat: SelectedChat | null
 }
 
-function MessageBox({
-	text,
-	iv,
-	sentAt,
-	sender,
-	selectedChat,
-}: MessageBoxProps) {
+function MessageBox({ text, iv, sentAt, sender }: MessageBoxProps) {
 	const [decrypted, setDecrypted] = useState<string | null>(null)
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
 	const { deriveSharedKey, decryptMessage } = useUserKeys()
+	const selectedChat = useSelectedChat()
+
+	// console.log('MessageBox render:', { text, iv, sentAt, sender })
 
 	useEffect(() => {
 		if (!selectedChat || !user) return
@@ -169,12 +167,12 @@ function MessageBox({
 							user?.id === sender?.id ? styles.MyTimestamp : styles.timestamp
 						}
 					>
-						{new Date(sentAt).toLocaleString(undefined, {
-							// month: "numeric",
-							// day: "numeric",
-							hour: '2-digit',
-							minute: '2-digit',
-						})}
+						{sentAt
+							? parseDate(sentAt).toLocaleString(undefined, {
+									hour: '2-digit',
+									minute: '2-digit',
+							  })
+							: ''}
 					</span>
 				</div>
 			</div>

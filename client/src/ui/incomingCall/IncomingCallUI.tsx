@@ -5,24 +5,25 @@ import DefaultUserAvatar from '../../assets/icons/DefaultUserAvatar.svg?react'
 
 import incomingCallSound from '../../assets/sounds/Incoming_call.mp3'
 
-import type { SelectedChat, User } from '../../components/type'
+// import type { SelectedChat } from '../../components/type'
 import type { IncomingCall } from '../../hooks/useWebRTC'
+import { useSelectedChat } from '../../store/useChatStore'
+import { useUserStore } from '../../store/useUserStore'
 import styles from './IncomingCallUI.module.css'
 
 interface IncomingCallProps {
 	incomingCall: IncomingCall
-	selectedChat: SelectedChat | null
 	handleAcceptCall: () => void
 	handleRejectCall: () => void
 }
 
 function IncomingCallUI({
 	incomingCall,
-	selectedChat,
 	handleAcceptCall,
 	handleRejectCall,
 }: IncomingCallProps) {
-	const user: User | null = JSON.parse(localStorage.getItem('user') || 'null')
+	const user = useUserStore(s => s.user)
+	const selectedChat = useSelectedChat()
 	const audioRef = useRef<HTMLAudioElement | null>(null)
 
 	useEffect(() => {
